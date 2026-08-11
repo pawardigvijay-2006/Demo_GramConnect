@@ -141,11 +141,47 @@ public class VillagerDashboard extends Application {
 
                 // The logo is just a Label, wrapped in its own tiny VBox so we can
                 // give it padding without affecting the rest of the sidebar.
-                Label logo = new Label("\uD83C\uDF3F  GramConnect");
-                logo.setStyle("-fx-text-fill: white; -fx-font-size: 17px; -fx-font-weight: bold;");
-                VBox logoBox = new VBox(logo); // <-- one child passed straight into VBox
+                // ---------------- Logo ----------------
 
-                logoBox.setPadding(new Insets(20, 18, 22, 18));
+                Image logoImage = new Image("assets\\images\\gramconnect.png");
+
+                ImageView logoIcon = new ImageView(logoImage);
+
+                logoIcon.setFitWidth(60);
+                logoIcon.setFitHeight(60);
+                logoIcon.setPreserveRatio(true);
+                logoIcon.setSmooth(true);
+
+                Label logoText = new Label("GramConnect");
+
+                logoText.setStyle(
+                                "-fx-text-fill: white;" +
+                                                "-fx-font-size: 18px;" +
+                                                "-fx-font-weight: bold;");
+
+                Label subtitle = new Label("Village Governance");
+
+                subtitle.setStyle(
+                                "-fx-text-fill: #D4E9D7;" +
+                                                "-fx-font-size: 9px;" +
+                                                "-fx-font-weight: bold;");
+
+                VBox logoTextBox = new VBox(
+                                0,
+                                logoText,
+                                subtitle);
+
+                HBox logo = new HBox(
+                                8,
+                                logoIcon,
+                                logoTextBox);
+
+                logo.setAlignment(Pos.CENTER_LEFT);
+
+                VBox logoBox = new VBox(logo);
+
+                logoBox.setPadding(
+                                new Insets(18, 18, 22, 18));
 
                 // Step 2: build each nav row as a Label (see navItem() below),
                 // then pass all 8 of them into one VBox at once. This VBox lays
