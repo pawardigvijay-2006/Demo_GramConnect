@@ -6,6 +6,7 @@
     "configurations": [
         {
             "type": "java",
+<<<<<<< HEAD
             "name": "ProjectTransparency",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.ProjectTransparency",
@@ -13,6 +14,8 @@
         },
         {
             "type": "java",
+=======
+>>>>>>> 8441b2af813f01c4fbc2726182544b64045c5828
             "name": "VillagerDashboard",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.VillagerDashboard",
