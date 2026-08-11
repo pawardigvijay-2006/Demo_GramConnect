@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ProjectTransparency",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.villager.ProjectTransparency",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
             "name": "VillagerDashboard",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.VillagerDashboard",

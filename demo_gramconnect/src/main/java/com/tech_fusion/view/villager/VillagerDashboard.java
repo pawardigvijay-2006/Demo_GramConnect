@@ -62,6 +62,9 @@ import javafx.stage.Stage;
  */
 public class VillagerDashboard extends Application {
 
+        private BorderPane root;
+        private BorderPane mainArea;
+
         // ================= COLORS =================
         // Keeping every color as a named constant means we type the hex code
         // once and reuse the name everywhere - easier to read and easier to
@@ -100,21 +103,29 @@ public class VillagerDashboard extends Application {
         @Override
         public void start(Stage primaryStage) {
 
-                // BorderPane splits the window into 5 zones: top, bottom, left,
-                // right, center. We only use "left" (sidebar) and "center" (everything else).
-                BorderPane root = new BorderPane();
-                root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+                root = new BorderPane();
 
-                root.setLeft(buildSidebar()); // put the sidebar VBox on the left
-                root.setCenter(buildMainArea()); // put the header + content on the right
+                root.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";");
 
-                // One Scene wraps the root node. 1600x1000 is the starting window size.
+                // Sidebar remains fixed
+                root.setLeft(buildSidebar());
+
+                // Main area
+                mainArea = buildMainArea();
+
+                root.setCenter(mainArea);
+
                 Scene scene = new Scene(root, 1500, 850);
 
-                primaryStage.setTitle("GramConnect - Villager Dashboard");
+                primaryStage.setTitle(
+                                "GramConnect - Villager Dashboard");
+
                 primaryStage.setScene(scene);
+
                 primaryStage.setMinWidth(1280);
                 primaryStage.setMinHeight(800);
+
                 primaryStage.show();
         }
 
@@ -170,8 +181,9 @@ public class VillagerDashboard extends Application {
                 Label item = new Label(text);
                 item.setMaxWidth(Double.MAX_VALUE);
                 item.setPadding(new Insets(10, 14, 10, 18));
+                
                 if (active) {
-                        item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: "+ PRIMARY
+                        item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY
                                         + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
                 } else {
                         item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;");
@@ -326,308 +338,264 @@ public class VillagerDashboard extends Application {
 
         private VBox buildProjectsCard() {
 
-    Label title = new Label("Recent projects");
-    title.setStyle(
-            "-fx-font-size: 15px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: " + TEXT_PRIMARY + ";"
-    );
+                Label title = new Label("Recent projects");
+                title.setStyle(
+                                "-fx-font-size: 15px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
-    Label viewAll = new Label("View all \u2192");
-    viewAll.setStyle(
-            "-fx-text-fill: " + SECONDARY + ";" +
-            "-fx-font-size: 12px;" +
-            "-fx-font-weight: bold;"
-    );
+                Label viewAll = new Label("View all \u2192");
+                viewAll.setStyle(
+                                "-fx-text-fill: " + SECONDARY + ";" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: bold;");
 
-    Region spacer = new Region();
-    HBox.setHgrow(spacer, Priority.ALWAYS);
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
 
-    HBox header = new HBox(
-            title,
-            spacer,
-            viewAll
-    );
+                HBox header = new HBox(
+                                title,
+                                spacer,
+                                viewAll);
 
-    header.setAlignment(Pos.CENTER_LEFT);
+                header.setAlignment(Pos.CENTER_LEFT);
 
+                // -------------------------------------------------
+                // PROJECT LIST
+                // -------------------------------------------------
 
-    // -------------------------------------------------
-    // PROJECT LIST
-    // -------------------------------------------------
+                VBox list = new VBox(
+                                18,
 
-    VBox list = new VBox(
-            18,
+                                projectRow(
+                                                "assets\\images\\road.jpg",
+                                                "Village road construction",
+                                                "Main Street, Suryapuri",
+                                                78,
+                                                "On Track"),
 
-            projectRow(
-                    "assets\\images\\road.jpg",
-                    "Village road construction",
-                    "Main Street, Suryapuri",
-                    78,
-                    "On Track"
-            ),
+                                projectRow(
+                                                "assets\\images\\water_tank.jpg",
+                                                "Water tank renovation",
+                                                "Near school area",
+                                                45,
+                                                "In Progress"),
 
-            projectRow(
-                    "assets\\images\\water_tank.jpg",
-                    "Water tank renovation",
-                    "Near school area",
-                    45,
-                    "In Progress"
-            ),
+                                projectRow(
+                                                "assets\\images\\street_light.jpg",
+                                                "Street light installation",
+                                                "All village roads",
+                                                25,
+                                                "Delayed"));
 
-            projectRow(
-                    "assets\\images\\street_light.jpg",
-                    "Street light installation",
-                    "All village roads",
-                    25,
-                    "Delayed"
-            )
-    );
+                // -------------------------------------------------
+                // CARD
+                // -------------------------------------------------
 
+                VBox card = new VBox(
+                                14,
+                                header,
+                                list);
 
-    // -------------------------------------------------
-    // CARD
-    // -------------------------------------------------
+                card.setPadding(new Insets(18));
 
-    VBox card = new VBox(
-            14,
-            header,
-            list
-    );
+                card.setPrefWidth(580);
 
-    card.setPadding(new Insets(18));
+                card.setStyle(
+                                "-fx-background-color: white;" +
+                                                "-fx-background-radius: 12;" +
+                                                "-fx-border-color: " + BORDER + ";" +
+                                                "-fx-border-radius: 12;" +
+                                                "-fx-border-width: 1;");
 
-        card.setPrefWidth(580);
+                HBox.setHgrow(card, Priority.ALWAYS);
 
-    card.setStyle(
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 12;" +
-            "-fx-border-color: " + BORDER + ";" +
-            "-fx-border-radius: 12;" +
-            "-fx-border-width: 1;"
-    );
-
-    HBox.setHgrow(card, Priority.ALWAYS);
-
-    return card;
-}
+                return card;
+        }
 
         /**
          * Builds one project row: name + status pill on top, location below, progress
          * bar at the bottom.
          */
         private HBox projectRow(
-        String imagePath,
-        String name,
-        String location,
-        int percent,
-        String status) {
+                        String imagePath,
+                        String name,
+                        String location,
+                        int percent,
+                        String status) {
 
+                // =================================================
+                // PROJECT IMAGE
+                // =================================================
 
-    // =================================================
-    // PROJECT IMAGE
-    // =================================================
+                ImageView projectImage = new ImageView(
+                                new Image(imagePath));
 
-    ImageView projectImage = new ImageView(
-            new Image(imagePath)
-    );
+                projectImage.setFitWidth(118);
+                projectImage.setFitHeight(78);
 
-    projectImage.setFitWidth(118);
-    projectImage.setFitHeight(78);
+                projectImage.setPreserveRatio(false);
 
-    projectImage.setPreserveRatio(false);
+                // Rounded corners for image
+                Rectangle clip = new Rectangle(
+                                118,
+                                78);
 
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
 
-    // Rounded corners for image
-    Rectangle clip = new Rectangle(
-            118,
-            78
-    );
+                projectImage.setClip(clip);
 
-    clip.setArcWidth(12);
-    clip.setArcHeight(12);
+                // =================================================
+                // PROJECT NAME
+                // =================================================
 
-    projectImage.setClip(clip);
+                Label nameLabel = new Label(name);
 
+                nameLabel.setStyle(
+                                "-fx-font-size: 13px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
-    // =================================================
-    // PROJECT NAME
-    // =================================================
+                // =================================================
+                // STATUS COLORS
+                // =================================================
 
-    Label nameLabel = new Label(name);
+                String pillBg;
+                String pillFg;
+                String barColor;
 
-    nameLabel.setStyle(
-            "-fx-font-size: 13px;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: " + TEXT_PRIMARY + ";"
-    );
+                switch (status) {
 
+                        case "Delayed":
 
-    // =================================================
-    // STATUS COLORS
-    // =================================================
+                                pillBg = "#FFEBEE";
+                                pillFg = "#791F1F";
+                                barColor = ERROR;
 
-    String pillBg;
-    String pillFg;
-    String barColor;
+                                break;
 
-    switch (status) {
+                        case "In Progress":
 
-        case "Delayed":
+                                pillBg = "#FFF3E0";
+                                pillFg = "#854F0B";
+                                barColor = SECONDARY;
 
-            pillBg = "#FFEBEE";
-            pillFg = "#791F1F";
-            barColor = ERROR;
+                                break;
 
-            break;
+                        default:
 
+                                pillBg = "#E8F5E9";
+                                pillFg = "#1B5E20";
+                                barColor = PRIMARY;
+                }
 
-        case "In Progress":
+                // =================================================
+                // STATUS PILL
+                // =================================================
 
-            pillBg = "#FFF3E0";
-            pillFg = "#854F0B";
-            barColor = SECONDARY;
+                Label statusPill = new Label(status);
 
-            break;
+                statusPill.setStyle(
+                                "-fx-background-color: " + pillBg + ";" +
+                                                "-fx-text-fill: " + pillFg + ";" +
+                                                "-fx-background-radius: 10;" +
+                                                "-fx-padding: 3 10 3 10;" +
+                                                "-fx-font-size: 10px;" +
+                                                "-fx-font-weight: bold;");
 
+                // =================================================
+                // TOP ROW
+                // =================================================
 
-        default:
+                Region spacer = new Region();
 
-            pillBg = "#E8F5E9";
-            pillFg = "#1B5E20";
-            barColor = PRIMARY;
-    }
+                HBox.setHgrow(
+                                spacer,
+                                Priority.ALWAYS);
 
+                HBox topRow = new HBox(
+                                nameLabel,
+                                spacer,
+                                statusPill);
 
-    // =================================================
-    // STATUS PILL
-    // =================================================
+                topRow.setAlignment(
+                                Pos.CENTER_LEFT);
 
-    Label statusPill = new Label(status);
+                // =================================================
+                // LOCATION
+                // =================================================
 
-    statusPill.setStyle(
-            "-fx-background-color: " + pillBg + ";" +
-            "-fx-text-fill: " + pillFg + ";" +
-            "-fx-background-radius: 10;" +
-            "-fx-padding: 3 10 3 10;" +
-            "-fx-font-size: 10px;" +
-            "-fx-font-weight: bold;"
-    );
+                Label locationLabel = new Label(location);
 
+                locationLabel.setStyle(
+                                "-fx-font-size: 11px;" +
+                                                "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-    // =================================================
-    // TOP ROW
-    // =================================================
+                // =================================================
+                // PROGRESS BAR
+                // =================================================
 
-    Region spacer = new Region();
+                ProgressBar bar = new ProgressBar(
+                                percent / 100.0);
 
-    HBox.setHgrow(
-            spacer,
-            Priority.ALWAYS
-    );
+                bar.setPrefWidth(400);
+                bar.setPrefHeight(7);
 
-    HBox topRow = new HBox(
-            nameLabel,
-            spacer,
-            statusPill
-    );
+                bar.setStyle(
+                                "-fx-accent: " + barColor + ";");
 
-    topRow.setAlignment(
-            Pos.CENTER_LEFT
-    );
+                // =================================================
+                // PERCENTAGE
+                // =================================================
 
+                Label percentLabel = new Label(
+                                percent + "%");
 
-    // =================================================
-    // LOCATION
-    // =================================================
+                percentLabel.setStyle(
+                                "-fx-font-size: 11px;" +
+                                                "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-    Label locationLabel = new Label(location);
+                HBox progressRow = new HBox(
+                                8,
+                                bar,
+                                percentLabel);
 
-    locationLabel.setStyle(
-            "-fx-font-size: 11px;" +
-            "-fx-text-fill: " + TEXT_SECONDARY + ";"
-    );
+                progressRow.setAlignment(
+                                Pos.CENTER_LEFT);
 
+                // =================================================
+                // PROJECT DETAILS
+                // =================================================
 
-    // =================================================
-    // PROGRESS BAR
-    // =================================================
+                VBox projectDetails = new VBox(
+                                4,
+                                topRow,
+                                locationLabel,
+                                progressRow);
 
-    ProgressBar bar = new ProgressBar(
-            percent / 100.0
-    );
+                projectDetails.setAlignment(
+                                Pos.CENTER_LEFT);
 
-    bar.setPrefWidth(400);
-    bar.setPrefHeight(7);
+                HBox.setHgrow(
+                                projectDetails,
+                                Priority.ALWAYS);
 
-    bar.setStyle(
-            "-fx-accent: " + barColor + ";"
-    );
+                // =================================================
+                // FINAL PROJECT ROW
+                // =================================================
 
+                HBox projectRow = new HBox(
+                                14,
+                                projectImage,
+                                projectDetails);
 
-    // =================================================
-    // PERCENTAGE
-    // =================================================
+                projectRow.setAlignment(
+                                Pos.CENTER_LEFT);
 
-    Label percentLabel = new Label(
-            percent + "%"
-    );
+                return projectRow;
+        }
 
-    percentLabel.setStyle(
-            "-fx-font-size: 11px;" +
-            "-fx-text-fill: " + TEXT_SECONDARY + ";"
-    );
-
-
-    HBox progressRow = new HBox(
-            8,
-            bar,
-            percentLabel
-    );
-
-    progressRow.setAlignment(
-            Pos.CENTER_LEFT
-    );
-
-
-    // =================================================
-    // PROJECT DETAILS
-    // =================================================
-
-    VBox projectDetails = new VBox(
-            4,
-            topRow,
-            locationLabel,
-            progressRow
-    );
-
-    projectDetails.setAlignment(
-            Pos.CENTER_LEFT
-    );
-
-    HBox.setHgrow(
-            projectDetails,
-            Priority.ALWAYS
-    );
-
-
-    // =================================================
-    // FINAL PROJECT ROW
-    // =================================================
-
-    HBox projectRow = new HBox(
-            14,
-            projectImage,
-            projectDetails
-    );
-
-    projectRow.setAlignment(
-            Pos.CENTER_LEFT
-    );
-
-
-    return projectRow;
-}
         /**
          * Builds the "My Bills" card: a title, 3 bill rows, and a "Pay All Dues"
          * button.
@@ -687,7 +655,7 @@ public class VillagerDashboard extends Application {
                 property.setAlignment(Pos.CENTER_LEFT);
                 property.setPadding(new Insets(10));
                 property.setStyle(
-                                "-fx-background-color: "+ LIGHT_BLUE +";"+
+                                "-fx-background-color: " + LIGHT_BLUE + ";" +
                                                 "-fx-border-color: " + BORDER + ";" +
                                                 "-fx-border-radius: 7;" +
                                                 "-fx-background-radius: 7;");

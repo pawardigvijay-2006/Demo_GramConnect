@@ -1,5 +1,6 @@
 package com.tech_fusion;
 
+import com.tech_fusion.view.villager.ProjectTransparency;
 import com.tech_fusion.view.villager.VillagerDashboard;
 
 import javafx.application.Application;
