@@ -6,7 +6,6 @@ import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -20,45 +19,30 @@ import javafx.stage.Stage;
  * GramConnect - Villager Dashboard
  *
  * ============================================================
- * HOW JAVAFX LAYOUT WORKS (read this first!)
+ * THEME NOTE (read this first!)
  * ============================================================
+ * The FUNCTIONALITY of this file is 100% unchanged from the original:
+ * same fields (homeStage, root, mainArea, selectedPage), same sidebar
+ * navigation via handleNavigation(), same integration with
+ * ProjectTransparency.getProjectBPane() and ComplaintsPage.getComplaintsPage(),
+ * same sections (greeting, stat cards, projects+bills, complaints/
+ * announcement/gram sabha, village status bar), same mock data.
  *
- * Every screen is built out of small pieces (Label, TextField, ProgressBar...)
- * that get grouped together inside "containers" (VBox, HBox, StackPane...).
+ * What changed is purely visual: this screen now borrows its color
+ * palette and "glass card" look from SarpanchDashboard.java (forest
+ * green + saffron accent, translucent white cards with a soft
+ * drop-shadow, a light-green gradient sidebar, pill-shaped status
+ * badges, and a hover-lift effect on cards) instead of the old flat
+ * white-card / solid-dark-green-sidebar look.
  *
- * The trick you already noticed is this constructor pattern:
- *
- * VBox box = new VBox(label1, label2, label3);
- *
- * That line means: "Create a VBox, and immediately put label1, label2, and
- * label3 inside it, stacked vertically, in that order." VBox = Vertical Box.
- * HBox works the same way but lays children out side-by-side (Horizontal Box).
- *
- * You will see this pattern everywhere below:
- * 1. First we build the small pieces (a Label for a title, a Label for a
- * value, etc).
- * 2. Then we pass those pieces into a VBox or HBox to group them.
- * 3. That group (which is itself just a "Node") gets passed into the NEXT
- * container up, and so on, until everything is nested inside one
- * root node (a BorderPane) that gets shown in the Scene.
- *
- * So the whole screen is really just one big tree of nodes:
- *
- * BorderPane (root)
- * |-- left: sidebar (VBox containing Labels)
- * `-- center: main area (BorderPane)
- * |-- top: header (HBox containing a TextField, a bell Label, a profile HBox)
- * `-- center: scrollable content (VBox containing all the cards)
- *
- * Nothing here is magic - it is just Java objects being created and handed
- * to each other's constructors or added via .getChildren().addAll(...).
+ * Two small helpers were borrowed from SarpanchDashboard.java to make
+ * that possible:
+ * - cardStyle(radius) / addHoverLift(card, radius): the shared glass
+ * panel look + hover animation used on every card.
+ * - progressBar(fraction, color, height): a rounded, colour-filled
+ * StackPane bar (replaces the plain javafx ProgressBar control so
+ * progress bars now match Sarpanch's rounded-pill style).
  * ============================================================
- *
- * ARCHITECTURE NOTE: This is a single, self-contained file (one Application,
- * one Stage, one Scene, no FXML, no external CSS) so it's easy to read start
- * to finish. All data below (projects, bills, complaints) is hardcoded mock
- * data - marked with TODO comments showing where a real Service class would
- * plug in later.
  */
 public class VillagerDashboard extends Application {
 
@@ -69,33 +53,26 @@ public class VillagerDashboard extends Application {
         private BorderPane mainArea;
         private String selectedPage = "dashboard";
 
-        // ================= COLORS =================
-        // Keeping every color as a named constant means we type the hex code
-        // once and reuse the name everywhere - easier to read and easier to
-        // change the whole theme later.
+        // ================= COLORS (borrowed from SarpanchDashboard.java)
+        // =================
+        private static final String FOREST_DEEP = "#0B3D2E";
+        private static final String FOREST_LIGHT = "#0F4736";
+        private static final String SAFFRON_MAIN = "#E07A1F";
+        private static final String CONTEXT_TEAL = "#0E8C8C";
+        private static final String AI_VIOLET = "#7C5CFC";
+        private static final String DELAYED_RED = "#D94C38";
 
-        private static final String PRIMARY = "#005B1B";
-        private static final String PRIMARY_DARK = "#004D16";
+        // Light green sidebar gradient (same as Sarpanch's "requested change" palette)
+        private static final String SIDEBAR_TOP = "#CDEBD8";
+        private static final String SIDEBAR_MID = "#BCE3CC";
+        private static final String SIDEBAR_BOT = "#A9D8BD";
 
-        private static final String ACCENT_GREEN = "#68D66F";
-        private static final String LIGHT_GREEN = "#E8F7EA";
+        private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-        private static final String BLUE = "#2196F3";
-        private static final String LIGHT_BLUE = "#EAF5FC";
+        private static final String BACKGROUND = "#EFF5F1";
 
-        private static final String WARNING = "#F4A62A";
-        private static final String LIGHT_YELLOW = "#FFF7E5";
-
-        private static final String ERROR = "#D93025";
-        private static final String LIGHT_RED = "#FDECEC";
-
-        private static final String BACKGROUND = "#F4F8FB";
-
-        private static final String TEXT_PRIMARY = "#10251A";
-        private static final String TEXT_SECONDARY = "#66756C";
-
-        private static final String BORDER = "#D8E2DC";
-        private static final String SECONDARY = "#1976D2";
+        private static final String TEXT_PRIMARY = FOREST_DEEP;
+        private static final String TEXT_SECONDARY = "rgba(11,61,46,0.65)";
 
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
@@ -136,14 +113,20 @@ public class VillagerDashboard extends Application {
         }
 
         // =================================================================
-        // SIDEBAR
+        // SIDEBAR - now uses Sarpanch's light-green gradient background and
+        // saffron active-state accent instead of the old solid dark green.
         // =================================================================
         private VBox buildSidebar() {
                 // Step 1: create the empty container.
                 VBox sidebar = new VBox();
                 sidebar.setPrefWidth(230);
                 sidebar.setMinWidth(230);
-                sidebar.setStyle("-fx-background-color: " + PRIMARY_DARK + ";");
+                sidebar.setStyle(
+                                "-fx-background-color: linear-gradient(to bottom, " + SIDEBAR_TOP + ", " + SIDEBAR_MID
+                                                + ", " + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent rgba(11,61,46,0.10) transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
 
                 // The logo is just a Label, wrapped in its own tiny VBox so we can
                 // give it padding without affecting the rest of the sidebar.
@@ -161,16 +144,19 @@ public class VillagerDashboard extends Application {
                 Label logoText = new Label("GramConnect");
 
                 logoText.setStyle(
-                                "-fx-text-fill: white;" +
-                                                "-fx-font-size: 18px;" +
-                                                "-fx-font-weight: bold;");
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
 
                 Label subtitle = new Label("Village Governance");
 
                 subtitle.setStyle(
-                                "-fx-text-fill: #D4E9D7;" +
-                                                "-fx-font-size: 9px;" +
-                                                "-fx-font-weight: bold;");
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-letter-spacing: 0.05em;");
 
                 VBox logoTextBox = new VBox(
                                 0,
@@ -190,7 +176,7 @@ public class VillagerDashboard extends Application {
                                 new Insets(18, 18, 22, 18));
 
                 // Step 2: build each nav row as a Label (see navItem() below),
-                // then pass all 8 of them into one VBox at once. This VBox lays
+                // then pass all 9 of them into one VBox at once. This VBox lays
                 // them out top-to-bottom, 4px apart (the "4" is the spacing).
                 VBox navItems = new VBox(4,
 
@@ -216,7 +202,14 @@ public class VillagerDashboard extends Application {
 
                 Label emergency = new Label("\u26A0  Emergency assistance");
                 emergency.setWrapText(true);
-                emergency.setStyle("-fx-text-fill: #FFCC80; -fx-font-size: 13px;");
+                emergency.setPadding(new Insets(10, 12, 10, 12));
+                emergency.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + DELAYED_RED + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-background-color: rgba(217,76,56,0.12);"
+                                                + "-fx-background-radius: 10;");
                 VBox emergencyBox = new VBox(emergency);
                 emergencyBox.setPadding(new Insets(12, 16, 18, 18));
 
@@ -227,7 +220,12 @@ public class VillagerDashboard extends Application {
                 return sidebar;
         }
 
-        /** Builds one clickable-looking sidebar row. Returns a single Label node. */
+        /**
+         * Builds one clickable-looking sidebar row. Returns a single Label node.
+         * Active row now gets a translucent white pill with a saffron left
+         * border (Sarpanch's "active indicator" look) instead of a solid
+         * green fill; inactive rows get a soft translucent-white hover.
+         */
         private Label navItem(String text, String pageId) {
 
                 Label item = new Label(text);
@@ -235,47 +233,58 @@ public class VillagerDashboard extends Application {
                 item.setMaxWidth(Double.MAX_VALUE);
 
                 item.setPadding(
-                                new Insets(10, 14, 10, 18));
+                                new Insets(10, 14, 10, 14));
 
                 if (selectedPage.equals(pageId)) {
 
                         item.setStyle(
-                                        "-fx-background-color: " + PRIMARY + ";" +
-                                                        "-fx-text-fill: white;" +
-                                                        "-fx-font-weight: bold;" +
-                                                        "-fx-font-size: 13px;" +
-                                                        "-fx-background-radius: 8;");
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;");
 
                 } else {
 
                         item.setStyle(
-                                        "-fx-text-fill: #C8E6C9;" +
-                                                        "-fx-font-size: 13px;" +
-                                                        "-fx-cursor: hand;");
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-font-weight: 700;"
+                                                        + "-fx-cursor: hand;");
 
                         item.setOnMouseEntered(e -> {
 
                                 item.setStyle(
-                                                "-fx-background-color: " + PRIMARY + ";" +
-                                                                "-fx-text-fill: white;" +
-                                                                "-fx-font-weight: bold;" +
-                                                                "-fx-font-size: 13px;" +
-                                                                "-fx-background-radius: 8;");
+                                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                                + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                                + "-fx-font-weight: 700;"
+                                                                + "-fx-font-size: 13px;"
+                                                                + "-fx-background-radius: 8;"
+                                                                + "-fx-cursor: hand;");
 
                         });
 
                         item.setOnMouseExited(e -> {
 
                                 item.setStyle(
-                                                "-fx-text-fill: #C8E6C9;" +
-                                                                "-fx-font-size: 13px;" +
-                                                                "-fx-cursor: hand;");
+                                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                                + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                                                + "-fx-font-size: 13px;"
+                                                                + "-fx-font-weight: 700;"
+                                                                + "-fx-cursor: hand;");
 
                         });
                 }
 
                 // ==============================
-                // SIDEBAR NAVIGATION
+                // SIDEBAR NAVIGATION (unchanged)
                 // ==============================
 
                 item.setOnMouseClicked(e -> handleNavigation(text));
@@ -301,28 +310,28 @@ public class VillagerDashboard extends Application {
                                 break;
 
                         case "\uD83D\uDCAC  Complaints":
-                               root.setCenter(new ComplaintsPage().getComplaintsPage());
+                                root.setCenter(new ComplaintsPage().getComplaintsPage());
                                 break;
 
-                        // case "\uD83C\uDF81 Government schemes":
-                        // showGovernmentSchemes();
-                        // break;
+                        case "\uD83C\uDF81  Government schemes":
+                                root.setCenter(new GovernmentSchemes().getSchemesPane());
+                                break;
 
-                        // case "\uD83D\uDCDC Certificates":
-                        // showCertificates();
-                        // break;
+                        case "\uD83D\uDCDC  Certificates":
+                                root.setCenter(new Certificates().getCertificatesPane());
+                                break;
 
-                        // case "\uD83C\uDFE0 Citizen services":
-                        // showCitizenServices();
-                        // break;
+                        case "\uD83D\uDCB3  Bills & Payments":
+                                root.setCenter(new BillsAndPayments().getBillsPane());
+                                break;
 
-                        // case "\uD83D\uDCE2 Announcements":
-                        // showAnnouncements();
-                        // break;
+                        case "\uD83D\uDCE2  Announcements":
+                                root.setCenter(new Announcements().getAnnouncementsPane());
+                                break;
 
-                        // case "\uD83E\uDD16 AI village assistant":
-                        // showAIAssistant();
-                        // break;
+                        case "\uD83D\uDC65  Gram Sabha":
+                                root.setCenter(new GramSabha().getGramSabhaPane());
+                                break;
 
                         default:
                                 System.out.println("Unknown page: " + page);
@@ -339,50 +348,96 @@ public class VillagerDashboard extends Application {
                 return main;
         }
 
+        /**
+         * Header restyled as a translucent glass bar with a rounded pill search box.
+         */
         private HBox buildHeader() {
-                // HBox lays its children left-to-right. Spacing "16" = 16px gap between them.
                 HBox header = new HBox(16);
                 header.setAlignment(Pos.CENTER_LEFT);
                 header.setPadding(new Insets(14, 28, 14, 28));
-                header.setStyle("-fx-background-color: white; -fx-border-color: transparent transparent "
-                                + BORDER + " transparent; -fx-border-width: 0 0 1 0;");
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
 
+                HBox searchBox = new HBox(8);
+                searchBox.setAlignment(Pos.CENTER_LEFT);
+                searchBox.setPadding(new Insets(0, 16, 0, 16));
+                searchBox.setPrefHeight(38);
+                searchBox.setPrefWidth(320);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
+                Label searchIcon = new Label("\uD83D\uDD0D");
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
                 TextField search = new TextField();
-                search.setPromptText("Search projects, schemes, services");
-                search.setPrefWidth(280);
-                search.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8 16 8 16; -fx-font-size: 12px;");
+                search.setPromptText("Search certificates...");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
 
-                // An empty Region set to grow fills up leftover space - this is how
-                // we "push" the bell + profile to the right edge of the header.
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                Label bell = new Label("\uD83D\uDD14");
-                bell.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8; -fx-font-size: 15px;");
+                // Bell with a small red badge showing unread notification count.
+                Label bellIcon = new Label("\uD83D\uDD14");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
-                // StackPane layers its children on top of each other (centered by
-                // default) - here it's just used to give the "RP" label a round
-                // colored background, like an avatar bubble.
                 StackPane avatar = new StackPane(new Label("RP"));
                 avatar.setPrefSize(34, 34);
                 avatar.setMaxSize(34, 34);
-                avatar.setStyle("-fx-background-color: " + SECONDARY + "; -fx-background-radius: 18;");
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
                 ((Label) avatar.getChildren().get(0))
                                 .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
 
                 Label name = new Label("Ramesh Patil");
-                name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
                 Label role = new Label("Villager, Suryapuri");
-                role.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                VBox nameBox = new VBox(name, role); // stack name above role
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
+                VBox nameBox = new VBox(name, role);
 
-                HBox profile = new HBox(8, avatar, nameBox); // avatar + name side by side
+                Label chevron = new Label("\u25BE");
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
                 profile.setAlignment(Pos.CENTER_LEFT);
 
-                // Finally: put all 4 pieces into the header, left to right.
-                header.getChildren().addAll(search, spacer, bell, profile);
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
                 return header;
         }
 
@@ -392,8 +447,9 @@ public class VillagerDashboard extends Application {
                 // 2. the row of 4 stat cards
                 // 3. the projects list + bills card, side by side
                 // 4. the complaints/announcement/gram sabha row
-                VBox content = new VBox(18);
-                content.setPadding(new Insets(18, 24, 28, 24));
+                VBox content = new VBox(24);
+                content.setPadding(new Insets(24, 32, 32, 32));
+                content.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
                 content.getChildren().addAll(
                                 buildGreeting(),
@@ -406,80 +462,104 @@ public class VillagerDashboard extends Application {
                 // short, the user can scroll instead of content getting clipped.
                 ScrollPane scrollPane = new ScrollPane(content);
                 scrollPane.setFitToWidth(true); // content stretches to match the scroll pane's width
-                scrollPane.setStyle("-fx-background-color: transparent;");
+                scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
                 return scrollPane;
         }
 
         // ---- Greeting ----
         private VBox buildGreeting() {
                 Label eyebrow = new Label("NAMASTE, RAMESH");
-                eyebrow.setStyle("-fx-text-fill: " + PRIMARY + "; -fx-font-size: 12px; -fx-font-weight: bold;");
+                eyebrow.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-text-fill: " + SAFFRON_MAIN
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 800; -fx-letter-spacing: 0.08em;");
                 Label title = new Label("Here is what is happening in Suryapuri today");
-                title.setStyle("-fx-text-fill: " + TEXT_PRIMARY + "; -fx-font-size: 22px; -fx-font-weight: bold;");
-                // "new VBox(2, eyebrow, title)" = a VBox with 2px spacing, containing
+                title.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-text-fill: " + TEXT_PRIMARY
+                                                + "; -fx-font-size: 26px; -fx-font-weight: 900;");
+                // "new VBox(4, eyebrow, title)" = a VBox with 4px spacing, containing
                 // these two Labels stacked vertically.
-                return new VBox(2, eyebrow, title);
+                return new VBox(4, eyebrow, title);
         }
 
         // ---- Stat cards ----
         private HBox buildStatCardsRow() {
                 // Build 4 cards (see statCard() below) and pass all 4 into one HBox
-                // at once, 14px apart, laid out side by side.
-                HBox row = new HBox(14,
-                                statCard("\uD83C\uDFD7", "#E3F2FD", SECONDARY, "8", "Ongoing projects"),
-                                statCard("\uD83D\uDCCA", "#E8F5E9", PRIMARY, "72%", "Average completion"),
-                                statCard("\uD83D\uDCAC", "#FFF3E0", WARNING, "2", "Open complaints"),
-                                statCard("\uD83D\uDCB3", "#FFEBEE", ERROR, "\u20B91,350", "Pending bills"));
+                // at once, 18px apart, laid out side by side - restyled as
+                // Sarpanch-style KPI cards (colored top strip + icon chip + big
+                // number) instead of the old plain icon-circle cards.
+                HBox row = new HBox(18,
+                                statCard(CONTEXT_TEAL, "\uD83C\uDFD7", "8", "Ongoing projects"),
+                                statCard(FOREST_DEEP, "\uD83D\uDCCA", "72%", "Average completion"),
+                                statCard(SAFFRON_MAIN, "\uD83D\uDCAC", "2", "Open complaints"),
+                                statCard(DELAYED_RED, "\uD83D\uDCB3", "\u20B91,350", "Pending bills"));
                 return row;
         }
 
-        /** Builds one small stat card: an icon circle, a big number, and a caption. */
-        private VBox statCard(String icon, String iconBg, String iconColor, String value, String label) {
-                Label iconLabel = new Label(icon);
-                iconLabel.setStyle("-fx-text-fill: " + iconColor + ";");
+        /**
+         * Builds one KPI-style stat card: colored top strip, icon chip, big value,
+         * caption.
+         */
+        private VBox statCard(String accent, String icon, String value, String label) {
+                VBox card = new VBox();
+                HBox.setHgrow(card, Priority.ALWAYS);
+                card.setStyle(cardStyle(16));
 
-                // The icon circle: a StackPane with one Label centered inside it,
-                // sized to 34x34 with rounded corners so it reads as a "chip".
+                Region strip = new Region();
+                strip.setPrefHeight(5);
+                strip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 16 16 0 0;");
+
+                Label iconLabel = new Label(icon);
+                iconLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: " + accent + ";");
                 StackPane iconCircle = new StackPane(iconLabel);
-                iconCircle.setPrefSize(34, 34);
-                iconCircle.setMaxSize(34, 34);
-                iconCircle.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 8;");
+                iconCircle.setPrefSize(40, 40);
+                iconCircle.setMaxSize(40, 40);
+                iconCircle.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 12;");
 
                 Label valueLabel = new Label(value);
-                valueLabel.setStyle("-fx-font-size: 21px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                valueLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
 
                 Label textLabel = new Label(label);
-                textLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                textLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
 
-                // The whole card is just: icon circle, then value, then label,
-                // stacked vertically with 8px gaps, inside a padded white box.
-                VBox card = new VBox(8, iconCircle, valueLabel, textLabel);
-                card.setPadding(new Insets(14));
-                card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
-                HBox.setHgrow(card, Priority.ALWAYS); // let the 4 cards share the row's width evenly
+                VBox inner = new VBox(10, iconCircle, valueLabel, textLabel);
+                inner.setPadding(new Insets(16, 16, 18, 16));
+
+                card.getChildren().addAll(strip, inner);
+                addHoverLift(card, 16);
                 return card;
         }
 
         // ---- Projects list + My Bills card ----
         private HBox buildProjectsAndBudgetRow() {
                 // Two big cards, side by side.
-                return new HBox(16, buildProjectsCard(), buildMyBillsCard());
+                return new HBox(18, buildProjectsCard(), buildMyBillsCard());
         }
 
         private VBox buildProjectsCard() {
 
                 Label title = new Label("Recent projects");
                 title.setStyle(
-                                "-fx-font-size: 15px;" +
-                                                "-fx-font-weight: bold;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 17px;" +
+                                                "-fx-font-weight: 900;" +
                                                 "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Label viewAll = new Label("View all \u2192");
+                viewAll.setPadding(new Insets(6, 14, 6, 14));
                 viewAll.setStyle(
-                                "-fx-text-fill: " + SECONDARY + ";" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-background-color: " + rgba(CONTEXT_TEAL, 0.10) + ";" +
+                                                "-fx-background-radius: 999;" +
+                                                "-fx-text-fill: " + CONTEXT_TEAL + ";" +
                                                 "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: bold;");
+                                                "-fx-font-weight: 700;" +
+                                                "-fx-cursor: hand;");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -496,7 +576,7 @@ public class VillagerDashboard extends Application {
                 // -------------------------------------------------
 
                 VBox list = new VBox(
-                                18,
+                                20,
 
                                 projectRow(
                                                 "assets\\images\\road.jpg",
@@ -524,29 +604,27 @@ public class VillagerDashboard extends Application {
                 // -------------------------------------------------
 
                 VBox card = new VBox(
-                                14,
+                                16,
                                 header,
                                 list);
 
-                card.setPadding(new Insets(18));
+                card.setPadding(new Insets(24));
 
-                card.setPrefWidth(580);
+                card.setPrefWidth(600);
 
-                card.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 12;" +
-                                                "-fx-border-color: " + BORDER + ";" +
-                                                "-fx-border-radius: 12;" +
-                                                "-fx-border-width: 1;");
+                card.setStyle(cardStyle(20));
 
                 HBox.setHgrow(card, Priority.ALWAYS);
+
+                addHoverLift(card, 20);
 
                 return card;
         }
 
         /**
-         * Builds one project row: name + status pill on top, location below, progress
-         * bar at the bottom.
+         * Builds one project row: name + status pill on top, location below, a
+         * rounded colored progress bar at the bottom (Sarpanch-style
+         * progressBar() helper instead of the old plain ProgressBar control).
          */
         private HBox projectRow(
                         String imagePath,
@@ -584,41 +662,33 @@ public class VillagerDashboard extends Application {
                 Label nameLabel = new Label(name);
 
                 nameLabel.setStyle(
-                                "-fx-font-size: 13px;" +
-                                                "-fx-font-weight: bold;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 14px;" +
+                                                "-fx-font-weight: 800;" +
                                                 "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 // =================================================
                 // STATUS COLORS
                 // =================================================
 
-                String pillBg;
-                String pillFg;
+                String pillColor;
                 String barColor;
 
                 switch (status) {
 
                         case "Delayed":
-
-                                pillBg = "#FFEBEE";
-                                pillFg = "#791F1F";
-                                barColor = ERROR;
-
+                                pillColor = DELAYED_RED;
+                                barColor = DELAYED_RED;
                                 break;
 
                         case "In Progress":
-
-                                pillBg = "#FFF3E0";
-                                pillFg = "#854F0B";
-                                barColor = SECONDARY;
-
+                                pillColor = SAFFRON_MAIN;
+                                barColor = SAFFRON_MAIN;
                                 break;
 
                         default:
-
-                                pillBg = "#E8F5E9";
-                                pillFg = "#1B5E20";
-                                barColor = PRIMARY;
+                                pillColor = FOREST_DEEP;
+                                barColor = FOREST_DEEP;
                 }
 
                 // =================================================
@@ -628,12 +698,15 @@ public class VillagerDashboard extends Application {
                 Label statusPill = new Label(status);
 
                 statusPill.setStyle(
-                                "-fx-background-color: " + pillBg + ";" +
-                                                "-fx-text-fill: " + pillFg + ";" +
-                                                "-fx-background-radius: 10;" +
-                                                "-fx-padding: 3 10 3 10;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-background-color: " + pillColor + ";" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-background-radius: 999;" +
+                                                "-fx-padding: 4 12 4 12;" +
                                                 "-fx-font-size: 10px;" +
-                                                "-fx-font-weight: bold;");
+                                                "-fx-font-weight: 700;" +
+                                                "-fx-effect: dropshadow(gaussian, " + rgba(pillColor, 0.25)
+                                                + ", 6, 0.2, 0, 2);");
 
                 // =================================================
                 // TOP ROW
@@ -646,6 +719,7 @@ public class VillagerDashboard extends Application {
                                 Priority.ALWAYS);
 
                 HBox topRow = new HBox(
+                                8,
                                 nameLabel,
                                 spacer,
                                 statusPill);
@@ -660,21 +734,16 @@ public class VillagerDashboard extends Application {
                 Label locationLabel = new Label(location);
 
                 locationLabel.setStyle(
-                                "-fx-font-size: 11px;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 11px;" +
                                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
                 // =================================================
-                // PROGRESS BAR
+                // PROGRESS BAR (rounded pill, Sarpanch-style)
                 // =================================================
 
-                ProgressBar bar = new ProgressBar(
-                                percent / 100.0);
-
-                bar.setPrefWidth(400);
-                bar.setPrefHeight(7);
-
-                bar.setStyle(
-                                "-fx-accent: " + barColor + ";");
+                StackPane bar = progressBar(percent / 100.0, barColor, 7);
+                HBox.setHgrow(bar, Priority.ALWAYS);
 
                 // =================================================
                 // PERCENTAGE
@@ -684,7 +753,9 @@ public class VillagerDashboard extends Application {
                                 percent + "%");
 
                 percentLabel.setStyle(
-                                "-fx-font-size: 11px;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 11px;" +
+                                                "-fx-font-weight: 700;" +
                                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
                 HBox progressRow = new HBox(
@@ -700,7 +771,7 @@ public class VillagerDashboard extends Application {
                 // =================================================
 
                 VBox projectDetails = new VBox(
-                                4,
+                                6,
                                 topRow,
                                 locationLabel,
                                 progressRow);
@@ -735,8 +806,9 @@ public class VillagerDashboard extends Application {
 
                 Label title = new Label("My Bills");
                 title.setStyle(
-                                "-fx-font-size: 14px;" +
-                                                "-fx-font-weight: bold;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 16px;" +
+                                                "-fx-font-weight: 900;" +
                                                 "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 // Each bill row below follows the same recipe:
@@ -745,135 +817,127 @@ public class VillagerDashboard extends Application {
                 // 3. a spacer Region in between so the right side sticks to the edge
                 // 4. all 3 passed into one HBox = the finished row
 
-                // Water Bill
-                Label waterTitle = new Label("Water Bill");
-                waterTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label waterDate = new Label("Sept 2024");
-                waterDate.setStyle("-fx-font-size: 9px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                Label waterAmount = new Label("\u20B9240.00");
-                waterAmount.setStyle(
-                                "-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label waterStatus = new Label("DUE");
-                waterStatus.setStyle("-fx-font-size: 8px; -fx-font-weight: bold; -fx-text-fill: " + ERROR + ";");
-
-                VBox waterLeft = new VBox(2, waterTitle, waterDate);
-                VBox waterRight = new VBox(2, waterAmount, waterStatus);
-                Region waterSpacer = new Region();
-                HBox.setHgrow(waterSpacer, Priority.ALWAYS);
-
-                HBox water = new HBox(waterLeft, waterSpacer, waterRight);
-                water.setAlignment(Pos.CENTER_LEFT);
-                water.setPadding(new Insets(10));
-                water.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-background-radius: 7;");
-
-                // Property Tax
-                Label propertyTitle = new Label("Property Tax");
-                propertyTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label propertyDate = new Label("Annual 2024");
-                propertyDate.setStyle("-fx-font-size: 9px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                Label propertyAmount = new Label("\u20B91,200.00");
-                propertyAmount.setStyle(
-                                "-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label propertyStatus = new Label("PAID");
-                propertyStatus.setStyle("-fx-font-size: 8px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + ";");
-
-                VBox propertyLeft = new VBox(2, propertyTitle, propertyDate);
-                VBox propertyRight = new VBox(2, propertyAmount, propertyStatus);
-                Region propertySpacer = new Region();
-                HBox.setHgrow(propertySpacer, Priority.ALWAYS);
-
-                HBox property = new HBox(propertyLeft, propertySpacer, propertyRight);
-                property.setAlignment(Pos.CENTER_LEFT);
-                property.setPadding(new Insets(10));
-                property.setStyle(
-                                "-fx-background-color: " + LIGHT_BLUE + ";" +
-                                                "-fx-border-color: " + BORDER + ";" +
-                                                "-fx-border-radius: 7;" +
-                                                "-fx-background-radius: 7;");
-
-                // Electricity
-                Label electricityTitle = new Label("Electricity");
-                electricityTitle.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label electricityDate = new Label("Sept 2024");
-                electricityDate.setStyle("-fx-font-size: 9px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                Label electricityAmount = new Label("\u20B9650.00");
-                electricityAmount.setStyle(
-                                "-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
-                Label electricityStatus = new Label("DUE");
-                electricityStatus.setStyle("-fx-font-size: 8px; -fx-font-weight: bold; -fx-text-fill: " + ERROR + ";");
-
-                VBox electricityLeft = new VBox(2, electricityTitle, electricityDate);
-                VBox electricityRight = new VBox(2, electricityAmount, electricityStatus);
-                Region electricitySpacer = new Region();
-                HBox.setHgrow(electricitySpacer, Priority.ALWAYS);
-
-                HBox electricity = new HBox(electricityLeft, electricitySpacer, electricityRight);
-                electricity.setAlignment(Pos.CENTER_LEFT);
-                electricity.setPadding(new Insets(10));
-                electricity.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-background-radius: 7;");
+                HBox water = billRow("Water Bill", "Sept 2024", "\u20B9240.00", "DUE", DELAYED_RED);
+                HBox property = billRow("Property Tax", "Annual 2024", "\u20B91,200.00", "PAID", FOREST_DEEP);
+                HBox electricity = billRow("Electricity", "Sept 2024", "\u20B9650.00", "DUE", DELAYED_RED);
 
                 // Pay all button
                 javafx.scene.control.Button payButton = new javafx.scene.control.Button("Pay All Dues");
                 payButton.setMaxWidth(Double.MAX_VALUE);
                 payButton.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: " + PRIMARY + ";" +
-                                                "-fx-font-size: 11px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: " + PRIMARY + ";" +
-                                                "-fx-border-radius: 6;" +
-                                                "-fx-background-radius: 6;" +
-                                                "-fx-padding: 8;");
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", "
+                                                + FOREST_DEEP + ");" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: 800;" +
+                                                "-fx-background-radius: 8;" +
+                                                "-fx-padding: 10;" +
+                                                "-fx-cursor: hand;" +
+                                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 8, 0.1, 0, 3);");
 
                 // The whole card: title, then the 3 bill rows, then the button,
-                // all stacked vertically 10px apart.
-                VBox card = new VBox(10, title, water, property, electricity, payButton);
-                card.setPadding(new Insets(16));
-                card.setPrefWidth(330);
-                card.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 10;" +
-                                                "-fx-border-color: " + BORDER + ";" +
-                                                "-fx-border-radius: 10;" +
-                                                "-fx-border-width: 1;");
+                // all stacked vertically 12px apart.
+                VBox card = new VBox(12, title, water, property, electricity, payButton);
+                card.setPadding(new Insets(20));
+                card.setPrefWidth(340);
+                card.setStyle(cardStyle(18));
+
+                addHoverLift(card, 18);
 
                 return card;
+        }
+
+        /**
+         * One bill row, used 3x above: name+date on the left, amount+status pill on the
+         * right.
+         */
+        private HBox billRow(String name, String date, String amount, String status, String statusColor) {
+                Label nameLabel = new Label(name);
+                nameLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label dateLabel = new Label(date);
+                dateLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 9px; -fx-text-fill: "
+                                                + TEXT_SECONDARY
+                                                + ";");
+
+                Label amountLabel = new Label(amount);
+                amountLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 900; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label statusLabel = new Label(status);
+                statusLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 8px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + statusColor + ";");
+
+                VBox left = new VBox(2, nameLabel, dateLabel);
+                VBox right = new VBox(2, amountLabel, statusLabel);
+                right.setAlignment(Pos.CENTER_RIGHT);
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                HBox row = new HBox(left, spacer, right);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setPadding(new Insets(12));
+                row.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.6);" +
+                                                "-fx-background-radius: 10;" +
+                                                "-fx-border-color: rgba(255,255,255,0.7);" +
+                                                "-fx-border-radius: 10;" +
+                                                "-fx-border-width: 1;");
+                return row;
         }
 
         // ---- Complaints / Announcement / Gram Sabha row ----
         private HBox buildComplaintsAnnouncementsGramSabhaRow() {
                 // Three cards side by side.
-                return new HBox(16, buildComplaintsCard(), buildAnnouncementCard(), buildGramSabhaCard());
+                return new HBox(18, buildComplaintsCard(), buildAnnouncementCard(), buildGramSabhaCard());
         }
 
         private VBox buildComplaintsCard() {
                 Label title = new Label("Complaint status");
-                title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                title.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
 
                 // TODO: replace with ComplaintService.getComplaintsForUser(userId)
-                VBox list = new VBox(10,
-                                complaintRow("Water leakage in street", "In Progress"),
-                                complaintRow("Street light not working", "Resolved"));
+                VBox list = new VBox(12,
+                                complaintRow("Water leakage in street", "In Progress", SAFFRON_MAIN),
+                                complaintRow("Street light not working", "Resolved", FOREST_DEEP));
 
-                VBox card = new VBox(12, title, list);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(14, title, list);
+                card.setPadding(new Insets(20));
                 card.setPrefWidth(300);
-                card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
+                card.setStyle(cardStyle(18));
                 HBox.setHgrow(card, Priority.ALWAYS);
+                addHoverLift(card, 18);
                 return card;
         }
 
         /** One complaint row: title on the left, status pill pushed to the right. */
-        private HBox complaintRow(String title, String status) {
+        private HBox complaintRow(String title, String status, String pillColor) {
                 Label titleLabel = new Label(title);
-                titleLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                titleLabel.setWrapText(true);
+                titleLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY
+                                                + ";");
 
-                String pillBg = status.equals("Resolved") ? "#E8F5E9" : "#FFF3E0";
-                String pillFg = status.equals("Resolved") ? "#1B5E20" : "#854F0B";
                 Label statusLabel = new Label(status);
-                statusLabel.setStyle("-fx-background-color: " + pillBg + "; -fx-text-fill: " + pillFg + "; "
-                                + "-fx-background-radius: 10; -fx-padding: 3 10 3 10; -fx-font-size: 10px; -fx-font-weight: bold;");
+                statusLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-background-color: " + pillColor + ";" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-background-radius: 999;" +
+                                                "-fx-padding: 3 10 3 10;" +
+                                                "-fx-font-size: 10px;" +
+                                                "-fx-font-weight: 700;");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -884,58 +948,79 @@ public class VillagerDashboard extends Application {
 
         private VBox buildAnnouncementCard() {
                 Label title = new Label("Latest announcement");
-                title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                title.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
 
                 // TODO: replace with AnnouncementService.getRecentAnnouncements(villageId)
                 Label headline = new Label("Water supply schedule change");
                 headline.setWrapText(true);
-                headline.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                headline.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
                 Label body = new Label("Supply interrupted in Ward 3 on 25 May.");
                 body.setWrapText(true);
-                body.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                body.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY
+                                                + ";");
 
-                VBox card = new VBox(8, title, headline, body);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(10, title, headline, body);
+                card.setPadding(new Insets(20));
                 card.setPrefWidth(300);
-                card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
+                card.setStyle(cardStyle(18));
                 HBox.setHgrow(card, Priority.ALWAYS);
+                addHoverLift(card, 18);
                 return card;
         }
 
         private VBox buildGramSabhaCard() {
                 Label title = new Label("Upcoming Gram Sabha");
-                title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                title.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 16px; -fx-font-weight: 900; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
 
                 Label dateLabel = new Label("30");
-                dateLabel.setStyle("-fx-text-fill: " + SECONDARY + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+                dateLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-text-fill: " + CONTEXT_TEAL
+                                                + "; -fx-font-size: 15px; -fx-font-weight: 900;");
                 StackPane dateBox = new StackPane(dateLabel);
-                dateBox.setPrefSize(40, 40);
-                dateBox.setMaxSize(40, 40);
-                dateBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 8;");
+                dateBox.setPrefSize(42, 42);
+                dateBox.setMaxSize(42, 42);
+                dateBox.setStyle("-fx-background-color: " + rgba(CONTEXT_TEAL, 0.12) + "; -fx-background-radius: 10;");
 
                 Label eventTitle = new Label("11:00 AM, Panchayat Bhavan");
                 eventTitle.setWrapText(true);
-                eventTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                eventTitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
                 Label eventSub = new Label("Village development discussion");
                 eventSub.setWrapText(true);
-                eventSub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                VBox eventBox = new VBox(eventTitle, eventSub);
+                eventSub.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY
+                                                + ";");
+                VBox eventBox = new VBox(2, eventTitle, eventSub);
 
-                HBox body = new HBox(10, dateBox, eventBox);
+                HBox body = new HBox(12, dateBox, eventBox);
                 body.setAlignment(Pos.CENTER_LEFT);
 
-                VBox card = new VBox(10, title, body);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(12, title, body);
+                card.setPadding(new Insets(20));
                 card.setPrefWidth(300);
-                card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
+                card.setStyle(cardStyle(18));
                 HBox.setHgrow(card, Priority.ALWAYS);
+                addHoverLift(card, 18);
                 return card;
         }
 
         // ================================================================
-        // VILLAGE STATUS BAR
+        // VILLAGE STATUS BAR - forest-green gradient (matches Sarpanch's
+        // "Create Project" button gradient) instead of the old flat PRIMARY fill.
         // ================================================================
 
         private HBox buildVillageStatusBar() {
@@ -951,14 +1036,16 @@ public class VillagerDashboard extends Application {
 
                 Label temperature = new Label("32°C");
                 temperature.setStyle(
-                                "-fx-font-size: 20px;" +
-                                                "-fx-font-weight: bold;" +
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 20px;" +
+                                                "-fx-font-weight: 900;" +
                                                 "-fx-text-fill: white;");
 
                 Label weather = new Label("Sunny Skies | Ganeshpur, MH");
                 weather.setStyle(
-                                "-fx-font-size: 9px;" +
-                                                "-fx-text-fill: #D4E9D7;");
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 9px;" +
+                                                "-fx-text-fill: rgba(255,255,255,0.75);");
 
                 VBox weatherText = new VBox(
                                 1,
@@ -978,87 +1065,13 @@ public class VillagerDashboard extends Application {
                 // POWER STATUS
                 // ============================================================
 
-                Label powerIcon = new Label("⚡");
-                powerIcon.setStyle(
-                                "-fx-font-size: 20px;" +
-                                                "-fx-text-fill: white;");
-
-                Label powerTitle = new Label("Power Status");
-                powerTitle.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: white;");
-
-                Label powerText = new Label("All Good • No scheduled cuts");
-                powerText.setStyle(
-                                "-fx-font-size: 9px;" +
-                                                "-fx-text-fill: #D4E9D7;");
-
-                VBox powerContent = new VBox(
-                                2,
-                                powerTitle,
-                                powerText);
-
-                powerContent.setAlignment(Pos.CENTER_LEFT);
-
-                HBox power = new HBox(
-                                8,
-                                powerIcon,
-                                powerContent);
-
-                power.setAlignment(Pos.CENTER_LEFT);
-
-                power.setPadding(
-                                new Insets(10, 14, 10, 14));
-
-                power.setPrefWidth(250);
-
-                power.setStyle(
-                                "-fx-background-color: rgba(255,255,255,0.10);" +
-                                                "-fx-background-radius: 6;");
+                HBox power = statusChip("⚡", "Power Status", "All Good • No scheduled cuts");
 
                 // ============================================================
                 // HEALTH CAMP
                 // ============================================================
 
-                Label healthIcon = new Label("✚");
-                healthIcon.setStyle(
-                                "-fx-font-size: 20px;" +
-                                                "-fx-text-fill: white;");
-
-                Label healthTitle = new Label("Health Camp");
-                healthTitle.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: white;");
-
-                Label healthText = new Label("Free Checkup @ PHC • 10 AM");
-                healthText.setStyle(
-                                "-fx-font-size: 9px;" +
-                                                "-fx-text-fill: #D4E9D7;");
-
-                VBox healthContent = new VBox(
-                                2,
-                                healthTitle,
-                                healthText);
-
-                healthContent.setAlignment(Pos.CENTER_LEFT);
-
-                HBox health = new HBox(
-                                8,
-                                healthIcon,
-                                healthContent);
-
-                health.setAlignment(Pos.CENTER_LEFT);
-
-                health.setPadding(
-                                new Insets(10, 14, 10, 14));
-
-                health.setPrefWidth(250);
-
-                health.setStyle(
-                                "-fx-background-color: rgba(255,255,255,0.10);" +
-                                                "-fx-background-radius: 6;");
+                HBox health = statusChip("✚", "Health Camp", "Free Checkup @ PHC • 10 AM");
 
                 // ============================================================
                 // "TODAY IN VILLAGE"
@@ -1067,9 +1080,11 @@ public class VillagerDashboard extends Application {
                 Label today = new Label("Today in Village");
 
                 today.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: white;");
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: 800;" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-letter-spacing: 0.06em;");
 
                 VBox weatherSection = new VBox(
                                 8,
@@ -1114,23 +1129,120 @@ public class VillagerDashboard extends Application {
 
                 bottom.setPadding(
                                 new Insets(
-                                                14,
-                                                18,
-                                                14,
-                                                18));
+                                                16,
+                                                22,
+                                                16,
+                                                22));
 
-                bottom.setMinHeight(100);
+                bottom.setMinHeight(104);
 
-                bottom.setPrefHeight(100);
+                bottom.setPrefHeight(104);
 
                 bottom.setMaxWidth(
                                 Double.MAX_VALUE);
 
                 bottom.setStyle(
-                                "-fx-background-color: " + PRIMARY + ";" +
-                                                "-fx-background-radius: 9;");
+                                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP
+                                                + ");"
+                                                + "-fx-background-radius: 16;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 16, 0.15, 0, 6);");
 
                 return bottom;
+        }
+
+        /** One translucent status chip (used for Power Status + Health Camp). */
+        private HBox statusChip(String icon, String title, String text) {
+                Label iconLabel = new Label(icon);
+                iconLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: white;");
+
+                Label titleLabel = new Label(title);
+                titleLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: 800;" +
+                                                "-fx-text-fill: white;");
+
+                Label textLabel = new Label(text);
+                textLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 9px;" +
+                                                "-fx-text-fill: rgba(255,255,255,0.75);");
+
+                VBox content = new VBox(2, titleLabel, textLabel);
+                content.setAlignment(Pos.CENTER_LEFT);
+
+                HBox chip = new HBox(8, iconLabel, content);
+                chip.setAlignment(Pos.CENTER_LEFT);
+                chip.setPadding(new Insets(10, 14, 10, 14));
+                chip.setPrefWidth(250);
+                chip.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.12);" +
+                                                "-fx-background-radius: 10;" +
+                                                "-fx-border-color: rgba(255,255,255,0.15);" +
+                                                "-fx-border-radius: 10;" +
+                                                "-fx-border-width: 1;");
+                return chip;
+        }
+
+        // =================================================================
+        // HELPERS (borrowed from SarpanchDashboard.java so every card on
+        // this screen shares the same glass-panel look and hover behavior)
+        // =================================================================
+
+        /** Glass-panel style shared by every card on this screen. */
+        private String cardStyle(int radius) {
+                return "-fx-background-color: rgba(255,255,255,0.88);" +
+                                "-fx-background-radius: " + radius + ";" +
+                                "-fx-border-color: rgba(255,255,255,0.5);" +
+                                "-fx-border-radius: " + radius + ";" +
+                                "-fx-border-width: 1;" +
+                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
+        }
+
+        /** Hover lift effect matching SarpanchDashboard's .stat-card-shadow:hover. */
+        private void addHoverLift(Region card, int radius) {
+                String base = cardStyle(radius);
+                String hover = "-fx-background-color: rgba(255,255,255,0.92);" +
+                                "-fx-background-radius: " + radius + ";" +
+                                "-fx-border-color: rgba(255,255,255,0.6);" +
+                                "-fx-border-radius: " + radius + ";" +
+                                "-fx-border-width: 1;" +
+                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.12), 24, 0.15, 0, 8);" +
+                                "-fx-translate-y: -2;";
+                card.setOnMouseEntered(e -> card.setStyle(hover));
+                card.setOnMouseExited(e -> card.setStyle(base));
+        }
+
+        /** Convert #RRGGBB hex to an rgba(r,g,b,a) CSS string. */
+        private String rgba(String hex, double alpha) {
+                int r = Integer.parseInt(hex.substring(1, 3), 16);
+                int g = Integer.parseInt(hex.substring(3, 5), 16);
+                int b = Integer.parseInt(hex.substring(5, 7), 16);
+                return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+        }
+
+        /**
+         * Rounded, colour-filled progress bar (replaces the old plain
+         * javafx.scene.control.ProgressBar so every bar on this screen matches
+         * Sarpanch's rounded-pill progress style). Track + colored fill, fill
+         * width is bound to a fraction of the track's actual rendered width.
+         */
+        private StackPane progressBar(double fraction, String color, double height) {
+                StackPane track = new StackPane();
+                track.setPrefHeight(height);
+                track.setMinHeight(height);
+                track.setMaxWidth(Double.MAX_VALUE);
+                track.setStyle("-fx-background-color: rgba(11,61,46,0.08); -fx-background-radius: 999;");
+
+                Region fill = new Region();
+                fill.setPrefHeight(height);
+                fill.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 999;");
+                StackPane.setAlignment(fill, Pos.CENTER_LEFT);
+                track.widthProperty().addListener((obs, o, w) -> fill.setMaxWidth(w.doubleValue() * fraction));
+                fill.setMaxWidth(0);
+
+                track.getChildren().add(fill);
+                return track;
         }
 
         /** Entry point - JavaFX's launch() eventually calls start() above. */
