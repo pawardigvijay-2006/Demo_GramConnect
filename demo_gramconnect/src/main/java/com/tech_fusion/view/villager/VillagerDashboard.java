@@ -300,9 +300,9 @@ public class VillagerDashboard extends Application {
                                 homeStage.setTitle("GramConnect - Project Transparency");
                                 break;
 
-                        // case "\uD83D\uDCAC Complaints":
-                        // showComplaints();
-                        // break;
+                        case "\uD83D\uDCAC  Complaints":
+                               root.setCenter(new ComplaintsPage().getComplaintsPage());
+                                break;
 
                         // case "\uD83C\uDF81 Government schemes":
                         // showGovernmentSchemes();
