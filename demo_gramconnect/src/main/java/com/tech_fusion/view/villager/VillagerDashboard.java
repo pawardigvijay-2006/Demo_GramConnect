@@ -62,8 +62,12 @@ import javafx.stage.Stage;
  */
 public class VillagerDashboard extends Application {
 
+        public Stage homeStage;
+        private Scene homeScene;
+
         private BorderPane root;
         private BorderPane mainArea;
+        private String selectedPage = "dashboard";
 
         // ================= COLORS =================
         // Keeping every color as a named constant means we type the hex code
@@ -95,13 +99,15 @@ public class VillagerDashboard extends Application {
 
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
-        /**
+        /*
          * JavaFX calls this method automatically when the app starts.
          * "primaryStage" is the actual OS window. We build ONE root node
          * (a BorderPane), put it inside ONE Scene, and show it in the Stage.
          */
         @Override
         public void start(Stage primaryStage) {
+
+                homeStage = primaryStage;
 
                 root = new BorderPane();
 
@@ -116,17 +122,17 @@ public class VillagerDashboard extends Application {
 
                 root.setCenter(mainArea);
 
-                Scene scene = new Scene(root, 1500, 850);
+                homeScene = new Scene(root, 1500, 850);
 
-                primaryStage.setTitle(
+                homeStage.setTitle(
                                 "GramConnect - Villager Dashboard");
 
-                primaryStage.setScene(scene);
+                homeStage.setScene(homeScene);
 
-                primaryStage.setMinWidth(1280);
-                primaryStage.setMinHeight(800);
+                homeStage.setMinWidth(1280);
+                homeStage.setMinHeight(800);
 
-                primaryStage.show();
+                homeStage.show();
         }
 
         // =================================================================
@@ -187,15 +193,24 @@ public class VillagerDashboard extends Application {
                 // then pass all 8 of them into one VBox at once. This VBox lays
                 // them out top-to-bottom, 4px apart (the "4" is the spacing).
                 VBox navItems = new VBox(4,
-                                navItem("\uD83C\uDFE0  Dashboard", true),
-                                navItem("\uD83C\uDFD7  Project transparency", false),
-                                navItem("\uD83D\uDCAC  Complaints", false),
-                                navItem("\uD83C\uDF81  Government schemes", false),
-                                navItem("\uD83D\uDCDC  Certificates", false),
-                                navItem("\uD83D\uDCB3  Bills & Payments", false),
-                                navItem("\uD83D\uDCE2  Announcements", false),
-                                navItem("\uD83D\uDC65  Gram Sabha", false),
-                                navItem("\uD83E\uDD16  AI village assistant", false));
+
+                                navItem("\uD83C\uDFE0  Dashboard", "dashboard"),
+
+                                navItem("\uD83C\uDFD7  Project transparency", "projects"),
+
+                                navItem("\uD83D\uDCAC  Complaints", "complaints"),
+
+                                navItem("\uD83C\uDF81  Government schemes", "schemes"),
+
+                                navItem("\uD83D\uDCDC  Certificates", "certificates"),
+
+                                navItem("\uD83D\uDCB3  Bills & Payments", "bills"),
+
+                                navItem("\uD83D\uDCE2  Announcements", "announcements"),
+
+                                navItem("\uD83D\uDC65  Gram Sabha", "gramSabha"),
+
+                                navItem("\uD83E\uDD16  AI village assistant", "aiAssistant"));
                 navItems.setPadding(new Insets(0, 10, 0, 10));
                 VBox.setVgrow(navItems, Priority.ALWAYS); // let this section stretch to fill leftover space
 
@@ -213,25 +228,105 @@ public class VillagerDashboard extends Application {
         }
 
         /** Builds one clickable-looking sidebar row. Returns a single Label node. */
-        private Label navItem(String text, boolean active) {
+        private Label navItem(String text, String pageId) {
+
                 Label item = new Label(text);
+
                 item.setMaxWidth(Double.MAX_VALUE);
-                item.setPadding(new Insets(10, 14, 10, 18));
-                
-                if (active) {
-                        item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY
-                                        + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
+
+                item.setPadding(
+                                new Insets(10, 14, 10, 18));
+
+                if (selectedPage.equals(pageId)) {
+
+                        item.setStyle(
+                                        "-fx-background-color: " + PRIMARY + ";" +
+                                                        "-fx-text-fill: white;" +
+                                                        "-fx-font-weight: bold;" +
+                                                        "-fx-font-size: 13px;" +
+                                                        "-fx-background-radius: 8;");
+
                 } else {
-                        item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;");
-                        // Simple hover effect: swap the style on mouse enter/exit.
-                        item.setOnMouseEntered(e -> item.setStyle(
-                                        "-fx-text-fill: white; -fx-font-size: 13px; -fx-cursor: hand; "
-                                                        + "-fx-background-color: " + PRIMARY
-                                                        + "; -fx-background-radius: 8;"));
-                        item.setOnMouseExited(e -> item.setStyle(
-                                        "-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;"));
+
+                        item.setStyle(
+                                        "-fx-text-fill: #C8E6C9;" +
+                                                        "-fx-font-size: 13px;" +
+                                                        "-fx-cursor: hand;");
+
+                        item.setOnMouseEntered(e -> {
+
+                                item.setStyle(
+                                                "-fx-background-color: " + PRIMARY + ";" +
+                                                                "-fx-text-fill: white;" +
+                                                                "-fx-font-weight: bold;" +
+                                                                "-fx-font-size: 13px;" +
+                                                                "-fx-background-radius: 8;");
+
+                        });
+
+                        item.setOnMouseExited(e -> {
+
+                                item.setStyle(
+                                                "-fx-text-fill: #C8E6C9;" +
+                                                                "-fx-font-size: 13px;" +
+                                                                "-fx-cursor: hand;");
+
+                        });
                 }
+
+                // ==============================
+                // SIDEBAR NAVIGATION
+                // ==============================
+
+                item.setOnMouseClicked(e -> handleNavigation(text));
+
                 return item;
+        }
+
+        private void handleNavigation(String text) {
+
+                String page = text.trim();
+
+                switch (page) {
+
+                        case "\uD83C\uDFE0  Dashboard":
+                                root.setCenter(buildMainArea());
+                                homeStage.setTitle("GramConnect - Villager Dashboard");
+                                break;
+
+                        case "\uD83C\uDFD7  Project transparency":
+                                ProjectTransparency project = new ProjectTransparency();
+                                root.setCenter(project.getProjectBPane());
+                                homeStage.setTitle("GramConnect - Project Transparency");
+                                break;
+
+                        // case "\uD83D\uDCAC Complaints":
+                        // showComplaints();
+                        // break;
+
+                        // case "\uD83C\uDF81 Government schemes":
+                        // showGovernmentSchemes();
+                        // break;
+
+                        // case "\uD83D\uDCDC Certificates":
+                        // showCertificates();
+                        // break;
+
+                        // case "\uD83C\uDFE0 Citizen services":
+                        // showCitizenServices();
+                        // break;
+
+                        // case "\uD83D\uDCE2 Announcements":
+                        // showAnnouncements();
+                        // break;
+
+                        // case "\uD83E\uDD16 AI village assistant":
+                        // showAIAssistant();
+                        // break;
+
+                        default:
+                                System.out.println("Unknown page: " + page);
+                }
         }
 
         // =================================================================
