@@ -73,6 +73,10 @@ public class ComplaintsPage {
         private static final String BORDER = "#D8E2DC";
         private static final String SECONDARY = "#1976D2";
 
+        private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
+        private static final String SAFFRON_MAIN = "#E07A1F";
+        private static final String FOREST_DEEP = "#0B3D2E";
+
         /**
          * Builds the whole Complaints Management screen and returns it as a
          * single BorderPane, ready to be set as a Scene's root on the shared
@@ -199,43 +203,89 @@ public class ComplaintsPage {
                 HBox header = new HBox(16);
                 header.setAlignment(Pos.CENTER_LEFT);
                 header.setPadding(new Insets(14, 28, 14, 28));
-                header.setStyle("-fx-background-color: white; -fx-border-color: transparent transparent "
-                                + BORDER + " transparent; -fx-border-width: 0 0 1 0;");
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
 
+                HBox searchBox = new HBox(8);
+                searchBox.setAlignment(Pos.CENTER_LEFT);
+                searchBox.setPadding(new Insets(0, 16, 0, 16));
+                searchBox.setPrefHeight(38);
+                searchBox.setPrefWidth(320);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
+                Label searchIcon = new Label("\uD83D\uDD0D");
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
                 TextField search = new TextField();
-                search.setPromptText("\uD83D\uDD0D  Search complaints, IDs, or categories...");
-                search.setPrefWidth(320);
-                search.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8 16 8 16; -fx-font-size: 12px;");
+                search.setPromptText("Search certificates...");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                // Bell with a small red "unread" dot pinned to its top-right corner.
+                // Bell with a small red badge showing unread notification count.
                 Label bellIcon = new Label("\uD83D\uDD14");
-                bellIcon.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8; -fx-font-size: 15px;");
-                Region unreadDot = new Region();
-                unreadDot.setPrefSize(9, 9);
-                unreadDot.setMaxSize(9, 9);
-                unreadDot.setStyle("-fx-background-color: " + ERROR + "; -fx-background-radius: 5; "
-                                + "-fx-border-color: white; -fx-border-width: 1.5; -fx-border-radius: 5;");
-                StackPane bell = new StackPane(bellIcon, unreadDot);
-                StackPane.setAlignment(unreadDot, Pos.TOP_RIGHT);
-
-                Label help = new Label("?");
-                help.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8 12 8 12; -fx-font-size: 13px; -fx-font-weight: bold; "
-                                + "-fx-text-fill: " + TEXT_SECONDARY + ";");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
                 StackPane avatar = new StackPane(new Label("RP"));
-                avatar.setPrefSize(36, 36);
-                avatar.setMaxSize(36, 36);
-                avatar.setStyle("-fx-background-color: " + SECONDARY + "; -fx-background-radius: 18;");
+                avatar.setPrefSize(34, 34);
+                avatar.setMaxSize(34, 34);
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
                 ((Label) avatar.getChildren().get(0))
                                 .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
 
-                header.getChildren().addAll(search, spacer, bell, help, avatar);
+                Label name = new Label("Ramesh Patil");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label role = new Label("Villager, Suryapuri");
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
+                VBox nameBox = new VBox(name, role);
+
+                Label chevron = new Label("\u25BE");
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
+                profile.setAlignment(Pos.CENTER_LEFT);
+
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
                 return header;
         }
 

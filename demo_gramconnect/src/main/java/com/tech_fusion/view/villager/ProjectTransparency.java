@@ -49,7 +49,7 @@ import javafx.stage.Stage;
  * ============================================================
  */
 
-public class ProjectTransparency{
+public class ProjectTransparency {
 
         // ================= COLORS =================
         // Same palette as VillagerDashboard.java, plus one new accent
@@ -81,6 +81,12 @@ public class ProjectTransparency{
         private static final String BORDER = "#D8E2DC";
         private static final String SECONDARY = "#1976D2";
 
+        private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
+        private static final String SAFFRON_MAIN = "#E07A1F";
+        private static final String FOREST_DEEP = "#0B3D2E";
+
+
+
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
         private BorderPane projectBPane;
@@ -103,72 +109,76 @@ public class ProjectTransparency{
         // "Project transparency" is now the active/highlighted row)
         // =================================================================
         // private VBox buildSidebar() {
-        //         VBox sidebar = new VBox();
-        //         sidebar.setPrefWidth(230);
-        //         sidebar.setMinWidth(230);
-        //         sidebar.setStyle("-fx-background-color: " + PRIMARY_DARK + ";");
+        // VBox sidebar = new VBox();
+        // sidebar.setPrefWidth(230);
+        // sidebar.setMinWidth(230);
+        // sidebar.setStyle("-fx-background-color: " + PRIMARY_DARK + ";");
 
-        //         // ---------------- Logo ----------------
-        //         Image logoImage = new Image("assets\\images\\gramconnect.png");
-        //         ImageView logoIcon = new ImageView(logoImage);
-        //         logoIcon.setFitWidth(60);
-        //         logoIcon.setFitHeight(60);
-        //         logoIcon.setPreserveRatio(true);
-        //         logoIcon.setSmooth(true);
+        // // ---------------- Logo ----------------
+        // Image logoImage = new Image("assets\\images\\gramconnect.png");
+        // ImageView logoIcon = new ImageView(logoImage);
+        // logoIcon.setFitWidth(60);
+        // logoIcon.setFitHeight(60);
+        // logoIcon.setPreserveRatio(true);
+        // logoIcon.setSmooth(true);
 
-        //         Label logoText = new Label("GramConnect");
-        //         logoText.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        // Label logoText = new Label("GramConnect");
+        // logoText.setStyle("-fx-text-fill: white; -fx-font-size: 18px;
+        // -fx-font-weight: bold;");
 
-        //         Label subtitle = new Label("Village Governance");
-        //         subtitle.setStyle("-fx-text-fill: #D4E9D7; -fx-font-size: 9px; -fx-font-weight: bold;");
+        // Label subtitle = new Label("Village Governance");
+        // subtitle.setStyle("-fx-text-fill: #D4E9D7; -fx-font-size: 9px;
+        // -fx-font-weight: bold;");
 
-        //         VBox logoTextBox = new VBox(0, logoText, subtitle);
-        //         HBox logo = new HBox(8, logoIcon, logoTextBox);
-        //         logo.setAlignment(Pos.CENTER_LEFT);
-        //         VBox logoBox = new VBox(logo);
-        //         logoBox.setPadding(new Insets(18, 18, 22, 18));
+        // VBox logoTextBox = new VBox(0, logoText, subtitle);
+        // HBox logo = new HBox(8, logoIcon, logoTextBox);
+        // logo.setAlignment(Pos.CENTER_LEFT);
+        // VBox logoBox = new VBox(logo);
+        // logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-        //         // ---------------- Nav items ----------------
-        //         VBox navItems = new VBox(4,
-        //                         navItem("\uD83C\uDFE0  Dashboard", false),
-        //                         navItem("\uD83C\uDFD7  Project transparency", true),
-        //                         navItem("\uD83D\uDCAC  Complaints", false),
-        //                         navItem("\uD83C\uDF81  Government schemes", false),
-        //                         navItem("\uD83D\uDCDC  Certificates", false),
-        //                         navItem("\uD83D\uDCB3  Bills & Payments", false),
-        //                         navItem("\uD83D\uDCE2  Announcements", false),
-        //                         navItem("\uD83D\uDC65  Gram Sabha", false),
-        //                         navItem("\uD83E\uDD16  AI village assistant", false));
-        //         navItems.setPadding(new Insets(0, 10, 0, 10));
-        //         VBox.setVgrow(navItems, Priority.ALWAYS);
+        // // ---------------- Nav items ----------------
+        // VBox navItems = new VBox(4,
+        // navItem("\uD83C\uDFE0 Dashboard", false),
+        // navItem("\uD83C\uDFD7 Project transparency", true),
+        // navItem("\uD83D\uDCAC Complaints", false),
+        // navItem("\uD83C\uDF81 Government schemes", false),
+        // navItem("\uD83D\uDCDC Certificates", false),
+        // navItem("\uD83D\uDCB3 Bills & Payments", false),
+        // navItem("\uD83D\uDCE2 Announcements", false),
+        // navItem("\uD83D\uDC65 Gram Sabha", false),
+        // navItem("\uD83E\uDD16 AI village assistant", false));
+        // navItems.setPadding(new Insets(0, 10, 0, 10));
+        // VBox.setVgrow(navItems, Priority.ALWAYS);
 
-        //         Label emergency = new Label("\u26A0  Emergency assistance");
-        //         emergency.setWrapText(true);
-        //         emergency.setStyle("-fx-text-fill: #FFCC80; -fx-font-size: 13px;");
-        //         VBox emergencyBox = new VBox(emergency);
-        //         emergencyBox.setPadding(new Insets(12, 16, 18, 18));
+        // Label emergency = new Label("\u26A0 Emergency assistance");
+        // emergency.setWrapText(true);
+        // emergency.setStyle("-fx-text-fill: #FFCC80; -fx-font-size: 13px;");
+        // VBox emergencyBox = new VBox(emergency);
+        // emergencyBox.setPadding(new Insets(12, 16, 18, 18));
 
-        //         sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
-        //         return sidebar;
+        // sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
+        // return sidebar;
         // }
 
         // private Label navItem(String text, boolean active) {
-        //         Label item = new Label(text);
-        //         item.setMaxWidth(Double.MAX_VALUE);
-        //         item.setPadding(new Insets(10, 14, 10, 18));
-        //         if (active) {
-        //                 item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY
-        //                                 + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
-        //         } else {
-        //                 item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;");
-        //                 item.setOnMouseEntered(e -> item.setStyle(
-        //                                 "-fx-text-fill: white; -fx-font-size: 13px; -fx-cursor: hand; "
-        //                                                 + "-fx-background-color: " + PRIMARY
-        //                                                 + "; -fx-background-radius: 8;"));
-        //                 item.setOnMouseExited(e -> item.setStyle(
-        //                                 "-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;"));
-        //         }
-        //         return item;
+        // Label item = new Label(text);
+        // item.setMaxWidth(Double.MAX_VALUE);
+        // item.setPadding(new Insets(10, 14, 10, 18));
+        // if (active) {
+        // item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " +
+        // PRIMARY
+        // + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
+        // } else {
+        // item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-font-weight:
+        // bold; -fx-cursor: hand;");
+        // item.setOnMouseEntered(e -> item.setStyle(
+        // "-fx-text-fill: white; -fx-font-size: 13px; -fx-cursor: hand; "
+        // + "-fx-background-color: " + PRIMARY
+        // + "; -fx-background-radius: 8;"));
+        // item.setOnMouseExited(e -> item.setStyle(
+        // "-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;"));
+        // }
+        // return item;
         // }
 
         // =================================================================
@@ -186,39 +196,89 @@ public class ProjectTransparency{
                 HBox header = new HBox(16);
                 header.setAlignment(Pos.CENTER_LEFT);
                 header.setPadding(new Insets(14, 28, 14, 28));
-                header.setStyle("-fx-background-color: white; -fx-border-color: transparent transparent "
-                                + BORDER + " transparent; -fx-border-width: 0 0 1 0;");
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
 
+                HBox searchBox = new HBox(8);
+                searchBox.setAlignment(Pos.CENTER_LEFT);
+                searchBox.setPadding(new Insets(0, 16, 0, 16));
+                searchBox.setPrefHeight(38);
+                searchBox.setPrefWidth(320);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
+                Label searchIcon = new Label("\uD83D\uDD0D");
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
                 TextField search = new TextField();
-                search.setPromptText("Search projects, schemes, services");
-                search.setPrefWidth(280);
-                search.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8 16 8 16; -fx-font-size: 12px;");
+                search.setPromptText("Search certificates...");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                Label bell = new Label("\uD83D\uDD14");
-                bell.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 20; "
-                                + "-fx-padding: 8; -fx-font-size: 15px;");
+                // Bell with a small red badge showing unread notification count.
+                Label bellIcon = new Label("\uD83D\uDD14");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
                 StackPane avatar = new StackPane(new Label("RP"));
                 avatar.setPrefSize(34, 34);
                 avatar.setMaxSize(34, 34);
-                avatar.setStyle("-fx-background-color: " + SECONDARY + "; -fx-background-radius: 18;");
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
                 ((Label) avatar.getChildren().get(0))
                                 .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
 
                 Label name = new Label("Ramesh Patil");
-                name.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
                 Label role = new Label("Villager, Suryapuri");
-                role.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
                 VBox nameBox = new VBox(name, role);
 
-                HBox profile = new HBox(8, avatar, nameBox);
+                Label chevron = new Label("\u25BE");
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
                 profile.setAlignment(Pos.CENTER_LEFT);
 
-                header.getChildren().addAll(search, spacer, bell, profile);
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
                 return header;
         }
 
@@ -315,7 +375,8 @@ public class ProjectTransparency{
                 return card;
         }
 
-        // ---- "All Projects" (left) + "Budget Overview" / "Recent Updates" (right) ----
+        // ---- "All Projects" (left) + "Budget Overview" / "Recent Updates" (right)
+        // ----
         private HBox buildProjectsAndSidebarRow() {
                 HBox row = new HBox(16, buildAllProjectsCard(), buildRightColumn());
                 return row;
@@ -386,7 +447,10 @@ public class ProjectTransparency{
                 return card;
         }
 
-        /** One pill-shaped filter tab. First one (active=true) gets the solid dark-green look. */
+        /**
+         * One pill-shaped filter tab. First one (active=true) gets the solid dark-green
+         * look.
+         */
         private Label filterTab(String text, boolean active) {
                 Label tab = new Label(text);
                 if (active) {
@@ -395,7 +459,8 @@ public class ProjectTransparency{
                                         + "-fx-padding: 7 14 7 14; -fx-cursor: hand;");
                 } else {
                         tab.setStyle("-fx-background-color: white; -fx-text-fill: " + TEXT_SECONDARY + "; "
-                                        + "-fx-border-color: " + BORDER + "; -fx-border-radius: 6; -fx-background-radius: 6; "
+                                        + "-fx-border-color: " + BORDER
+                                        + "; -fx-border-radius: 6; -fx-background-radius: 6; "
                                         + "-fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 7 14 7 14; -fx-cursor: hand;");
                 }
                 return tab;
@@ -561,7 +626,8 @@ public class ProjectTransparency{
                 HBox.setHgrow(topSpacer, Priority.ALWAYS);
 
                 Label amountText = new Label(amount + "  (" + percent + "%)");
-                amountText.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                amountText.setStyle(
+                                "-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_SECONDARY + ";");
 
                 HBox topRow = new HBox(labelRow, topSpacer, amountText);
                 topRow.setAlignment(Pos.CENTER_LEFT);
@@ -673,7 +739,8 @@ public class ProjectTransparency{
                 banner.setAlignment(Pos.CENTER_LEFT);
                 banner.setPadding(new Insets(16, 20, 16, 20));
                 banner.setStyle("-fx-background-color: " + LIGHT_GREEN + "; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + ACCENT_GREEN + "; -fx-border-radius: 12; -fx-border-width: 1;");
+                                + "-fx-border-color: " + ACCENT_GREEN
+                                + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return banner;
         }
 }

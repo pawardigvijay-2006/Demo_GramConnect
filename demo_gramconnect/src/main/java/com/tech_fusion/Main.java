@@ -1,6 +1,7 @@
 package com.tech_fusion;
 
 import com.tech_fusion.view.sarpanch.SarpanchDashboard;
+import com.tech_fusion.view.villager.GovernmentSchemes;
 import com.tech_fusion.view.villager.ProjectTransparency;
 import com.tech_fusion.view.villager.VillagerDashboard;
 
