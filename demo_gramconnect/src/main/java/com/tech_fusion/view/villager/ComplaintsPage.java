@@ -32,11 +32,13 @@ import javafx.stage.Stage;
  * area), so a navigation controller can plug it straight into the
  * single shared "homepageStage" like this:
  *
- * homepageStage.getScene().setRoot(new ComplaintsPage().getComplaintsPage(homepageStage));
+ * homepageStage.getScene().setRoot(new
+ * ComplaintsPage().getComplaintsPage(homepageStage));
  *
  * or, if no Scene exists yet:
  *
- * homepageStage.setScene(new Scene(new ComplaintsPage().getComplaintsPage(homepageStage), 1500, 850));
+ * homepageStage.setScene(new Scene(new
+ * ComplaintsPage().getComplaintsPage(homepageStage), 1500, 850));
  *
  * The Stage reference is passed in (and threaded through the sidebar)
  * so that clicking a different nav item (Dashboard, Project transparency,
@@ -77,19 +79,25 @@ public class ComplaintsPage {
         private static final String SAFFRON_MAIN = "#E07A1F";
         private static final String FOREST_DEEP = "#0B3D2E";
 
+        // Light green sidebar gradient (identical to VillagerDashboard.java)
+        private static final String SIDEBAR_TOP = "#CDEBD8";
+        private static final String SIDEBAR_MID = "#BCE3CC";
+        private static final String SIDEBAR_BOT = "#A9D8BD";
+        private static final String DELAYED_RED = "#D94C38";
+
         /**
          * Builds the whole Complaints Management screen and returns it as a
          * single BorderPane, ready to be set as a Scene's root on the shared
          * homepageStage.
          */
-        public BorderPane getComplaintsPage() {
+        public Scene getComplaintsPage(Runnable backAction) {
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-                // root.setLeft(buildSidebar());
+                root.setLeft(buildSidebar(backAction));
                 root.setCenter(buildMainArea());
 
-                return root;
+                return new Scene(root, 1500, 850);
         }
 
         // =================================================================
@@ -98,89 +106,244 @@ public class ComplaintsPage {
         // SAME homepageStage - fill in the TODOs with your real page
         // classes once they exist.
         // =================================================================
-        private VBox buildSidebar() {
+        private VBox buildSidebar(Runnable backAction) {
+
                 VBox sidebar = new VBox();
+
                 sidebar.setPrefWidth(230);
                 sidebar.setMinWidth(230);
-                sidebar.setStyle("-fx-background-color: " + PRIMARY_DARK + ";");
+                sidebar.setMaxWidth(230);
 
-                // ---------------- Logo ----------------
+                // EXACT SAME SIDEBAR STYLE AS PROJECT TRANSPARENCY
+                sidebar.setStyle(
+                                "-fx-background-color: linear-gradient(to bottom, "
+                                                + SIDEBAR_TOP + ", "
+                                                + SIDEBAR_MID + ", "
+                                                + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent rgba(11,61,46,0.10) "
+                                                + "transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, "
+                                                + "rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
+
+                // =====================================================
+                // LOGO
+                // =====================================================
+
                 Image logoImage = new Image("assets\\images\\gramconnect.png");
+
                 ImageView logoIcon = new ImageView(logoImage);
+
                 logoIcon.setFitWidth(60);
                 logoIcon.setFitHeight(60);
                 logoIcon.setPreserveRatio(true);
                 logoIcon.setSmooth(true);
 
                 Label logoText = new Label("GramConnect");
-                logoText.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+
+                logoText.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
 
                 Label subtitle = new Label("Village Governance");
-                subtitle.setStyle("-fx-text-fill: #D4E9D7; -fx-font-size: 9px; -fx-font-weight: bold;");
+
+                subtitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;");
 
                 VBox logoTextBox = new VBox(0, logoText, subtitle);
+
                 HBox logo = new HBox(8, logoIcon, logoTextBox);
+
                 logo.setAlignment(Pos.CENTER_LEFT);
+
                 VBox logoBox = new VBox(logo);
-                logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // ---------------- Nav items ----------------
-                Label dashboardItem = navItem("\uD83C\uDFE0  Dashboard", false);
-                Label projectItem = navItem("\uD83C\uDFD7  Project transparency", false);
-                Label complaintsItem = navItem("\uD83D\uDCAC  Complaints", true);
-                Label schemesItem = navItem("\uD83C\uDF81  Government schemes", false);
-                Label certificatesItem = navItem("\uD83D\uDCDC  Certificates", false);
-                Label billsItem = navItem("\uD83D\uDCB3  Bills & Payments", false);
-                Label announcementsItem = navItem("\uD83D\uDCE2  Announcements", false);
-                Label gramSabhaItem = navItem("\uD83D\uDC65  Gram Sabha", false);
-                Label aiAssistantItem = navItem("\uD83E\uDD16  AI village assistant", false);
+                logoBox.setPadding(
+                                new Insets(18, 18, 22, 18));
 
-                // TODO: swap in your real page classes, e.g.:
-                // dashboardItem.setOnMouseClicked(e ->
-                // homepageStage.getScene().setRoot(new VillagerDashboard().getDashboardPage(homepageStage)));
-                // projectItem.setOnMouseClicked(e ->
-                // homepageStage.getScene().setRoot(new ProjectTransparency().getProjectTransparencyPage(homepageStage)));
-                // complaintsItem is already active, so no click handler needed here.
+                // =====================================================
+                // NAVIGATION
+                // Complaints is ACTIVE
+                // =====================================================
 
-                VBox navItems = new VBox(4,
-                                dashboardItem,
-                                projectItem,
-                                complaintsItem,
-                                schemesItem,
-                                certificatesItem,
-                                billsItem,
-                                announcementsItem,
-                                gramSabhaItem,
-                                aiAssistantItem);
-                navItems.setPadding(new Insets(0, 10, 0, 10));
-                VBox.setVgrow(navItems, Priority.ALWAYS);
+                Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
+
+                dashboardNav.setOnMouseClicked(
+                                e -> {
+                                         backAction.run();
+                                });
+
+                Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
+                projectsNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backAction));
+                                });
+
+                Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", true);
+
+                Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
+                schemesNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backAction));
+                                });
+
+                Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
+                certificatesNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backAction));
+                                });
+
+                Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
+                certificatesNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backAction));
+                                });
+
+                Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
+                announcementsNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backAction));
+                                });
+
+                Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
+                gramSabhaNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backAction));
+                                });
+
+                Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
+                aiAssistantNav.setOnMouseClicked(
+                                e -> {
+                                        // backAction.run();
+                                        VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backAction));
+                                });
+
+                VBox navItems = new VBox(
+                                4,
+                                dashboardNav,
+                                projectsNav,
+                                complaintsNav,
+                                schemesNav,
+                                certificatesNav,
+                                billsNav,
+                                announcementsNav,
+                                gramSabhaNav,
+                                aiAssistantNav);
+
+                navItems.setPadding(
+                                new Insets(0, 10, 0, 10));
+
+                VBox.setVgrow(
+                                navItems,
+                                Priority.ALWAYS);
+
+                // =====================================================
+                // EMERGENCY ASSISTANCE
+                // =====================================================
 
                 Label emergency = new Label("\u26A0  Emergency assistance");
-                emergency.setWrapText(true);
-                emergency.setStyle("-fx-text-fill: #FFCC80; -fx-font-size: 13px;");
-                VBox emergencyBox = new VBox(emergency);
-                emergencyBox.setPadding(new Insets(12, 16, 18, 18));
 
-                sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
+                emergency.setWrapText(true);
+
+                emergency.setPadding(
+                                new Insets(10, 12, 10, 12));
+
+                emergency.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + DELAYED_RED + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-background-color: rgba(217,76,56,0.12);"
+                                                + "-fx-background-radius: 10;");
+
+                VBox emergencyBox = new VBox(emergency);
+
+                emergencyBox.setPadding(
+                                new Insets(12, 16, 18, 18));
+
+                sidebar.getChildren().addAll(
+                                logoBox,
+                                navItems,
+                                emergencyBox);
+
                 return sidebar;
         }
 
         private Label navItem(String text, boolean active) {
+
                 Label item = new Label(text);
-                item.setMaxWidth(Double.MAX_VALUE);
-                item.setPadding(new Insets(10, 14, 10, 18));
+
+                item.setMaxWidth(
+                                Double.MAX_VALUE);
+
+                item.setPadding(
+                                new Insets(10, 14, 10, 14));
+
+                // =====================================================
+                // ACTIVE ITEM
+                // EXACT SAME STYLE AS PROJECT TRANSPARENCY
+                // =====================================================
+
                 if (active) {
-                        item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " + PRIMARY
-                                        + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
-                } else {
-                        item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;");
-                        item.setOnMouseEntered(e -> item.setStyle(
-                                        "-fx-text-fill: white; -fx-font-size: 13px; -fx-cursor: hand; "
-                                                        + "-fx-background-color: " + PRIMARY
-                                                        + "; -fx-background-radius: 8;"));
-                        item.setOnMouseExited(e -> item.setStyle(
-                                        "-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;"));
+
+                        item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;"
+                                                        + "-fx-cursor: hand;");
+
                 }
+
+                // =====================================================
+                // INACTIVE ITEM
+                // =====================================================
+
+                else {
+
+                        String baseStyle = "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-cursor: hand;";
+
+                        item.setStyle(baseStyle);
+
+                        // ---------------- Hover ----------------
+
+                        item.setOnMouseEntered(
+                                        e -> item.setStyle(
+                                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                                        + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                                        + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                                        + "-fx-font-weight: 700;"
+                                                                        + "-fx-font-size: 13px;"
+                                                                        + "-fx-background-radius: 8;"
+                                                                        + "-fx-cursor: hand;"));
+
+                        // ---------------- Mouse Exit ----------------
+
+                        item.setOnMouseExited(
+                                        e -> item.setStyle(baseStyle));
+                }
+
                 return item;
         }
 
