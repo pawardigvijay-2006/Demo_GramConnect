@@ -419,7 +419,7 @@ public class BillsAndPayments {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(44, 44);
                 iconChip.setMaxSize(44, 44);
-                iconChip.setStyle("-fx-background-color: " + rgba(iconColor, 0.12) + "; -fx-background-radius: 12;");
+                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 12;");
 
                 Label nameLabel = new Label(name);
                 nameLabel.setStyle(
@@ -567,7 +567,7 @@ public class BillsAndPayments {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(28, 28);
                 iconChip.setMaxSize(28, 28);
-                iconChip.setStyle("-fx-background-color: " + rgba(iconColor, 0.12) + "; -fx-background-radius: 8;");
+                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 8;");
 
                 Label nameLabel = new Label(name);
                 nameLabel.setStyle(

@@ -411,7 +411,7 @@ public class Announcements {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(56, 56);
                 iconChip.setMaxSize(56, 56);
-                iconChip.setStyle("-fx-background-color: " + rgba(iconColor, 0.12) + "; -fx-background-radius: 14;");
+                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 14;");
 
                 Label titleLabel = new Label(title);
                 titleLabel.setWrapText(true);
@@ -437,7 +437,7 @@ public class Announcements {
                 Label dateLabel = new Label(date);
                 dateLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
-                                                "-fx-font-size: 11px;" +
+                                                "-fx-font-size: 12px;" +
                                                 "-fx-font-weight: 700;" +
                                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
@@ -464,20 +464,20 @@ public class Announcements {
                 descriptionLabel.setWrapText(true);
                 descriptionLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
-                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-size: 14px;" +
                                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                Label publishedIcon = new Label("\uD83D\uDDD3");
-                publishedIcon.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                Label publishedLabel = new Label("Published on: " + date);
-                publishedLabel.setStyle(
-                                "-fx-font-family: " + FONT_FAMILY + ";" +
-                                                "-fx-font-size: 10px;" +
-                                                "-fx-text-fill: " + TEXT_SECONDARY + ";");
-                HBox publishedRow = new HBox(4, publishedIcon, publishedLabel);
-                publishedRow.setAlignment(Pos.CENTER_LEFT);
+                // Label publishedIcon = new Label("\uD83D\uDDD3");
+                // publishedIcon.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                // Label publishedLabel = new Label("Published on: " + date);
+                // publishedLabel.setStyle(
+                //                 "-fx-font-family: " + FONT_FAMILY + ";" +
+                //                                 "-fx-font-size: 10px;" +
+                //                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
+                // HBox publishedRow = new HBox(4, publishedIcon, publishedLabel);
+                // publishedRow.setAlignment(Pos.CENTER_LEFT);
 
-                VBox details = new VBox(8, titleRow, categoryRow, descriptionLabel, publishedRow);
+                VBox details = new VBox(8, titleRow, categoryRow, descriptionLabel);
                 HBox.setHgrow(details, Priority.ALWAYS);
 
                 HBox row = new HBox(16, iconChip, details);

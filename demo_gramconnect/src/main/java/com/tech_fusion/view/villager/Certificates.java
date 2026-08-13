@@ -455,7 +455,7 @@ public class Certificates {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(52, 52);
                 iconChip.setMaxSize(52, 52);
-                iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.14) + "; -fx-background-radius: 14;");
+                iconChip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 14;");
 
                 Label titleLabel = new Label(title);
                 titleLabel.setWrapText(true);
@@ -559,7 +559,7 @@ public class Certificates {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(24, 24);
                 iconChip.setMaxSize(24, 24);
-                iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.14) + "; -fx-background-radius: 7;");
+                iconChip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 7;");
 
                 Label certLabel = new Label(certType);
                 certLabel.setStyle(
