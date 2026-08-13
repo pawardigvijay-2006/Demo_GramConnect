@@ -175,14 +175,15 @@ public class ComplaintsPage {
 
                 dashboardNav.setOnMouseClicked(
                                 e -> {
-                                         backAction.run();
+                                        backAction.run();
                                 });
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
                 projectsNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backAction));
+                                        VillagerDashboard.homeStage.setScene(
+                                                        new ProjectTransparency().getProjectScene(backAction));
                                 });
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", true);
@@ -191,42 +192,48 @@ public class ComplaintsPage {
                 schemesNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new GovernmentSchemes().getSchemesScene(backAction));
                                 });
 
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
                 certificatesNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new Certificates().getCertificatesScene(backAction));
                                 });
 
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
-                certificatesNav.setOnMouseClicked(
+                billsNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new BillsAndPayments().getBillsScene(backAction));
                                 });
 
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
                 announcementsNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new Announcements().getAnnouncementScene(backAction));
                                 });
 
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
                 gramSabhaNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new GramSabha().getGramSabhaScene(backAction));
                                 });
 
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
                 aiAssistantNav.setOnMouseClicked(
                                 e -> {
                                         // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backAction));
+                                        VillagerDashboard.homeStage
+                                                        .setScene(new AIAssistant().getAiAssiatantScene(backAction));
                                 });
 
                 VBox navItems = new VBox(
@@ -453,8 +460,12 @@ public class ComplaintsPage {
         }
 
         private ScrollPane buildScrollableContent() {
-                VBox content = new VBox(18);
-                content.setPadding(new Insets(18, 24, 28, 24));
+
+                VBox content = new VBox(14);
+
+                content.setPadding(new Insets(16, 24, 24, 24));
+
+                content.setFillWidth(true);
 
                 content.getChildren().addAll(
                                 buildPageTitle(),
@@ -465,8 +476,20 @@ public class ComplaintsPage {
                                 buildShowMoreLink());
 
                 ScrollPane scrollPane = new ScrollPane(content);
+
                 scrollPane.setFitToWidth(true);
-                scrollPane.setStyle("-fx-background-color: transparent;");
+                scrollPane.setFitToHeight(false);
+
+                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+                scrollPane.setPannable(true);
+
+                scrollPane.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-background-insets: 0;"
+                                                + "-fx-padding: 0;");
+
                 return scrollPane;
         }
 
@@ -507,8 +530,8 @@ public class ComplaintsPage {
                 Label iconLabel = new Label(icon);
                 iconLabel.setStyle("-fx-text-fill: " + iconColor + "; -fx-font-size: 15px;");
                 StackPane iconCircle = new StackPane(iconLabel);
-                iconCircle.setPrefSize(38, 38);
-                iconCircle.setMaxSize(38, 38);
+                iconCircle.setPrefSize(50, 50);
+                iconCircle.setMaxSize(80, 80);
                 iconCircle.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 9;");
 
                 Label pill = new Label(pillText);
@@ -524,7 +547,7 @@ public class ComplaintsPage {
                 valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Label captionLabel = new Label(caption);
-                captionLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                captionLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 VBox textBlock = new VBox(4, valueLabel, captionLabel);
 
@@ -538,6 +561,9 @@ public class ComplaintsPage {
 
                 StackPane cardStack = new StackPane(watermark, foreground);
                 cardStack.setAlignment(Pos.TOP_LEFT);
+                cardStack.setMinWidth(280);
+                cardStack.setPrefWidth(280);
+                HBox.setHgrow(cardStack, Priority.ALWAYS);
 
                 String borderStyle = criticalAccent
                                 ? "-fx-border-color: " + ERROR + " " + BORDER + " " + BORDER + " " + BORDER + "; "
@@ -601,7 +627,7 @@ public class ComplaintsPage {
         // ---- Complaint list ----
         private VBox buildComplaintsList() {
                 // TODO: replace with ComplaintService.getRecentComplaints(villageId)
-                VBox list = new VBox(14,
+                VBox list = new VBox(12,
                                 complaintRow("\uD83D\uDCA7", LIGHT_BLUE, SECONDARY,
                                                 "Broken Water Pipe near Temple", "#CMP-2025-0012",
                                                 "Oct 24, 2024", "Temple Square, Zone 4",
@@ -637,19 +663,19 @@ public class ComplaintsPage {
                 iconCircle.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 20;");
 
                 Label titleLabel = new Label(title);
-                titleLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+                titleLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Label dateLabel = new Label("\uD83D\uDCC5  " + date);
-                dateLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                dateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Label locationLabel = new Label("\uD83D\uDCCD  " + location);
-                locationLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                locationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 HBox metaRow = new HBox(14, dateLabel, locationLabel);
                 metaRow.setAlignment(Pos.CENTER_LEFT);
 
                 Label viewDetails = new Label("View Details  \u2192");
-                viewDetails.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + "; "
+                viewDetails.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + "; "
                                 + "-fx-cursor: hand;");
                 // TODO: wire this up to open a real ComplaintDetailView(complaintId)
 
@@ -657,7 +683,7 @@ public class ComplaintsPage {
                 HBox.setHgrow(leftText, Priority.ALWAYS);
 
                 Label idLabel = new Label(complaintId);
-                idLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+                idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Label statusPill = new Label(status);
                 statusPill.setStyle("-fx-background-color: " + pillBg + "; -fx-text-fill: " + pillFg + "; "
