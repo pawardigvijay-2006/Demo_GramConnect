@@ -14,172 +14,265 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Arc;
-import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Screen;
-import javafx.stage.Stage;
 
 /**
  * GramConnect - Project Transparency
  *
  * ============================================================
- * This screen re-uses the exact same sidebar / header pattern as
- * VillagerDashboard.java (see that file for the full explanation of
- * how JavaFX layout containers - VBox / HBox / BorderPane - work).
+ * NAVIGATION NOTE (read this first!)
+ * ============================================================
+ * This page now owns its OWN sidebar + header, exactly like
+ * VillagerDashboard.java, and hands back a full Scene instead of
+ * just a BorderPane. That's what lets VillagerDashboard swap the
+ * WHOLE window over to this page with homeStage.setScene(...) and
+ * back again, the same way SarpanchDashboard swaps to
+ * ProjectTrackerPage.getProjectTrackerScene(Runnable) and back.
  *
- * The only new pieces introduced here are:
- * 1. A page title row with a "Download Report" button.
- * 2. A 5-card stats strip (Total / In Progress / Completed / Delayed / Budget).
- * 3. A left "All Projects" card with filter tabs, a category dropdown,
- * a search box, and a richer project row (image, description, budget,
- * dates, big percentage, progress bar, "View Details" button).
- * 4. A right column with a hand-drawn donut chart ("Budget Overview",
- * built from javafx.scene.shape.Arc - JavaFX has no built-in donut
- * chart, so 3 Arc wedges + a white Circle on top fake the "hole")
- * and a "Recent Updates" timeline card.
- * 5. A bottom "Transparency & Accountability" info banner.
+ * The pattern, step by step:
+ * 1. VillagerDashboard's "Project transparency" nav item creates a
+ * Runnable that knows how to get back to the dashboard:
+ * Runnable backToDashboardAction = () -> back();
+ * 2. It hands that Runnable straight into this page:
+ * homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
+ * 3. This page never needs to import VillagerDashboard or know
+ * anything about its fields - it just wires its OWN "Dashboard"
+ * nav item to call backToDashboardAction.run() when clicked.
  *
- * ARCHITECTURE NOTE: same as the dashboard - one self-contained file,
- * one Application, no FXML, no external CSS. All numbers below (12
- * projects, budget figures, updates...) are hardcoded mock data -
- * marked with TODO comments showing where a real Service class would
- * plug in later.
+ * Everything else here (5 stat cards, "All Projects" list with
+ * filter tabs, hand-drawn Budget Overview donut, Recent Updates
+ * timeline, Transparency & Accountability banner) is unchanged.
  * ============================================================
  */
-
 public class ProjectTransparency {
 
-        // ================= COLORS =================
-        // Same palette as VillagerDashboard.java, plus one new accent
-        // (PURPLE) for the "Total Budget" stat card.
+        // ================= COLORS (same palette as VillagerDashboard.java) =================
+        private static final String FOREST_DEEP = "#0B3D2E";
+        private static final String FOREST_LIGHT = "#0F4736";
+        private static final String SAFFRON_MAIN = "#E07A1F";
+        private static final String CONTEXT_TEAL = "#0E8C8C";
+        private static final String DELAYED_RED = "#D94C38";
 
-        private static final String PRIMARY = "#005B1B";
-        private static final String PRIMARY_DARK = "#004D16";
+        // Light green sidebar gradient (identical to VillagerDashboard.java)
+        private static final String SIDEBAR_TOP = "#CDEBD8";
+        private static final String SIDEBAR_MID = "#BCE3CC";
+        private static final String SIDEBAR_BOT = "#A9D8BD";
 
-        private static final String ACCENT_GREEN = "#68D66F";
+        // Extra accents used only on this page's cards/pills
         private static final String LIGHT_GREEN = "#E8F7EA";
-
-        private static final String BLUE = "#2196F3";
         private static final String LIGHT_BLUE = "#EAF5FC";
-
+        private static final String BLUE = "#2196F3";
         private static final String WARNING = "#F4A62A";
         private static final String LIGHT_YELLOW = "#FFF7E5";
-
         private static final String ERROR = "#D93025";
         private static final String LIGHT_RED = "#FDECEC";
-
         private static final String PURPLE = "#8B5CF6";
         private static final String LIGHT_PURPLE = "#F1EDFC";
-
-        private static final String BACKGROUND = "#F4F8FB";
-
-        private static final String TEXT_PRIMARY = "#10251A";
-        private static final String TEXT_SECONDARY = "#66756C";
-
-        private static final String BORDER = "#D8E2DC";
         private static final String SECONDARY = "#1976D2";
 
+        private static final String BACKGROUND = "#EFF5F1";
+        private static final String TEXT_PRIMARY = FOREST_DEEP;
+        private static final String TEXT_SECONDARY = "rgba(11,61,46,0.65)";
+        private static final String BORDER = "#D8E2DC";
+
         private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
-        private static final String SAFFRON_MAIN = "#E07A1F";
-        private static final String FOREST_DEEP = "#0B3D2E";
-
-
 
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
-        private BorderPane projectBPane;
-
-        public BorderPane getProjectBPane() {
+        /**
+         * Builds this page's full Scene: its own sidebar (with "Project
+         * transparency" highlighted as active) on the left, header + scrollable
+         * content on the right - exactly like VillagerDashboard.getDashboardScene().
+         *
+         * @param backToDashboardAction what to run when this page's own
+         *                               "Dashboard" nav item is clicked. Passed
+         *                               in by whoever navigates here, so this
+         *                               class stays decoupled from
+         *                               VillagerDashboard.
+         */
+        public Scene getProjectScene(Runnable backToDashboardAction) {
 
                 BorderPane root = new BorderPane();
-                // root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+                root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
-                // // root.setLeft(buildSidebar());
-                // root.setCenter(buildMainArea());
+                root.setLeft(buildSidebar(backToDashboardAction));
+                root.setCenter(buildMainArea());
 
-                projectBPane = new BorderPane(buildMainArea());
-                return projectBPane;
-
+                return new Scene(root, 1500, 850);
         }
 
         // =================================================================
-        // SIDEBAR (identical structure to VillagerDashboard.java, except
-        // "Project transparency" is now the active/highlighted row)
+        // SIDEBAR - identical structure/colors to VillagerDashboard.java,
+        // except "Project transparency" is the active row here, and
+        // "Dashboard" calls the Runnable instead of homeStage.setScene(...)
+        // directly (this class never touches a Stage at all).
         // =================================================================
-        // private VBox buildSidebar() {
-        // VBox sidebar = new VBox();
-        // sidebar.setPrefWidth(230);
-        // sidebar.setMinWidth(230);
-        // sidebar.setStyle("-fx-background-color: " + PRIMARY_DARK + ";");
+        private VBox buildSidebar(Runnable backToDashboardAction) {
+                VBox sidebar = new VBox();
+                sidebar.setPrefWidth(230);
+                sidebar.setMinWidth(230);
+                sidebar.setStyle(
+                                "-fx-background-color: linear-gradient(to bottom, " + SIDEBAR_TOP + ", " + SIDEBAR_MID
+                                                + ", " + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent rgba(11,61,46,0.10) transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
 
-        // // ---------------- Logo ----------------
-        // Image logoImage = new Image("assets\\images\\gramconnect.png");
-        // ImageView logoIcon = new ImageView(logoImage);
-        // logoIcon.setFitWidth(60);
-        // logoIcon.setFitHeight(60);
-        // logoIcon.setPreserveRatio(true);
-        // logoIcon.setSmooth(true);
+                Image logoImage = new Image("assets\\images\\gramconnect.png");
+                ImageView logoIcon = new ImageView(logoImage);
+                logoIcon.setFitWidth(60);
+                logoIcon.setFitHeight(60);
+                logoIcon.setPreserveRatio(true);
+                logoIcon.setSmooth(true);
 
-        // Label logoText = new Label("GramConnect");
-        // logoText.setStyle("-fx-text-fill: white; -fx-font-size: 18px;
-        // -fx-font-weight: bold;");
+                Label logoText = new Label("GramConnect");
+                logoText.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
 
-        // Label subtitle = new Label("Village Governance");
-        // subtitle.setStyle("-fx-text-fill: #D4E9D7; -fx-font-size: 9px;
-        // -fx-font-weight: bold;");
+                Label subtitle = new Label("Village Governance");
+                subtitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-letter-spacing: 0.05em;");
 
-        // VBox logoTextBox = new VBox(0, logoText, subtitle);
-        // HBox logo = new HBox(8, logoIcon, logoTextBox);
-        // logo.setAlignment(Pos.CENTER_LEFT);
-        // VBox logoBox = new VBox(logo);
-        // logoBox.setPadding(new Insets(18, 18, 22, 18));
+                VBox logoTextBox = new VBox(0, logoText, subtitle);
+                HBox logo = new HBox(8, logoIcon, logoTextBox);
+                logo.setAlignment(Pos.CENTER_LEFT);
+                VBox logoBox = new VBox(logo);
+                logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-        // // ---------------- Nav items ----------------
-        // VBox navItems = new VBox(4,
-        // navItem("\uD83C\uDFE0 Dashboard", false),
-        // navItem("\uD83C\uDFD7 Project transparency", true),
-        // navItem("\uD83D\uDCAC Complaints", false),
-        // navItem("\uD83C\uDF81 Government schemes", false),
-        // navItem("\uD83D\uDCDC Certificates", false),
-        // navItem("\uD83D\uDCB3 Bills & Payments", false),
-        // navItem("\uD83D\uDCE2 Announcements", false),
-        // navItem("\uD83D\uDC65 Gram Sabha", false),
-        // navItem("\uD83E\uDD16 AI village assistant", false));
-        // navItems.setPadding(new Insets(0, 10, 0, 10));
-        // VBox.setVgrow(navItems, Priority.ALWAYS);
+                // ---------------- Nav items ----------------
+                // "Dashboard" is the only item that needs to actually navigate
+                // anywhere from this page - it just calls the Runnable it was
+                // handed. The rest are inactive placeholders for now, same as
+                // they'd be on any page other than their own.
 
-        // Label emergency = new Label("\u26A0 Emergency assistance");
-        // emergency.setWrapText(true);
-        // emergency.setStyle("-fx-text-fill: #FFCC80; -fx-font-size: 13px;");
-        // VBox emergencyBox = new VBox(emergency);
-        // emergencyBox.setPadding(new Insets(12, 16, 18, 18));
+                Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
+                dashboardNav.setOnMouseClicked(e -> {
+                        // backToDashboardAction.run();
+                        VillagerDashboard.homeStage.setScene(new VillagerDashboard().getDashboardScene());
+                        
+                });
 
-        // sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
-        // return sidebar;
-        // }
+                Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", true);
+                // Already on this page - no handler needed.
 
-        // private Label navItem(String text, boolean active) {
-        // Label item = new Label(text);
-        // item.setMaxWidth(Double.MAX_VALUE);
-        // item.setPadding(new Insets(10, 14, 10, 18));
-        // if (active) {
-        // item.setStyle("-fx-background-color: " + LIGHT_BLUE + "; -fx-text-fill: " +
-        // PRIMARY
-        // + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 8;");
-        // } else {
-        // item.setStyle("-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-font-weight:
-        // bold; -fx-cursor: hand;");
-        // item.setOnMouseEntered(e -> item.setStyle(
-        // "-fx-text-fill: white; -fx-font-size: 13px; -fx-cursor: hand; "
-        // + "-fx-background-color: " + PRIMARY
-        // + "; -fx-background-radius: 8;"));
-        // item.setOnMouseExited(e -> item.setStyle(
-        // "-fx-text-fill: #C8E6C9; -fx-font-size: 13px; -fx-cursor: hand;"));
-        // }
-        // return item;
-        // }
+                Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
+                complaintsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
+                });
+                Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
+                schemesNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
+                });
+                Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
+                certificatesNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
+                });
+                Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
+                billsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
+                });
+                Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
+                announcementsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
+                });
+                Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
+                gramSabhaNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
+                });
+                Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
+                aiAssistantNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
+                });
+                // TODO: wire these the same way once each page exposes its own
+                // getXScene(Runnable backToDashboardAction) method.
+
+                VBox navItems = new VBox(4,
+                                dashboardNav,
+                                projectsNav,
+                                complaintsNav,
+                                schemesNav,
+                                certificatesNav,
+                                billsNav,
+                                announcementsNav,
+                                gramSabhaNav,
+                                aiAssistantNav);
+                navItems.setPadding(new Insets(0, 10, 0, 10));
+                VBox.setVgrow(navItems, Priority.ALWAYS);
+
+                Label emergency = new Label("\u26A0  Emergency assistance");
+                emergency.setWrapText(true);
+                emergency.setPadding(new Insets(10, 12, 10, 12));
+                emergency.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + DELAYED_RED + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-background-color: rgba(217,76,56,0.12);"
+                                                + "-fx-background-radius: 10;");
+                VBox emergencyBox = new VBox(emergency);
+                emergencyBox.setPadding(new Insets(12, 16, 18, 18));
+
+                sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
+                return sidebar;
+        }
+
+        /** Same nav-row builder as VillagerDashboard.java: no handler attached here - callers attach their own. */
+        private Label navItem(String text, boolean active) {
+                Label item = new Label(text);
+                item.setMaxWidth(Double.MAX_VALUE);
+                item.setPadding(new Insets(10, 14, 10, 14));
+
+                if (active) {
+                        item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;"
+                                                        + "-fx-cursor: hand;");
+                } else {
+                        String base = "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-cursor: hand;";
+                        item.setStyle(base);
+
+                        item.setOnMouseEntered(e -> item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                        + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                        + "-fx-font-weight: 700;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-cursor: hand;"));
+
+                        item.setOnMouseExited(e -> item.setStyle(base));
+                }
+
+                return item;
+        }
 
         // =================================================================
         // MAIN AREA (header on top, scrollable content below it)
@@ -191,7 +284,7 @@ public class ProjectTransparency {
                 return main;
         }
 
-        /** Identical top header (search + bell + profile) as VillagerDashboard.java. */
+        /** Identical header (search + bell + profile) as VillagerDashboard.java. */
         private HBox buildHeader() {
                 HBox header = new HBox(16);
                 header.setAlignment(Pos.CENTER_LEFT);
@@ -215,7 +308,7 @@ public class ProjectTransparency {
                 Label searchIcon = new Label("\uD83D\uDD0D");
                 searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
                 TextField search = new TextField();
-                search.setPromptText("Search certificates...");
+                search.setPromptText("Search projects...");
                 search.setStyle(
                                 "-fx-background-color: transparent;"
                                                 + "-fx-font-family: " + FONT_FAMILY + ";"
@@ -228,7 +321,6 @@ public class ProjectTransparency {
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                // Bell with a small red badge showing unread notification count.
                 Label bellIcon = new Label("\uD83D\uDD14");
                 bellIcon.setStyle("-fx-font-size: 15px;");
                 StackPane bell = new StackPane(bellIcon);
@@ -283,10 +375,6 @@ public class ProjectTransparency {
         }
 
         private ScrollPane buildScrollableContent() {
-                // 1. page title + "Download Report" button
-                // 2. 5 stat cards
-                // 3. "All Projects" card (left) + "Budget Overview" / "Recent Updates" (right)
-                // 4. transparency & accountability banner
                 VBox content = new VBox(18);
                 content.setPadding(new Insets(18, 24, 28, 24));
 
@@ -317,7 +405,7 @@ public class ProjectTransparency {
 
                 Button downloadReport = new Button("\u2B07  Download Report");
                 downloadReport.setStyle(
-                                "-fx-background-color: " + PRIMARY + ";" +
+                                "-fx-background-color: " + FOREST_DEEP + ";" +
                                                 "-fx-text-fill: white;" +
                                                 "-fx-font-size: 12px;" +
                                                 "-fx-font-weight: bold;" +
@@ -334,7 +422,7 @@ public class ProjectTransparency {
         // ---- Stat cards (5 across the top) ----
         private HBox buildStatCardsRow() {
                 HBox row = new HBox(14,
-                                statCard("\uD83D\uDCCA", LIGHT_GREEN, PRIMARY, "12", "Total Projects",
+                                statCard("\uD83D\uDCCA", LIGHT_GREEN, FOREST_DEEP, "12", "Total Projects",
                                                 "All development projects"),
                                 statCard("\uD83D\uDCC8", LIGHT_BLUE, SECONDARY, "8", "In Progress",
                                                 "Projects under construction"),
@@ -347,7 +435,6 @@ public class ProjectTransparency {
                 return row;
         }
 
-        /** One stat card: icon chip, big value, bold label, small gray caption. */
         private VBox statCard(String icon, String iconBg, String iconColor, String value, String label,
                         String caption) {
                 Label iconLabel = new Label(icon);
@@ -375,8 +462,7 @@ public class ProjectTransparency {
                 return card;
         }
 
-        // ---- "All Projects" (left) + "Budget Overview" / "Recent Updates" (right)
-        // ----
+        // ---- "All Projects" (left) + "Budget Overview" / "Recent Updates" (right) ----
         private HBox buildProjectsAndSidebarRow() {
                 HBox row = new HBox(16, buildAllProjectsCard(), buildRightColumn());
                 return row;
@@ -390,7 +476,6 @@ public class ProjectTransparency {
                 Label title = new Label("All Projects");
                 title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                // ---- filter tabs ----
                 HBox tabs = new HBox(6,
                                 filterTab("All Projects", true),
                                 filterTab("In Progress", false),
@@ -414,7 +499,6 @@ public class ProjectTransparency {
                 HBox filterRow = new HBox(8, tabs, tabSpacer, categoryFilter, searchProject);
                 filterRow.setAlignment(Pos.CENTER_LEFT);
 
-                // ---- project list ----
                 // TODO: replace with ProjectService.getProjectsForVillage(villageId)
                 VBox list = new VBox(16,
                                 projectCard(
@@ -447,14 +531,10 @@ public class ProjectTransparency {
                 return card;
         }
 
-        /**
-         * One pill-shaped filter tab. First one (active=true) gets the solid dark-green
-         * look.
-         */
         private Label filterTab(String text, boolean active) {
                 Label tab = new Label(text);
                 if (active) {
-                        tab.setStyle("-fx-background-color: " + PRIMARY + "; -fx-text-fill: white; "
+                        tab.setStyle("-fx-background-color: " + FOREST_DEEP + "; -fx-text-fill: white; "
                                         + "-fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 6; "
                                         + "-fx-padding: 7 14 7 14; -fx-cursor: hand;");
                 } else {
@@ -466,16 +546,9 @@ public class ProjectTransparency {
                 return tab;
         }
 
-        /**
-         * One full project card: image on the left, details in the middle
-         * (name + status pill, location, description, budget/date meta row),
-         * and a right-hand block with the big percentage, progress bar and a
-         * "View Details" button.
-         */
         private VBox projectCard(String imagePath, String name, String status, String location, String description,
                         String budget, String startDate, String endDate, int percent) {
 
-                // ---- image ----
                 ImageView image = new ImageView(new Image(imagePath));
                 image.setFitWidth(140);
                 image.setFitHeight(100);
@@ -485,7 +558,6 @@ public class ProjectTransparency {
                 clip.setArcHeight(12);
                 image.setClip(clip);
 
-                // ---- status colors ----
                 String pillBg, pillFg, accent;
                 switch (status) {
                         case "Delayed":
@@ -498,10 +570,10 @@ public class ProjectTransparency {
                                 pillFg = "#854F0B";
                                 accent = SECONDARY;
                                 break;
-                        default: // "On Track" / Completed
+                        default:
                                 pillBg = "#E8F5E9";
                                 pillFg = "#1B5E20";
-                                accent = PRIMARY;
+                                accent = FOREST_DEEP;
                 }
 
                 Label nameLabel = new Label(name);
@@ -536,7 +608,6 @@ public class ProjectTransparency {
                 details.setAlignment(Pos.CENTER_LEFT);
                 HBox.setHgrow(details, Priority.ALWAYS);
 
-                // ---- right block: percent + progress bar + button ----
                 Label percentLabel = new Label(percent + "%");
                 percentLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + accent + ";");
 
@@ -552,8 +623,8 @@ public class ProjectTransparency {
                 viewDetails.setPrefWidth(140);
                 viewDetails.setStyle(
                                 "-fx-background-color: white;" +
-                                                "-fx-text-fill: " + PRIMARY + ";" +
-                                                "-fx-border-color: " + PRIMARY + ";" +
+                                                "-fx-text-fill: " + FOREST_DEEP + ";" +
+                                                "-fx-border-color: " + FOREST_DEEP + ";" +
                                                 "-fx-border-radius: 6;" +
                                                 "-fx-background-radius: 6;" +
                                                 "-fx-font-size: 11px;" +
@@ -576,7 +647,7 @@ public class ProjectTransparency {
         }
 
         // =================================================================
-        // RIGHT COLUMN: Budget Overview (donut chart) + Recent Updates
+        // RIGHT COLUMN: Budget Overview + Recent Updates
         // =================================================================
         private VBox buildRightColumn() {
                 VBox column = new VBox(16, buildBudgetOverviewCard(), buildRecentUpdatesCard());
@@ -592,12 +663,8 @@ public class ProjectTransparency {
                 Label totalLabel = new Label("Total Allocated: \u20B918,45,000");
                 totalLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                // ---- horizontal colorful percentage bars ----
-                // Simpler and clearer to read at this card width than a donut:
-                // one row per category, each with a colored track showing how
-                // much of the total budget it represents.
                 VBox bars = new VBox(16,
-                                budgetBar(PRIMARY, "Spent", "\u20B98,45,000", 45),
+                                budgetBar(FOREST_DEEP, "Spent", "\u20B98,45,000", 45),
                                 budgetBar(SECONDARY, "In Progress", "\u20B96,75,000", 37),
                                 budgetBar(WARNING, "Remaining", "\u20B93,25,000", 18));
 
@@ -608,11 +675,6 @@ public class ProjectTransparency {
                 return card;
         }
 
-        /**
-         * One budget row: a colored dot + label on the left, the amount and
-         * percentage on the right, and underneath, a rounded horizontal
-         * track with a colored fill sized to "percent" out of 100.
-         */
         private VBox budgetBar(String color, String label, String amount, int percent) {
                 Circle dot = new Circle(4, Color.web(color));
 
@@ -632,9 +694,6 @@ public class ProjectTransparency {
                 HBox topRow = new HBox(labelRow, topSpacer, amountText);
                 topRow.setAlignment(Pos.CENTER_LEFT);
 
-                // Track: a light gray rounded background the full width of the
-                // card, with a colored rounded fill layered on top, sized to
-                // "percent" of that width.
                 double trackWidth = 280;
 
                 Region track = new Region();
@@ -659,7 +718,7 @@ public class ProjectTransparency {
 
                 // TODO: replace with UpdateService.getRecentUpdates(villageId)
                 VBox list = new VBox(14,
-                                updateRow("\u2705", LIGHT_GREEN, PRIMARY, "Village road construction",
+                                updateRow("\u2705", LIGHT_GREEN, FOREST_DEEP, "Village road construction",
                                                 "Road paving completed on Main Street", "2 days ago"),
                                 updateRow("\u23F0", LIGHT_YELLOW, WARNING, "Water tank renovation",
                                                 "Tank cleaning and painting in progress", "5 days ago"),
@@ -669,7 +728,7 @@ public class ProjectTransparency {
                 Button viewAll = new Button("View All Updates");
                 viewAll.setMaxWidth(Double.MAX_VALUE);
                 viewAll.setStyle(
-                                "-fx-background-color: " + PRIMARY + ";" +
+                                "-fx-background-color: " + FOREST_DEEP + ";" +
                                                 "-fx-text-fill: white;" +
                                                 "-fx-font-size: 11px;" +
                                                 "-fx-font-weight: bold;" +
@@ -717,7 +776,7 @@ public class ProjectTransparency {
         // =================================================================
         private HBox buildTransparencyBanner() {
                 Label shield = new Label("\uD83D\uDEE1");
-                shield.setStyle("-fx-text-fill: " + PRIMARY + "; -fx-font-size: 20px;");
+                shield.setStyle("-fx-text-fill: " + FOREST_DEEP + "; -fx-font-size: 20px;");
                 StackPane shieldCircle = new StackPane(shield);
                 shieldCircle.setPrefSize(38, 38);
                 shieldCircle.setMaxSize(38, 38);
@@ -739,8 +798,13 @@ public class ProjectTransparency {
                 banner.setAlignment(Pos.CENTER_LEFT);
                 banner.setPadding(new Insets(16, 20, 16, 20));
                 banner.setStyle("-fx-background-color: " + LIGHT_GREEN + "; -fx-background-radius: 12; "
-                                + "-fx-border-color: " + ACCENT_GREEN
+                                + "-fx-border-color: " + FOREST_DEEP
                                 + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return banner;
+        }
+
+        private void back() {
+                VillagerDashboard.homeStage.setTitle("GramConnect - Villager Dashboard");
+                VillagerDashboard.homeStage.setScene(getProjectScene(null));
         }
 }

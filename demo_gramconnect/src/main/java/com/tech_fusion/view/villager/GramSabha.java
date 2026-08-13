@@ -2,10 +2,13 @@ package com.tech_fusion.view.villager;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
 /**
@@ -44,14 +47,204 @@ public class GramSabha {
         private static final String TEXT_PRIMARY = FOREST_DEEP;
         private static final String TEXT_SECONDARY = "rgba(11,61,46,0.65)";
 
-        /** Public entry point - returns the fully built Gram Sabha screen. */
-        public BorderPane getGramSabhaPane() {
+        private static final String SIDEBAR_TOP = "#CDEBD8";
+        private static final String SIDEBAR_MID = "#BCE3CC";
+        private static final String SIDEBAR_BOT = "#A9D8BD";
+        private static final String DELAYED_RED = "#D94C38";
+
+
+        /** Public entry point - returns the fully built Bills & Payments screen. */
+        public Scene getGramSabhaScene(Runnable backToDashboardAction) {
+
+                BorderPane root = new BorderPane();
+                root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+
+                root.setLeft(buildSidebar(backToDashboardAction));
+                root.setCenter(buildMainArea());
+
+                return new Scene(root, 1500, 850);
+        }
+
+        // =================================================================
+        // SIDEBAR - identical structure/colors to VillagerDashboard.java,
+        // except "Project transparency" is the active row here, and
+        // "Dashboard" calls the Runnable instead of homeStage.setScene(...)
+        // directly (this class never touches a Stage at all).
+        // =================================================================
+        private VBox buildSidebar(Runnable backToDashboardAction) {
+                VBox sidebar = new VBox();
+                sidebar.setPrefWidth(230);
+                sidebar.setMinWidth(230);
+                sidebar.setStyle(
+                                "-fx-background-color: linear-gradient(to bottom, " + SIDEBAR_TOP + ", " + SIDEBAR_MID
+                                                + ", " + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent rgba(11,61,46,0.10) transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
+
+                Image logoImage = new Image("assets\\images\\gramconnect.png");
+                ImageView logoIcon = new ImageView(logoImage);
+                logoIcon.setFitWidth(60);
+                logoIcon.setFitHeight(60);
+                logoIcon.setPreserveRatio(true);
+                logoIcon.setSmooth(true);
+
+                Label logoText = new Label("GramConnect");
+                logoText.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
+
+                Label subtitle = new Label("Village Governance");
+                subtitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-letter-spacing: 0.05em;");
+
+                VBox logoTextBox = new VBox(0, logoText, subtitle);
+                HBox logo = new HBox(8, logoIcon, logoTextBox);
+                logo.setAlignment(Pos.CENTER_LEFT);
+                VBox logoBox = new VBox(logo);
+                logoBox.setPadding(new Insets(18, 18, 22, 18));
+
+                // ---------------- Nav items ----------------
+                // "Dashboard" is the only item that needs to actually navigate
+                // anywhere from this page - it just calls the Runnable it was
+                // handed. The rest are inactive placeholders for now, same as
+                // they'd be on any page other than their own.
+
+                Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
+                dashboardNav.setOnMouseClicked(e -> {
+                        backToDashboardAction.run();
+                });
+
+                Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
+                projectsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
+                });
+
+                Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
+                complaintsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
+                });
+                Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
+                schemesNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
+                });
+                Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
+                certificatesNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
+                });
+                Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
+                billsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
+                });
+
+                Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
+                announcementsNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
+                });
+                Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", true);
+                
+                Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
+                aiAssistantNav.setOnMouseClicked(e ->{
+                        // Runnable backToProjectTransparency = () -> back();
+                        VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
+                });
+                // TODO: wire these the same way once each page exposes its own
+                // getXScene(Runnable backToDashboardAction) method.
+
+                VBox navItems = new VBox(4,
+                                dashboardNav,
+                                projectsNav,
+                                complaintsNav,
+                                schemesNav,
+                                certificatesNav,
+                                billsNav,
+                                announcementsNav,
+                                gramSabhaNav,
+                                aiAssistantNav);
+                navItems.setPadding(new Insets(0, 10, 0, 10));
+                VBox.setVgrow(navItems, Priority.ALWAYS);
+
+                Label emergency = new Label("\u26A0  Emergency assistance");
+                emergency.setWrapText(true);
+                emergency.setPadding(new Insets(10, 12, 10, 12));
+                emergency.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + DELAYED_RED + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-background-color: rgba(217,76,56,0.12);"
+                                                + "-fx-background-radius: 10;");
+                VBox emergencyBox = new VBox(emergency);
+                emergencyBox.setPadding(new Insets(12, 16, 18, 18));
+
+                sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
+                return sidebar;
+        }
+
+        /** Same nav-row builder as VillagerDashboard.java: no handler attached here - callers attach their own. */
+        private Label navItem(String text, boolean active) {
+                Label item = new Label(text);
+                item.setMaxWidth(Double.MAX_VALUE);
+                item.setPadding(new Insets(10, 14, 10, 14));
+
+                if (active) {
+                        item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;"
+                                                        + "-fx-cursor: hand;");
+                } else {
+                        String base = "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-cursor: hand;";
+                        item.setStyle(base);
+
+                        item.setOnMouseEntered(e -> item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                        + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                        + "-fx-font-weight: 700;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-cursor: hand;"));
+
+                        item.setOnMouseExited(e -> item.setStyle(base));
+                }
+
+                return item;
+        }
+
+        // =================================================================
+        // MAIN AREA (header on top, scrollable content below it)
+        // =================================================================
+        private BorderPane buildMainArea() {
                 BorderPane main = new BorderPane();
-                main.setStyle("-fx-background-color: " + BACKGROUND + ";");
                 main.setTop(buildHeader());
                 main.setCenter(buildScrollableContent());
                 return main;
         }
+
 
         private HBox buildHeader() {
                 HBox header = new HBox(16);
