@@ -1,4 +1,4 @@
-package com.tech_fusion.view.sarpanch;
+package com.sarpanch.view;
 
 import java.io.File;
 
@@ -37,15 +37,6 @@ import javafx.stage.Stage;
 
 /**
  * GramConnect - Sarpanch Login Home (Dashboard) Page
- * Pure JavaFX recreation of the "Sarpanch Connect" governance dashboard UI.
- *
- * Changes from original template:
- *  1. Sidebar uses LIGHT GREEN instead of dark green.
- *  2. Extra sidebar section: "Announcements".
- *
- * Run:  javac GramConnectDashboard.java && java GramConnectDashboard
- * (Requires JavaFX SDK on module path:
- *  --module-path <path-to-javafx-lib> --add-modules javafx.controls)
  */
 public class SarpanchDashboard extends Application {
 
@@ -64,10 +55,31 @@ public class SarpanchDashboard extends Application {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-    "assets\\images\\street_light.jpg";
+    "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+
+    /** Shared Stage reference, following the same static-myStage pattern as HomePage.myStage. */
+    public static Stage myStage;
+
+    /** The built Dashboard scene, kept so back() can return to it without rebuilding. */
+    private Scene dashboardScene;
 
     @Override
     public void start(Stage stage) {
+        myStage = stage;
+        dashboardScene = getDashboardScene();
+
+        myStage.setTitle("GramConnect - Sarpanch Connect | Governance Dashboard");
+        myStage.setScene(dashboardScene);
+        myStage.show();
+    }
+
+    /**
+     * Builds (or rebuilds) the Dashboard scene and returns it.
+     * Public so ProjectTrackerPage's "Dashboard" nav item can jump straight back
+     * here via SarpanchDashboard.myStage, the same way ToppingsDetails calls
+     * back into PizzaDetails in the demo pattern.
+     */
+    public Scene getDashboardScene() {
         BorderPane root = new BorderPane();
         Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
@@ -94,10 +106,15 @@ public class SarpanchDashboard extends Application {
 
         root.setCenter(contentArea);
 
-        Scene scene = new Scene(root, 1300 , 800);
-        stage.setTitle("GramConnect - Sarpanch Connect | Governance Dashboard");
-        stage.setScene(scene);
-        stage.show();
+        Scene scene = new Scene(root, 1300, 800);
+        dashboardScene = scene;
+        return scene;
+    }
+
+    /** Returns to the Dashboard scene. Called via the backToDashboardAction Runnable. */
+    public void back() {
+        myStage.setTitle("GramConnect - Sarpanch Connect | Governance Dashboard");
+        myStage.setScene(dashboardScene);
     }
 
     /* ============================================================
@@ -141,11 +158,34 @@ public class SarpanchDashboard extends Application {
         /* ----- Navigation items ----- */
         VBox nav = new VBox(6);
         nav.setPadding(new Insets(16, 12, 16, 12));
+
+        HBox projectTrackerNav = navItem("\uD83D\uDDC2", "Project Tracker", false);
+        projectTrackerNav.setOnMouseClicked(e -> {
+            System.out.println("Project Tracker clicked");
+            ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
+            Runnable backToDashboardAction = () -> {
+                back();
+            };
+
+            myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
+        });
+
+        HBox complaintNav = navItem("\u26A0", "Complaints", false);
+        complaintNav.setOnMouseClicked(e -> {
+            System.out.println("Complaint Clicked");
+            SarpanchComplaintsPage sarpanchComplaintsPage = new SarpanchComplaintsPage();
+            Runnable backToDashboardAction = () -> {
+                back();
+            };
+
+            myStage.setScene(sarpanchComplaintsPage.getComplaintsScene(backToDashboardAction));
+        });
+
         nav.getChildren().addAll(
             navItem("\u25A6", "Dashboard", true),
-            navItem("\uD83D\uDDC2", "Project Tracker", false),
-            navItem("\uD83D\uDCB0", "Budget Center", false),
-            navItem("\u26A0", "Complaints", false),
+            projectTrackerNav,
+            //navItem("\u26A0", "Complaints", false),
+            complaintNav,
             navItem("\uD83D\uDCC4", "Citizen Services", false),
             navItem("\uD83D\uDCE2", "Announcements", false)   // NEW SECTION
         );
@@ -258,7 +298,7 @@ public class SarpanchDashboard extends Application {
         // Label brand = new Label("Sarpanch Connect");
         // brand.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
-        Image projectLogo = new Image("assets\\images\\gramconnect.png");
+        Image projectLogo = new Image("assets/images/ProjectLogo.png");
         ImageView imgView = new ImageView(projectLogo);
         imgView.setFitHeight(50);
         imgView.setFitWidth(60);
@@ -814,3 +854,5 @@ public class SarpanchDashboard extends Application {
     }
 
 }
+
+
