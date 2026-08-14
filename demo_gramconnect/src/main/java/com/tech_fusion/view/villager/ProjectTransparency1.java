@@ -31,31 +31,20 @@ import javafx.scene.shape.StrokeLineCap;
  * and returns via the "Back to Projects" button / breadcrumb calling
  * backToProjectsAction.run().
  *
- * BUGFIX NOTE (View Details <-> Project Details navigation):
- * "backToProjectsAction" (the Runnable this page receives) means
- * exactly one thing: "go back to the Project Transparency list,
- * however it got here." It is NOT a "go to the real Dashboard"
- * callback, even though the two used to get mixed up:
- *
- * 1. The sidebar's own "Dashboard" nav item used to call
- * backToProjectsAction.run() - which actually took the user back to
- * the PROJECT LIST, not the Dashboard. It now navigates straight to
- * VillagerDashboard.getDashboardScene(), matching every other page's
- * "Dashboard" nav item.
- * 2. The sidebar's "Project transparency" nav item used to build a
- * BRAND NEW ProjectTransparency and (incorrectly) hand it
- * backToProjectsAction as if it were THAT page's
- * backToDashboardAction. It now just calls
- * backToProjectsAction.run() directly - the exact same thing the
- * "Back to Projects" button and breadcrumb already do, so all three
- * paths back to the project list now behave identically.
+ * NEW: "Report an Issue" button/card navigates to ReportProject.java,
+ * the same way every other page-to-page jump works here - a Runnable
+ * is built on the spot that knows how to rebuild THIS scene
+ * (getProjectDetailsScene(backToProjectsAction) again) and is handed
+ * to ReportProject so its "Cancel"/breadcrumb/post-submit flow can
+ * come straight back to this exact project's details, not just any
+ * generic "back" destination.
  *
  * SCOPE NOTE: per your request this only includes the image gallery,
  * project overview, start/end dates + location, project status
- * (donut), budget overview, and a "budget utilization receipts"
- * section - the Progress Timeline / Current Progress / Quick Info /
- * extra tabs (Progress Updates, Photos, Documents, Location) from the
- * reference screenshot are left out.
+ * (donut), budget overview, budget utilization receipts, and now the
+ * report-an-issue entry point - the Progress Timeline / Current
+ * Progress / Quick Info / extra tabs from the reference screenshot
+ * are left out.
  *
  * ARCHITECTURE NOTE: all data below (project fields, budget figures,
  * receipts) is hardcoded mock data for one project ("Village Road
@@ -80,6 +69,7 @@ public class ProjectTransparency1 {
         private static final String LIGHT_BLUE = "#EAF5FC";
         private static final String WARNING = "#F4A62A";
         private static final String LIGHT_YELLOW = "#FFF7E5";
+        private static final String LIGHT_RED = "#FDECEC";
 
         private static final String BACKGROUND = "#EFF5F1";
         private static final String TEXT_PRIMARY = FOREST_DEEP;
@@ -96,9 +86,7 @@ public class ProjectTransparency1 {
          *                             ProjectTransparency list - used by the
          *                             breadcrumb, the "Back to Projects"
          *                             button, AND the sidebar's own "Project
-         *                             transparency" nav item. NOT used for the
-         *                             sidebar's "Dashboard" nav item - see
-         *                             BUGFIX NOTE above.
+         *                             transparency" nav item.
          */
         public Scene getProjectDetailsScene(Runnable backToProjectsAction) {
                 BorderPane root = new BorderPane();
@@ -111,8 +99,7 @@ public class ProjectTransparency1 {
         }
 
         // =================================================================
-        // SIDEBAR (identical to ProjectTransparency.java's, "Project
-        // transparency" active since this page lives under that section)
+        // SIDEBAR
         // =================================================================
         private VBox buildSidebar(Runnable backToProjectsAction) {
                 VBox sidebar = new VBox();
@@ -151,21 +138,11 @@ public class ProjectTransparency1 {
                 VBox logoBox = new VBox(logo);
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // BUGFIX: goes straight to the real Dashboard, exactly like every
-                // other page's sidebar. Previously called backToProjectsAction.run(),
-                // which actually took the user back to the Project Transparency
-                // list instead of the Dashboard.
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new VillagerDashboard().getDashboardScene());
                 });
 
-                // BUGFIX: reuses the SAME backToProjectsAction the "Back to
-                // Projects" button and breadcrumb already use, instead of
-                // constructing a brand new ProjectTransparency and (incorrectly)
-                // handing it this page's backToProjectsAction as if it were that
-                // page's backToDashboardAction. All three paths back to the
-                // project list now behave identically.
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", true);
                 projectsNav.setOnMouseClicked(e -> backToProjectsAction.run());
 
@@ -360,14 +337,14 @@ public class ProjectTransparency1 {
         }
 
         private ScrollPane buildScrollableContent(Runnable backToProjectsAction) {
-                VBox content = new VBox(18);
-                content.setPadding(new Insets(18, 24, 28, 24));
+                VBox content = new VBox(20);
+                content.setPadding(new Insets(20, 24, 30, 24));
 
                 content.getChildren().addAll(
                                 buildBreadcrumbRow(backToProjectsAction),
                                 buildTitleRow(backToProjectsAction),
                                 buildMetaRow(),
-                                buildMainContentRow());
+                                buildMainContentRow(backToProjectsAction));
 
                 ScrollPane scrollPane = new ScrollPane(content);
                 scrollPane.setFitToWidth(true);
@@ -440,17 +417,20 @@ public class ProjectTransparency1 {
                 return row;
         }
 
-        // ---- Main content: left column (gallery + overview) / right column (status + budget + receipts) ----
-        private HBox buildMainContentRow() {
-                HBox row = new HBox(18, buildLeftColumn(), buildRightColumn());
+        // ---- Main content: left column (gallery + overview + report card) / right column (status + budget + receipts) ----
+        private HBox buildMainContentRow(Runnable backToProjectsAction) {
+                HBox row = new HBox(18, buildLeftColumn(backToProjectsAction), buildRightColumn());
                 return row;
         }
 
         // =================================================================
-        // LEFT COLUMN: image gallery + project overview
+        // LEFT COLUMN: image gallery + project overview + report-an-issue
         // =================================================================
-        private VBox buildLeftColumn() {
-                VBox column = new VBox(18, buildImageGalleryCard(), buildOverviewCard());
+        private VBox buildLeftColumn(Runnable backToProjectsAction) {
+                VBox column = new VBox(20,
+                                buildImageGalleryCard(),
+                                buildOverviewCard(),
+                                buildReportCard(backToProjectsAction));
                 HBox.setHgrow(column, Priority.ALWAYS);
                 return column;
         }
@@ -466,10 +446,10 @@ public class ProjectTransparency1 {
                 };
 
                 ImageView mainImage = new ImageView(new Image(photoPaths[0]));
-                mainImage.setFitWidth(700);
-                mainImage.setFitHeight(340);
+                mainImage.setFitWidth(760);
+                mainImage.setFitHeight(360);
                 mainImage.setPreserveRatio(false);
-                Rectangle mainClip = new Rectangle(700, 340);
+                Rectangle mainClip = new Rectangle(760, 360);
                 mainClip.setArcWidth(14);
                 mainClip.setArcHeight(14);
                 mainImage.setClip(mainClip);
@@ -478,10 +458,10 @@ public class ProjectTransparency1 {
                 thumbRow.setAlignment(Pos.CENTER_LEFT);
                 for (int i = 0; i < photoPaths.length; i++) {
                         ImageView thumb = new ImageView(new Image(photoPaths[i]));
-                        thumb.setFitWidth(84);
-                        thumb.setFitHeight(60);
+                        thumb.setFitWidth(90);
+                        thumb.setFitHeight(64);
                         thumb.setPreserveRatio(false);
-                        Rectangle clip = new Rectangle(84, 60);
+                        Rectangle clip = new Rectangle(90, 64);
                         clip.setArcWidth(8);
                         clip.setArcHeight(8);
                         thumb.setClip(clip);
@@ -495,8 +475,8 @@ public class ProjectTransparency1 {
                         thumbRow.getChildren().add(thumbFrame);
                 }
 
-                VBox card = new VBox(12, mainImage, thumbRow);
-                card.setPadding(new Insets(16));
+                VBox card = new VBox(14, mainImage, thumbRow);
+                card.setPadding(new Insets(18));
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return card;
@@ -514,8 +494,8 @@ public class ProjectTransparency1 {
 
                 // TODO: replace with ProjectService.getProjectById(projectId)
                 GridPane grid = new GridPane();
-                grid.setHgap(24);
-                grid.setVgap(16);
+                grid.setHgap(28);
+                grid.setVgap(18);
                 grid.add(overviewField("Project ID", "PRJ-2025-001"), 0, 0);
                 grid.add(overviewField("Scheme", "Gram Panchayat Development Plan"), 1, 0);
                 grid.add(overviewField("Executing Agency", "Gram Panchayat Suryapuri"), 2, 0);
@@ -526,8 +506,8 @@ public class ProjectTransparency1 {
                 grid.add(overviewField("Ward/Area", "Ward No. 2"), 1, 2);
                 grid.add(overviewField("Status", "On Track"), 2, 2);
 
-                VBox card = new VBox(14, title, description, grid);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(16, title, description, grid);
+                card.setPadding(new Insets(20));
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return card;
@@ -544,13 +524,70 @@ public class ProjectTransparency1 {
                 return new VBox(4, labelText, valueText);
         }
 
+        /**
+         * NEW: "Report an Issue" call-to-action card. Also helps fill the
+         * empty space that used to sit below the Overview card on wide
+         * windows, since it stretches the same width as the gallery/overview
+         * cards above it.
+         */
+        private VBox buildReportCard(Runnable backToProjectsAction) {
+                Label icon = new Label("\uD83D\uDEA9");
+                icon.setStyle("-fx-font-size: 22px;");
+                StackPane iconCircle = new StackPane(icon);
+                iconCircle.setPrefSize(50, 50);
+                iconCircle.setMaxSize(50, 50);
+                iconCircle.setStyle("-fx-background-color: " + LIGHT_RED + "; -fx-background-radius: 25;");
+
+                Label title = new Label("Notice a problem with this project?");
+                title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+
+                Label body = new Label(
+                                "Poor quality work, delays, safety concerns, or anything else - let the Gram "
+                                                + "Panchayat know so it can be looked into.");
+                body.setWrapText(true);
+                body.setMaxWidth(420);
+                body.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                VBox textBox = new VBox(6, title, body);
+                HBox.setHgrow(textBox, Priority.ALWAYS);
+
+                Button reportBtn = new Button("\uD83D\uDEA9  Report an Issue");
+                reportBtn.setStyle(
+                                "-fx-background-color: " + DELAYED_RED + ";" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-background-radius: 8;" +
+                                                "-fx-padding: 12 20 12 20;" +
+                                                "-fx-cursor: hand;");
+                // The Runnable below rebuilds THIS exact project's Details scene,
+                // so ReportProject's "Cancel"/breadcrumb/post-submit navigation
+                // lands back here rather than at some generic dashboard.
+                reportBtn.setOnAction(e -> {
+                        Runnable backToProjectDetailsAction = () -> VillagerDashboard.homeStage
+                                        .setScene(getProjectDetailsScene(backToProjectsAction));
+                        ReportProject reportProject = new ReportProject();
+                        VillagerDashboard.homeStage.setScene(reportProject.getReportScene(backToProjectDetailsAction));
+                });
+
+                HBox row = new HBox(18, iconCircle, textBox, reportBtn);
+                row.setAlignment(Pos.CENTER_LEFT);
+
+                VBox card = new VBox(row);
+                card.setPadding(new Insets(24));
+                card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
+                                + "-fx-border-color: " + LIGHT_RED + "; -fx-border-radius: 12; -fx-border-width: 1;");
+                VBox.setVgrow(card, Priority.ALWAYS);
+                return card;
+        }
+
         // =================================================================
         // RIGHT COLUMN: Project Status donut + Budget Overview + Bill Receipts
         // =================================================================
         private VBox buildRightColumn() {
-                VBox column = new VBox(18, buildProjectStatusCard(), buildBudgetOverviewCard(), buildReceiptsCard());
-                column.setPrefWidth(340);
-                column.setMinWidth(340);
+                VBox column = new VBox(20, buildProjectStatusCard(), buildBudgetOverviewCard(), buildReceiptsCard());
+                column.setPrefWidth(360);
+                column.setMinWidth(360);
                 return column;
         }
 
@@ -558,8 +595,6 @@ public class ProjectTransparency1 {
                 Label title = new Label("Project Status");
                 title.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                // Hand-drawn donut on a Canvas, same technique as SarpanchDashboard.java's
-                // drawDonut(): JavaFX has no built-in donut chart, so we stroke arcs.
                 int completed = 78;
                 int inProgress = 0;
                 int remaining = 22;
@@ -580,6 +615,7 @@ public class ProjectTransparency1 {
                                 statusLegendRow(FOREST_DEEP, "Completed", completed + "%"),
                                 statusLegendRow(SECONDARY, "In Progress", inProgress + "%"),
                                 statusLegendRow(WARNING, "Remaining", remaining + "%"));
+                HBox.setHgrow(legend, Priority.ALWAYS);
 
                 HBox body = new HBox(20, donut, legend);
                 body.setAlignment(Pos.CENTER_LEFT);
@@ -589,8 +625,8 @@ public class ProjectTransparency1 {
                 banner.setStyle("-fx-background-color: " + LIGHT_GREEN + "; -fx-text-fill: " + FOREST_DEEP + "; "
                                 + "-fx-background-radius: 8; -fx-padding: 10; -fx-font-size: 11px; -fx-font-weight: bold;");
 
-                VBox card = new VBox(14, title, body, banner);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(16, title, body, banner);
+                card.setPadding(new Insets(20));
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return card;
@@ -600,16 +636,13 @@ public class ProjectTransparency1 {
                 double cx = 75, cy = 75, r = 60, stroke = 20;
                 g.setLineWidth(stroke);
                 g.setLineCap(StrokeLineCap.BUTT);
-                // Track (remaining, light)
                 g.setStroke(Color.web(WARNING, 0.35));
                 g.strokeArc(cx - r, cy - r, 2 * r, 2 * r, 0, 360, ArcType.OPEN);
-                // In Progress slice (blue), if any
                 if (inProgressPct > 0) {
                         g.setStroke(Color.web(SECONDARY));
                         g.strokeArc(cx - r, cy - r, 2 * r, 2 * r, 90 - (completedPct * 3.6), -(inProgressPct * 3.6),
                                         ArcType.OPEN);
                 }
-                // Completed slice (green), starting at 12 o'clock, clockwise
                 g.setStroke(Color.web(FOREST_DEEP));
                 g.strokeArc(cx - r, cy - r, 2 * r, 2 * r, 90, -(completedPct * 3.6), ArcType.OPEN);
         }
@@ -637,14 +670,13 @@ public class ProjectTransparency1 {
                 totalValue.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: " + FOREST_DEEP + ";");
                 VBox totalBox = new VBox(2, totalLabel, totalValue);
 
-                // TODO: replace with BudgetService.getBudgetSummary(projectId)
-                VBox bars = new VBox(14,
+                VBox bars = new VBox(16,
                                 budgetBar(FOREST_DEEP, "Spent", "\u20B94,87,500", 78),
                                 budgetBar(SECONDARY, "In Progress", "\u20B91,00,000", 16),
                                 budgetBar(WARNING, "Remaining", "\u20B937,500", 6));
 
-                VBox card = new VBox(14, title, totalBox, bars);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(16, title, totalBox, bars);
+                card.setPadding(new Insets(20));
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return card;
@@ -664,7 +696,7 @@ public class ProjectTransparency1 {
                 HBox topRow = new HBox(labelRow, topSpacer, amountText);
                 topRow.setAlignment(Pos.CENTER_LEFT);
 
-                double trackWidth = 290;
+                double trackWidth = 310;
                 Region track = new Region();
                 track.setPrefSize(trackWidth, 9);
                 track.setMaxSize(trackWidth, 9);
@@ -682,9 +714,7 @@ public class ProjectTransparency1 {
         }
 
         // =================================================================
-        // Budget Utilization Receipts - lets a villager see the bill /
-        // receipt uploaded by the Gram Panchayat for each spend against this
-        // project's budget.
+        // Budget Utilization Receipts
         // =================================================================
         private VBox buildReceiptsCard() {
                 Label title = new Label("Budget Utilization Receipts");
@@ -693,21 +723,19 @@ public class ProjectTransparency1 {
                 subtitle.setWrapText(true);
                 subtitle.setStyle("-fx-font-size: 10px; -fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                // TODO: replace with BudgetService.getUtilizationReceipts(projectId)
-                VBox list = new VBox(10,
+                VBox list = new VBox(12,
                                 receiptRow("Cement & Gravel Purchase", "\u20B91,85,000", "20 Mar 2026"),
                                 receiptRow("Labour Wages - March", "\u20B91,20,000", "05 Apr 2026"),
                                 receiptRow("Road Roller Rental", "\u20B995,000", "18 Apr 2026"),
                                 receiptRow("Drainage Pipes Purchase", "\u20B987,500", "02 May 2026"));
 
-                VBox card = new VBox(12, title, subtitle, list);
-                card.setPadding(new Insets(18));
+                VBox card = new VBox(14, title, subtitle, list);
+                card.setPadding(new Insets(20));
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
                 return card;
         }
 
-        /** One uploaded receipt: document icon, description + date, amount, and a "View Receipt" button. */
         private VBox receiptRow(String description, String amount, String date) {
                 Label iconLabel = new Label("\uD83E\uDDFE");
                 iconLabel.setStyle("-fx-text-fill: " + FOREST_DEEP + "; -fx-font-size: 14px;");
@@ -745,7 +773,7 @@ public class ProjectTransparency1 {
                 // TODO: open the actual uploaded receipt image/PDF (Firebase Storage URL)
 
                 VBox row = new VBox(8, topRow, viewReceiptBtn);
-                row.setPadding(new Insets(10));
+                row.setPadding(new Insets(12));
                 row.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 8; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 8; -fx-border-width: 1;");
                 return row;
