@@ -24,12 +24,11 @@ import javafx.stage.Screen;
  * ============================================================
  * NAVIGATION NOTE (read this first!)
  * ============================================================
- * This page now owns its OWN sidebar + header, exactly like
- * VillagerDashboard.java, and hands back a full Scene instead of
- * just a BorderPane. That's what lets VillagerDashboard swap the
- * WHOLE window over to this page with homeStage.setScene(...) and
- * back again, the same way SarpanchDashboard swaps to
- * ProjectTrackerPage.getProjectTrackerScene(Runnable) and back.
+ * This page owns its OWN sidebar + header, exactly like
+ * VillagerDashboard.java, and hands back a full Scene instead of just
+ * a BorderPane. That's what lets VillagerDashboard swap the WHOLE
+ * window over to this page with homeStage.setScene(...) and back
+ * again.
  *
  * The pattern, step by step:
  * 1. VillagerDashboard's "Project transparency" nav item creates a
@@ -37,13 +36,24 @@ import javafx.stage.Screen;
  * Runnable backToDashboardAction = () -> back();
  * 2. It hands that Runnable straight into this page:
  * homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
- * 3. This page never needs to import VillagerDashboard or know
- * anything about its fields - it just wires its OWN "Dashboard"
- * nav item to call backToDashboardAction.run() when clicked.
+ * 3. This page never needs to import VillagerDashboard's internals -
+ * it just wires its OWN "Dashboard" nav item to go there.
  *
- * Everything else here (5 stat cards, "All Projects" list with
- * filter tabs, hand-drawn Budget Overview donut, Recent Updates
- * timeline, Transparency & Accountability banner) is unchanged.
+ * BUGFIX NOTE (View Details <-> Project Details navigation):
+ * getProjectScene(Runnable) now stores the Runnable it's given in the
+ * backToDashboardAction FIELD below (not just a local parameter).
+ * Previously, back() - called when returning here from
+ * ProjectTransparency1 via the "View Details" -> "Back to Projects"
+ * loop - rebuilt this page with getProjectScene(null), which silently
+ * discarded the real "return to Dashboard" callback. Any further
+ * navigation to a sibling page (Complaints, Schemes, ...) from that
+ * rebuilt page then forwarded null instead of a working Runnable.
+ * back() now reuses the stored field instead, so the callback
+ * survives the round trip through ProjectTransparency1.
+ *
+ * Everything else here (5 stat cards, "All Projects" list with filter
+ * tabs, Budget Overview bars, Recent Updates timeline, Transparency &
+ * Accountability banner) is unchanged.
  * ============================================================
  */
 public class ProjectTransparency {
@@ -82,9 +92,17 @@ public class ProjectTransparency {
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
         /**
+         * BUGFIX: remembers the Runnable this page was given, so back() (called
+         * when returning from ProjectTransparency1) can rebuild this page
+         * WITHOUT losing the real "return to Dashboard" callback. See
+         * NAVIGATION NOTE above for the full story.
+         */
+        private Runnable backToDashboardAction;
+
+        /**
          * Builds this page's full Scene: its own sidebar (with "Project
          * transparency" highlighted as active) on the left, header + scrollable
-         * content on the right - exactly like VillagerDashboard.getDashboardScene().
+         * content on the right.
          *
          * @param backToDashboardAction what to run when this page's own
          *                               "Dashboard" nav item is clicked. Passed
@@ -93,6 +111,11 @@ public class ProjectTransparency {
          *                               VillagerDashboard.
          */
         public Scene getProjectScene(Runnable backToDashboardAction) {
+
+                // BUGFIX: store it before building anything, so back() (near the
+                // bottom of this file) can reuse the SAME callback later instead
+                // of rebuilding this page with a null one.
+                this.backToDashboardAction = backToDashboardAction;
 
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -106,8 +129,8 @@ public class ProjectTransparency {
         // =================================================================
         // SIDEBAR - identical structure/colors to VillagerDashboard.java,
         // except "Project transparency" is the active row here, and
-        // "Dashboard" calls the Runnable instead of homeStage.setScene(...)
-        // directly (this class never touches a Stage at all).
+        // "Dashboard" navigates directly to the real Dashboard scene
+        // (this class never touches a Stage anywhere else).
         // =================================================================
         private VBox buildSidebar(Runnable backToDashboardAction) {
                 VBox sidebar = new VBox();
@@ -149,58 +172,43 @@ public class ProjectTransparency {
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
                 // ---------------- Nav items ----------------
-                // "Dashboard" is the only item that needs to actually navigate
-                // anywhere from this page - it just calls the Runnable it was
-                // handed. The rest are inactive placeholders for now, same as
-                // they'd be on any page other than their own.
 
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
-                        // backToDashboardAction.run();
                         VillagerDashboard.homeStage.setScene(new VillagerDashboard().getDashboardScene());
-                        
                 });
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", true);
                 // Already on this page - no handler needed.
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
-                complaintsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                complaintsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
                 });
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
-                schemesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                schemesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
                 });
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
-                certificatesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                certificatesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
                 });
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
-                billsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                billsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
                 });
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
-                announcementsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                announcementsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
                 });
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
-                gramSabhaNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                gramSabhaNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
                 });
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
-                aiAssistantNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                aiAssistantNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
                 });
-                // TODO: wire these the same way once each page exposes its own
-                // getXScene(Runnable backToDashboardAction) method.
 
                 VBox navItems = new VBox(4,
                                 dashboardNav,
@@ -633,6 +641,17 @@ public class ProjectTransparency {
                                                 "-fx-cursor: hand;");
                 // TODO: wire this up to open a real ProjectDetailView(projectId)
 
+                // BUGFIX: "backAction" calls back() on THIS instance, and back()
+                // (below) rebuilds this page using the backToDashboardAction
+                // FIELD - captured earlier in getProjectScene(...) - instead of
+                // discarding it with getProjectScene(null). This is what keeps
+                // the "Dashboard" callback alive across a View Details -> Back
+                // to Projects round trip.
+                viewDetails.setOnAction(e -> {
+                        Runnable backAction = () -> back();
+                        VillagerDashboard.homeStage.setScene(new ProjectTransparency1().getProjectDetailsScene(backAction));
+                });
+
                 VBox rightBlock = new VBox(6, percentLabel, completeLabel, bar, viewDetails);
                 rightBlock.setAlignment(Pos.CENTER_RIGHT);
                 rightBlock.setPrefWidth(140);
@@ -803,8 +822,15 @@ public class ProjectTransparency {
                 return banner;
         }
 
+        /**
+         * BUGFIX: previously called getProjectScene(null), which discarded the
+         * real backToDashboardAction this page was originally opened with.
+         * Now reuses the value captured in the field during
+         * getProjectScene(...), so the "Dashboard" callback keeps working even
+         * after a View Details -> Back to Projects round trip.
+         */
         private void back() {
-                VillagerDashboard.homeStage.setTitle("GramConnect - Villager Dashboard");
-                VillagerDashboard.homeStage.setScene(getProjectScene(null));
+                VillagerDashboard.homeStage.setTitle("GramConnect - Project Transparency");
+                VillagerDashboard.homeStage.setScene(getProjectScene(backToDashboardAction));
         }
 }
