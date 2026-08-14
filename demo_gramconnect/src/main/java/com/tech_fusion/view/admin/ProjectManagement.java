@@ -50,8 +50,7 @@ public class ProjectManagement extends Application {
     private static final String SIDEBAR_BOT   = "#A9D8BD";
     private static final String FONT_FAMILY   = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-    private static final String BACKGROUND_IMAGE_PATH =
-            "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+    private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
     private Label selectedNavItem;
 
@@ -121,15 +120,16 @@ public class ProjectManagement extends Application {
         avatarCircle.setFill(Color.web(FOREST_DEEP));
         avatarCircle.setStroke(Color.web(SAFFRON_MAIN, 0.85));
         avatarCircle.setStrokeWidth(2.5);
-        Label avatarInitials = new Label("SP");
+        Label avatarInitials = new Label("SD");
         avatarInitials.setFont(Font.font("Inter", FontWeight.BOLD, 16));
         avatarInitials.setTextFill(Color.WHITE);
         avatar.getChildren().addAll(avatarCircle, avatarInitials);
 
         VBox nameBox = new VBox(2);
-        Label name = new Label("Sarpanch Patil");
-        name.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label role = new Label("Gram Panchayat");
+        Label name = new Label("Officer Sameer Deshmukh");
+        name.setWrapText(true);
+        name.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 17px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        Label role = new Label("BDO, Gram Panchayat");
         role.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65); -fx-letter-spacing: 0.05em;");
         nameBox.getChildren().addAll(name, role);
 
@@ -170,13 +170,11 @@ public class ProjectManagement extends Application {
         reportsNav.setOnMouseClicked(e -> toReportsAnalytics.run());
 
         nav.getChildren().addAll(
-                dashboardNav,
-                projectNav,
-                budgetNav,
-                complaintNav,
-                reportsNav,
-                navItem("\uD83D\uDCC4", "Citizen Services", false),
-                navItem("\uD83D\uDCE2", "Announcements", false)
+            dashboardNav,
+            projectNav,
+            budgetNav,
+            complaintNav,
+            reportsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -187,20 +185,6 @@ public class ProjectManagement extends Application {
         divider.setPrefHeight(1);
         divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
 
-        Label createBtn = new Label("+   Create Project");
-        createBtn.setMaxWidth(Double.MAX_VALUE);
-        createBtn.setAlignment(Pos.CENTER);
-        createBtn.setPadding(new Insets(14, 16, 14, 16));
-        String createBase =
-                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-background-radius: 12; -fx-text-fill: white;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 700;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4); -fx-cursor: hand;";
-        createBtn.setStyle(createBase);
-        createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
-        createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
-
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
         smallLinks.getChildren().addAll(
@@ -208,7 +192,7 @@ public class ProjectManagement extends Application {
                 footerLink("\u2753", "Support")
         );
 
-        footer.getChildren().addAll(divider, createBtn, smallLinks);
+        footer.getChildren().addAll(divider, smallLinks);
 
         sidebar.getChildren().addAll(header, nav, footer);
         return sidebar;
@@ -370,20 +354,8 @@ public class ProjectManagement extends Application {
         subtitleRow.getChildren().addAll(subtitle, subtitleStrong);
         text.getChildren().addAll(title, subtitleRow);
 
-        Label export = new Label("\u2B07  Export Report");
-        export.setPadding(new Insets(12, 18, 12, 18));
-        export.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-border-color: white; -fx-border-radius: 10;" +
-                "-fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px;" +
-                "-fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + "; -fx-cursor: hand;");
-
-        Label createProject = new Label("+  Create Project");
-        createProject.setPadding(new Insets(12, 18, 12, 18));
-        createProject.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-text-fill: white; -fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 13px; -fx-font-weight: 700; -fx-cursor: hand;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4);");
-
-        HBox actions = new HBox(12, export, createProject);
+    
+        HBox actions = new HBox(12);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
         Region spacer = new Region();

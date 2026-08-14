@@ -56,8 +56,7 @@ public class ReportsAnalytics extends Application {
     private static final String SIDEBAR_BOT   = "#A9D8BD";
     private static final String FONT_FAMILY   = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-    private static final String BACKGROUND_IMAGE_PATH =
-            "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+    private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
     private Label selectedNavItem;
 
@@ -174,13 +173,11 @@ public class ReportsAnalytics extends Application {
         HBox reportsNav = navItem("\uD83D\uDCCA", "Reports & Analytics", true);   // <-- active on this page
 
         nav.getChildren().addAll(
-                dashboardNav,
-                projectNav,
-                budgetNav,
-                complaintNav,
-                reportsNav,
-                navItem("\uD83D\uDCC4", "Citizen Services", false),
-                navItem("\uD83D\uDCE2", "Announcements", false)
+            dashboardNav,
+            projectNav,
+            budgetNav,
+            complaintNav,
+            reportsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -189,21 +186,7 @@ public class ReportsAnalytics extends Application {
 
         Region divider = new Region();
         divider.setPrefHeight(1);
-        divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
-
-        Label createBtn = new Label("+   Create Project");
-        createBtn.setMaxWidth(Double.MAX_VALUE);
-        createBtn.setAlignment(Pos.CENTER);
-        createBtn.setPadding(new Insets(14, 16, 14, 16));
-        String createBase =
-                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-background-radius: 12; -fx-text-fill: white;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 700;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4); -fx-cursor: hand;";
-        createBtn.setStyle(createBase);
-        createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
-        createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+        divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent)");
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -211,8 +194,7 @@ public class ReportsAnalytics extends Application {
                 footerLink("\u2699", "Settings"),
                 footerLink("\u2753", "Support")
         );
-
-        footer.getChildren().addAll(divider, createBtn, smallLinks);
+        footer.getChildren().addAll(divider,  smallLinks);
 
         sidebar.getChildren().addAll(header, nav, footer);
         return sidebar;

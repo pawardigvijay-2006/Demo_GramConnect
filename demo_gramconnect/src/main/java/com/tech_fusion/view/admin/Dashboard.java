@@ -55,8 +55,7 @@ public class Dashboard extends Application {
     private static final String SIDEBAR_BOT   = "#A9D8BD";
     private static final String FONT_FAMILY   = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-    private static final String BACKGROUND_IMAGE_PATH =
-            "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+    private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
     private Label selectedNavItem;
 
@@ -177,13 +176,11 @@ public class Dashboard extends Application {
         reportsNav.setOnMouseClicked(e -> toReportsAnalytics.run());
 
         nav.getChildren().addAll(
-                dashboardNav,
-                projectNav,
-                budgetNav,
-                complaintNav,
-                reportsNav,
-                navItem("\uD83D\uDCC4", "Citizen Services", false),
-                navItem("\uD83D\uDCE2", "Announcements", false)
+            dashboardNav,
+            projectNav,
+            budgetNav,
+            complaintNav,
+            reportsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -194,19 +191,7 @@ public class Dashboard extends Application {
         divider.setPrefHeight(1);
         divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
 
-        Label createBtn = new Label("+   Create Project");
-        createBtn.setMaxWidth(Double.MAX_VALUE);
-        createBtn.setAlignment(Pos.CENTER);
-        createBtn.setPadding(new Insets(14, 16, 14, 16));
-        String createBase =
-                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-background-radius: 12; -fx-text-fill: white;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 700;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4); -fx-cursor: hand;";
-        createBtn.setStyle(createBase);
-        createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
-        createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+        
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -215,7 +200,7 @@ public class Dashboard extends Application {
                 footerLink("\u2753", "Support")
         );
 
-        footer.getChildren().addAll(divider, createBtn, smallLinks);
+        footer.getChildren().addAll(divider,smallLinks);
 
         sidebar.getChildren().addAll(header, nav, footer);
         return sidebar;
@@ -373,27 +358,10 @@ public class Dashboard extends Application {
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
         text.getChildren().addAll(title, subtitle);
 
-        Label createProject = new Label("+  Create Project");
-        createProject.setPadding(new Insets(12, 18, 12, 18));
-        createProject.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-text-fill: white; -fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 13px; -fx-font-weight: 700; -fx-cursor: hand;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4);");
-        createProject.setOnMouseEntered(e -> createProject.setStyle(
-                "-fx-background-color: linear-gradient(to right, " + FOREST_DEEP + ", " + FOREST_DEEP + ");" +
-                "-fx-text-fill: white; -fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 13px; -fx-font-weight: 700; -fx-cursor: hand;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 14, 0.15, 0, 5); -fx-translate-y: -1;"));
-        createProject.setOnMouseExited(e -> createProject.setStyle(
-                "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
-                "-fx-text-fill: white; -fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 13px; -fx-font-weight: 700; -fx-cursor: hand;" +
-                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.35), 10, 0.1, 0, 4);"));
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox headerRow = new HBox(20, text, spacer, createProject);
+        HBox headerRow = new HBox(20, text, spacer);
         headerRow.setAlignment(Pos.CENTER_LEFT);
         return headerRow;
     }
@@ -404,7 +372,7 @@ public class Dashboard extends Application {
     private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
 
-        VBox totalCard = statCard("TOTAL PROJECTS", "142", "\uD83D\uDCBC", "rgba(11,61,46,0.10)");
+        VBox totalCard = statCard ("TOTAL PROJECTS", "142","\uD83D\uDCBC", "rgba(11,61,46,0.10)");
         Label totalFooter = new Label("\u2197  12% vs last month");
         totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
         totalCard.getChildren().add(totalFooter);
