@@ -141,12 +141,28 @@ public class ProjectTrackerPage {
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        citizenServicesNav.setOnMouseClicked(e -> {
+            System.out.println("Citizen Services clicked");
+            CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
+        });
+
+        HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
+        announcementsNav.setOnMouseClicked(e -> {
+            System.out.println("Announcements clicked");
+            AnnouncementsPage announcementsPage = new AnnouncementsPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
+            SarpanchDashboard.myStage.setScene(announcementsPage.getAnnouncementsScene(backToDashboardAction));
+        });
+
         nav.getChildren().addAll(
             dashboardNav,
             navItem("\uD83D\uDDC2", "Project Tracker", true),
             complaintsNav,
-            navItem("\uD83D\uDCC4", "Citizen Services", false),
-            navItem("\uD83D\uDCE2", "Announcements", false)
+            citizenServicesNav,
+            announcementsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 

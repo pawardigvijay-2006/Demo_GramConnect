@@ -181,13 +181,37 @@ public class SarpanchDashboard extends Application {
             myStage.setScene(sarpanchComplaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        citizenServicesNav.setOnMouseClicked(e -> {
+            System.out.println("Citizen Services clicked");
+            CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
+            Runnable backToDashboardAction = () -> {
+                back();
+            };
+
+            myStage.setTitle("GramConnect - Citizen Services");
+            myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
+        });
+
+        HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
+        announcementsNav.setOnMouseClicked(e -> {
+            System.out.println("Announcements clicked");
+            AnnouncementsPage announcementsPage = new AnnouncementsPage();
+            Runnable backToDashboardAction = () -> {
+                back();
+            };
+
+            myStage.setTitle("GramConnect - Announcements");
+            myStage.setScene(announcementsPage.getAnnouncementsScene(backToDashboardAction));
+        });
+
         nav.getChildren().addAll(
             navItem("\u25A6", "Dashboard", true),
             projectTrackerNav,
             //navItem("\u26A0", "Complaints", false),
             complaintNav,
-            navItem("\uD83D\uDCC4", "Citizen Services", false),
-            navItem("\uD83D\uDCE2", "Announcements", false)   // NEW SECTION
+            citizenServicesNav,
+            announcementsNav   
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -854,5 +878,3 @@ public class SarpanchDashboard extends Application {
     }
 
 }
-
-
