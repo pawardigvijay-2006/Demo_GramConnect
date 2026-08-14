@@ -383,7 +383,7 @@ public class GramSabha {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(46, 46);
                 iconChip.setMaxSize(46, 46);
-                iconChip.setStyle("-fx-background-color: " + rgba(iconColor, 0.12) + "; -fx-background-radius: 12;");
+                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 12;");
 
                 Label labelLabel = new Label(label);
                 labelLabel.setStyle(
@@ -440,7 +440,7 @@ public class GramSabha {
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(48, 48);
                 iconChip.setMaxSize(48, 48);
-                iconChip.setStyle("-fx-background-color: " + rgba(FOREST_DEEP, 0.12) + "; -fx-background-radius: 12;");
+                iconChip.setStyle("-fx-background-color: " + FOREST_DEEP + "; -fx-background-radius: 12;");
 
                 Label meetingTitle = new Label("Gram Sabha Meeting \u2013 June 2024");
                 meetingTitle.setStyle(

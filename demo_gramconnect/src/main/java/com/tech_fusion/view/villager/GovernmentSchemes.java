@@ -265,76 +265,93 @@ public class GovernmentSchemes{
     // globe icon between the search box and the notification bell)
     // =================================================================
     private HBox buildHeader() {
-        HBox header = new HBox(16);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(14, 28, 14, 28));
-        header.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.92);"
-                        + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
-                        + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
+                HBox header = new HBox(16);
+                header.setAlignment(Pos.CENTER_LEFT);
+                header.setPadding(new Insets(14, 28, 14, 28));
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
 
-        HBox searchBox = new HBox(8);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(0, 16, 0, 16));
-        searchBox.setPrefHeight(38);
-        HBox.setHgrow(searchBox, Priority.ALWAYS);
-        searchBox.setStyle(
-                "-fx-background-color: " + BACKGROUND + ";"
-                        + "-fx-background-radius: 20;"
-                        + "-fx-border-color: rgba(11,61,46,0.10);"
-                        + "-fx-border-radius: 20;"
-                        + "-fx-border-width: 1;");
-        Label searchIcon = new Label("\uD83D\uDD0D");
-        searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
-        TextField search = new TextField();
-        search.setPromptText("Search schemes, departments, or benefits...");
-        search.setStyle(
-                "-fx-background-color: transparent;"
-                        + "-fx-font-family: " + FONT_FAMILY + ";"
-                        + "-fx-font-size: 12px;"
-                        + "-fx-text-fill: " + FOREST_DEEP + ";"
-                        + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
-        HBox.setHgrow(search, Priority.ALWAYS);
-        searchBox.getChildren().addAll(searchIcon, search);
+                HBox searchBox = new HBox(8);
+                searchBox.setAlignment(Pos.CENTER_LEFT);
+                searchBox.setPadding(new Insets(0, 16, 0, 16));
+                searchBox.setPrefHeight(38);
+                searchBox.setPrefWidth(320);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
+                Label searchIcon = new Label("\uD83D\uDD0D");
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
+                TextField search = new TextField();
+                search.setPromptText("Search projects...");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
 
-        StackPane globe = new StackPane(new Label("\uD83C\uDF10"));
-        globe.setPrefSize(34, 34);
-        globe.setMaxSize(34, 34);
-        ((Label) globe.getChildren().get(0)).setStyle("-fx-font-size: 15px;");
-        globe.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 999;");
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        StackPane bell = new StackPane(new Label("\uD83D\uDD14"));
-        bell.setPrefSize(38, 38);
-        bell.setMaxSize(38, 38);
-        ((Label) bell.getChildren().get(0)).setStyle("-fx-font-size: 15px;");
-        bell.setStyle(
-                "-fx-background-color: " + BACKGROUND + ";"
-                        + "-fx-background-radius: 999;"
-                        + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label bellIcon = new Label("\uD83D\uDD14");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
-        StackPane avatar = new StackPane(new Label("RP"));
-        avatar.setPrefSize(34, 34);
-        avatar.setMaxSize(34, 34);
-        avatar.setStyle(
-                "-fx-background-color: " + FOREST_DEEP + ";"
-                        + "-fx-background-radius: 18;"
-                        + "-fx-border-color: " + SAFFRON_MAIN + ";"
-                        + "-fx-border-width: 2;"
-                        + "-fx-border-radius: 18;");
-        ((Label) avatar.getChildren().get(0))
-                .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
+                StackPane avatar = new StackPane(new Label("RP"));
+                avatar.setPrefSize(34, 34);
+                avatar.setMaxSize(34, 34);
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
+                ((Label) avatar.getChildren().get(0))
+                                .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
 
-        Label name = new Label("Ramesh Patel");
-        name.setStyle(
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
-                        + TEXT_PRIMARY + ";");
+                Label name = new Label("Ramesh Patil");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label role = new Label("Villager, Suryapuri");
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
+                VBox nameBox = new VBox(name, role);
 
-        HBox profile = new HBox(8, avatar, name);
-        profile.setAlignment(Pos.CENTER_LEFT);
+                Label chevron = new Label("\u25BE");
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-        header.getChildren().addAll(searchBox, globe, bell, profile);
-        return header;
-    }
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
+                profile.setAlignment(Pos.CENTER_LEFT);
+
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
+                return header;
+        }
 
     // =================================================================
     // SCROLLABLE CONTENT
@@ -460,7 +477,7 @@ public class GovernmentSchemes{
         StackPane iconChip = new StackPane(icon);
         iconChip.setPrefSize(36, 36);
         iconChip.setMaxSize(36, 36);
-        iconChip.setStyle("-fx-background-color: " + rgba(FOREST_DEEP, 0.10) + "; -fx-background-radius: 10;");
+        iconChip.setStyle("-fx-background-color: " + FOREST_DEEP + "; -fx-background-radius: 10;");
 
         Label title = new Label("Popular Schemes");
         title.setStyle(
