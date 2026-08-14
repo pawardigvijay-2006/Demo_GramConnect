@@ -477,7 +477,7 @@ public class GovernmentSchemes{
         StackPane iconChip = new StackPane(icon);
         iconChip.setPrefSize(36, 36);
         iconChip.setMaxSize(36, 36);
-        iconChip.setStyle("-fx-background-color: " + rgba(FOREST_DEEP, 0.10) + "; -fx-background-radius: 10;");
+        iconChip.setStyle("-fx-background-color: " + FOREST_DEEP + "; -fx-background-radius: 10;");
 
         Label title = new Label("Popular Schemes");
         title.setStyle(
