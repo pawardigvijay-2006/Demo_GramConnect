@@ -1,9 +1,7 @@
-package com.sarpanch.view;
+package com.tech_fusion.view.sarpanch;
 
 import java.io.File;
 import java.util.List;
-
-import com.sarpanch.model.Complaint;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

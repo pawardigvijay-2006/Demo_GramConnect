@@ -1,4 +1,4 @@
-package com.sarpanch.model;
+package com.tech_fusion.view.sarpanch;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
