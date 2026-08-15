@@ -46,7 +46,7 @@ public class GovSchemes {
                 content.setPadding(new Insets(32, 40, 48, 40));
 
                 content.getChildren().addAll(
-                                buildTitleRow(),
+                                buildTitleRow(newSchemeAction),
                                 buildSummaryCards(),
                                 buildMainArea());
 
@@ -56,7 +56,7 @@ public class GovSchemes {
         // ============================================================
         // TITLE ROW — "Scheme Management" + New Scheme button
         // ============================================================
-        private static HBox buildTitleRow() {
+        private static HBox buildTitleRow(Runnable newSchemeAction) {
 
                 HBox titleRow = new HBox();
                 titleRow.setAlignment(Pos.CENTER_LEFT);
@@ -99,7 +99,7 @@ public class GovSchemes {
                 newSchemeBtn.setOnMouseExited(e -> newSchemeBtn.setStyle(base));
 
                 newSchemeBtn.setOnAction(e -> {
-                               // newSchemeAction.run();
+                               newSchemeAction.run();
                 });
 
                 // Future purpose: open a form to add a new scheme (name, category,

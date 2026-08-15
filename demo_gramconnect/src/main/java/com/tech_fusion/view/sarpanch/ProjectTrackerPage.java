@@ -4,6 +4,7 @@ import java.io.File;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -27,9 +28,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 
 public class ProjectTrackerPage {
+
+        Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
 
     /* ---------- Color palette (kept identical to SarpanchDashboard) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -84,7 +89,7 @@ public class ProjectTrackerPage {
 
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================
