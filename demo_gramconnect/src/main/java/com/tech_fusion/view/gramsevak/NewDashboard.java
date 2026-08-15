@@ -38,6 +38,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 public class NewDashboard extends Application {
+        public static Stage homeStage;
         /* ---------- Color palette (from the HTML template) ---------- */
         private static final String FOREST_DEEP = "#0B3D2E";
         private static final String FOREST_LIGHT = "#0F4736";
@@ -52,12 +53,16 @@ public class NewDashboard extends Application {
 
         private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-        private static final String BACKGROUND_IMAGE_PATH = "D:/Downloads/backgroundfinalimage.png/";
+        private static final String BACKGROUND_IMAGE_PATH = "assets\\images\\backgroundfinalimage.png";
         BorderPane contentArea;
         private HBox activeNavItem;
+        private Label activeNavText;
+        private Label activeNavIcon;
 
         @Override
         public void start(Stage stage) throws Exception {
+                // stage = homeStage;
+
                 BorderPane root = new BorderPane();
                 Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
                 root.setBackground(new Background(new BackgroundImage(backgroundImage,
@@ -84,6 +89,28 @@ public class NewDashboard extends Application {
                 stage.setScene(scene);
                 stage.show();
         }
+        /*
+         * public Scene getDashboardScene() {
+         * 
+         * root = new BorderPane();
+         * 
+         * root.setStyle(
+         * "-fx-background-color: " + BACKGROUND + ";");
+         * 
+         * // Sidebar remains fixed for every page that swaps content via
+         * // root.setCenter(...) instead of a full Scene swap.
+         * root.setLeft(buildSidebar());
+         * 
+         * // Main area
+         * mainArea = buildMainArea();
+         * 
+         * root.setCenter(mainArea);
+         * 
+         * dashboardScene = new Scene(root, 1500, 850);
+         * 
+         * return dashboardScene;
+         * }
+         */
 
         private ScrollPane createPage(Node page) {
 
@@ -92,12 +119,8 @@ public class NewDashboard extends Application {
                 scrollPane.setFitToWidth(true);
                 scrollPane.setFitToHeight(false);
 
-                scrollPane.setHbarPolicy(
-                                ScrollPane.ScrollBarPolicy.NEVER);
-
-                scrollPane.setVbarPolicy(
-                                ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
+                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);               
                 scrollPane.setStyle(
                                 "-fx-background-color: transparent;" +
                                                 "-fx-background: transparent;" +
@@ -159,8 +182,9 @@ public class NewDashboard extends Application {
                                         contentArea.setCenter(createPage(buildMainContent()));
                                 }),
                                 navItem("\uD83D\uDDC2", "Bill Management", false, () -> {
-                                        contentArea.setCenter(createPage(BillManagement.getBillManageContent()));
+                                        showBillManagement();
                                 }),
+
                                 navItem("\uD83D\uDCB0", "Document Management", false, () -> {
                                         contentArea.setCenter(createPage(DocumentsManage.getDocumentManageContent()));
                                 }),
@@ -168,11 +192,9 @@ public class NewDashboard extends Application {
                                         contentArea.setCenter(createPage(Complaints.getComplaintManagement()));
                                 }),
                                 navItem("📄", "Government Schemes", false, () -> {
-                                        contentArea.setCenter(createPage( GovSchemes.getSchemeContent(() -> {
-                                         contentArea.setCenter(new ScrollPane(NewScheme.getNewSchemeContent()));
-                                                                        })));
+                                        showGovSchemes();
                                 })
-                // navItem("\uD83D\uDCE2", "Announcements", false) // NEW SECTION
+
                 );
                 VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -198,47 +220,81 @@ public class NewDashboard extends Application {
         }
 
         private HBox navItem(String icon, String text, boolean active, Runnable action) {
+
                 HBox item = new HBox(14);
                 item.setAlignment(Pos.CENTER_LEFT);
                 item.setPadding(new Insets(14, 16, 14, 16));
                 item.setMaxWidth(Double.MAX_VALUE);
 
                 Label ic = new Label(icon);
-                ic.setStyle("-fx-font-size: 17px; -fx-text-fill: " + (active ? SAFFRON_MAIN : FOREST_DEEP) + ";");
-
                 Label lbl = new Label(text);
-                lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px;" +
-                                "-fx-font-weight: " + (active ? "800" : "600") + ";" +
-                                "-fx-text-fill: " + (active ? SAFFRON_MAIN : "rgba(11,61,46,0.80)") + ";" +
-                                "-fx-letter-spacing: 0.05em;");
 
                 item.getChildren().addAll(ic, lbl);
-                // Navigation across pages
+
+                // Normal style
+                String normalItem = "-fx-background-radius: 10;" +
+                                "-fx-background-color: transparent;" +
+                                "-fx-cursor: hand;";
+
+                String normalText = "-fx-font-family: " + FONT_FAMILY + ";" +
+                                "-fx-font-size: 14px;" +
+                                "-fx-font-weight: 600;" +
+                                "-fx-text-fill: rgba(11,61,46,0.80);";
+
+                String normalIcon = "-fx-font-size: 17px;" +
+                                "-fx-text-fill: " + FOREST_DEEP + ";";
+
+                // Active orange style
+                String activeItem = "-fx-background-radius: 10;" +
+                                "-fx-background-color: rgba(255,255,255,0.65);" +
+                                "-fx-border-color: " + SAFFRON_MAIN + ";" +
+                                "-fx-border-width: 0 0 0 5;" +
+                                "-fx-border-radius: 10;" +
+                                "-fx-cursor: hand;";
+
+                String activeText = "-fx-font-family: " + FONT_FAMILY + ";" +
+                                "-fx-font-size: 14px;" +
+                                "-fx-font-weight: 800;" +
+                                "-fx-text-fill: " + SAFFRON_MAIN + ";";
+
+                String activeIcon = "-fx-font-size: 17px;" +
+                                "-fx-text-fill: " + SAFFRON_MAIN + ";";
+
+                // Initial active item
+                if (active) {
+                        item.setStyle(activeItem);
+                        lbl.setStyle(activeText);
+                        ic.setStyle(activeIcon);
+
+                        activeNavItem = item;
+                        activeNavText = lbl;
+                        activeNavIcon = ic;
+
+                } else {
+                        item.setStyle(normalItem);
+                        lbl.setStyle(normalText);
+                        ic.setStyle(normalIcon);
+                }
+                // When clicked
                 item.setOnMouseClicked(e -> {
+                        // STEP 1: Make previous button normal
+                        if (activeNavItem != null) {
+                                activeNavItem.setStyle(normalItem);
+                                activeNavText.setStyle(normalText);
+                                activeNavIcon.setStyle(normalIcon);
+                        }
+                        // STEP 2: Make clicked button orange
+                        item.setStyle(activeItem);
+                        lbl.setStyle(activeText);
+                        ic.setStyle(activeIcon);
+                        // STEP 3: Remember clicked button
+                        activeNavItem = item;
+                        activeNavText = lbl;
+                        activeNavIcon = ic;
+                        // STEP 4: Open page
                         action.run();
                 });
-
-                if (active) {
-                        // active pill with saffron indicator bar on the left
-                        Region bar = new Region();
-                        bar.setPrefWidth(6);
-                        bar.setMinWidth(6);
-                        bar.setStyle("-fx-background-color: " + SAFFRON_MAIN + "; -fx-background-radius: 8 0 0 8;" +
-                                        "-fx-effect: dropshadow(gaussian, rgba(224,122,31,0.6), 8, 0.3, 0, 0);");
-                        HBox wrap = new HBox(bar, item);
-                        HBox.setHgrow(item, Priority.ALWAYS);
-                        wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
-                                        "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
-                        wrap.setMaxWidth(Double.MAX_VALUE);
-                        return wrap;
-                } else {
-                        String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
-                        item.setStyle(base);
-                        item.setOnMouseEntered(e -> item.setStyle(
-                                        "-fx-background-radius: 10; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-                        item.setOnMouseExited(e -> item.setStyle(base));
-                        return item;
-                }
+                return item;
         }
 
         private HBox footerLink(String icon, String text) {
@@ -259,6 +315,41 @@ public class NewDashboard extends Application {
                 return link;
         }
 
+        private void showGovSchemes() {
+                contentArea.setCenter(createPage(GovSchemes.getSchemeContent(() -> {
+                        showNewScheme();
+                })));
+        }
+
+        private void showNewScheme() {
+                contentArea.setCenter(createPage(NewScheme.getNewSchemeContent(() -> {
+                        showGovSchemes();
+                })));
+        }
+
+        private void showBillManagement() {
+                contentArea.setCenter(createPage(BillManagement.getBillManageContent(
+                                () -> showPropertyBill()
+                // () -> showWaterBill()
+                )));
+        }
+
+        private void showPropertyBill() {
+                contentArea.setCenter(createPage(PropertyTaxBill.getPropertyTaxBillContent(
+                                () -> showBillManagement())));
+        }
+        /*
+         * private void showWaterBill() {
+         * contentArea.setCenter(
+         * createPage(
+         * GenerateWaterBill.getWaterBillContent(
+         * () -> showBillManagement()
+         * )
+         * )
+         * );
+         * }
+         */ // add after adding water bill page
+
         /*
          * ============================================================
          * TOP NAVIGATION BAR
@@ -274,7 +365,7 @@ public class NewDashboard extends Application {
                                                 "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
                                                 +
                                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
-                Image projectLogo = new Image("assets\\icon\\gc logo.jpeg");
+                Image projectLogo = new Image("assets\\images\\gc logo.jpeg");
                 ImageView imgView = new ImageView(projectLogo);
                 imgView.setFitHeight(50);
                 imgView.setFitWidth(60);
@@ -828,16 +919,13 @@ public class NewDashboard extends Application {
                 VBox textBox = new VBox(3);
 
                 Label title = new Label(titleText);
-
                 title.setStyle(
                                 "-fx-font-size: 13px;" +
                                                 "-fx-font-weight: bold;" +
                                                 "-fx-text-fill: #285B5B;");
 
                 Label detail = new Label(detailText);
-
                 detail.setWrapText(true);
-
                 detail.setStyle(
                                 "-fx-font-size: 11px;" +
                                                 "-fx-text-fill: #7A8A87;");
@@ -868,13 +956,12 @@ public class NewDashboard extends Application {
 
                 return notice;
         }
-        /*
-         * ============================================================
+  
+        /* ============================================================
          * HELPERS
-         * ============================================================
-         */
+        ============================================================*/
 
-        /** Glass-panel style shared by all cards. */
+      /** Glass-panel style shared by all cards. */
         private String cardStyle(int radius) {
                 return "-fx-background-color: rgba(255,255,255,0.88);" +
                                 "-fx-background-radius: " + radius + ";" +
@@ -883,7 +970,6 @@ public class NewDashboard extends Application {
                                 "-fx-border-width: 1;" +
                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
         }
-
         /** Hover lift effect matching the HTML .stat-card-shadow:hover. */
         private void addHoverLift(Region card, int radius) {
                 String base = cardStyle(radius);
@@ -897,7 +983,6 @@ public class NewDashboard extends Application {
                 card.setOnMouseEntered(e -> card.setStyle(hover));
                 card.setOnMouseExited(e -> card.setStyle(base));
         }
-
         /** Convert #RRGGBB hex to rgba(r,g,b,a) CSS string. */
         private String rgba(String hex, double alpha) {
                 int r = Integer.parseInt(hex.substring(1, 3), 16);
