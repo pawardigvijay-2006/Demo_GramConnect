@@ -1,6 +1,5 @@
 package com.tech_fusion.view.villager;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,7 +10,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
 
 /**
  * GramConnect - Certificates
@@ -27,14 +25,17 @@ import javafx.stage.Stage;
  * saffron ring). cardStyle()/addHoverLift()/rgba() are copied
  * verbatim so this file stays self-contained.
  *
- * Per your request, this page only offers the 4 certificate types
- * you asked for - Birth, Death, Marriage, and Residential - instead
- * of all 8 shown in the reference screenshot.
+ * NEW: each "Apply Now" button now navigates to CertificateApply.java,
+ * the same way every other page-to-page jump in this app works - a
+ * Runnable is built on the spot that knows how to rebuild THIS exact
+ * scene (getCertificatesScene(backToDashboardAction) again), and is
+ * handed to CertificateApply as "backToCertificatesAction" so its
+ * breadcrumb/back button/post-submit flow always lands back on the
+ * Certificates page, not some generic destination.
  *
- * Wired the same way as ProjectTransparency/GovernmentSchemes:
- * VillagerDashboard's handleNavigation() would call
- * root.setCenter(new Certificates().getCertificatesPane());
- * for the "Certificates" sidebar item.
+ * Per your earlier request, this page only offers the 4 certificate
+ * types you asked for - Birth, Death, Marriage, and Residential -
+ * instead of all 8 shown in the original reference screenshot.
  *
  * ARCHITECTURE NOTE: The application table below is hardcoded mock
  * data, marked with a TODO showing where a real CertificateService
@@ -43,8 +44,7 @@ import javafx.stage.Stage;
  */
 public class Certificates {
 
-        // ================= COLORS (copied from VillagerDashboard.java)
-        // =================
+        // ================= COLORS (copied from VillagerDashboard.java) =================
         private static final String FOREST_DEEP = "#0B3D2E";
         private static final String FOREST_LIGHT = "#0F4736";
         private static final String SAFFRON_MAIN = "#E07A1F";
@@ -64,33 +64,16 @@ public class Certificates {
         private static final String SIDEBAR_BOT = "#A9D8BD";
         private static final String DELAYED_RED = "#D94C38";
 
-        // Kept only for standalone preview - the real app builds this pane inside
-        // VillagerDashboard's existing root/sidebar via getCertificatesPane().
-        // @Override
-        // public void start(Stage stage) {
-        // BorderPane root = new BorderPane();
-        // root.setStyle("-fx-background-color: " + BACKGROUND + ";");
-        // root.setCenter(getCertificatesPane());
-
-        // Scene scene = new Scene(root, 1500, 850);
-        // stage.setTitle("GramConnect - Certificates");
-        // stage.setScene(scene);
-        // stage.setMinWidth(1000);
-        // stage.setMinHeight(700);
-        // stage.show();
-        // }
-
         /**
          * Public entry point used by VillagerDashboard's sidebar navigation:
-         * root.setCenter(new Certificates().getCertificatesPane());
-         * Returns the full page (header on top, scrollable content below),
-         * exactly like ProjectTransparency.getProjectBPane().
+         * root.setCenter(new Certificates().getCertificatesScene(backToDashboardAction));
+         * Returns the full page (sidebar + header + scrollable content).
          */
         public Scene getCertificatesScene(Runnable backToDashboardAction) {
 
                 BorderPane pane = new BorderPane();
                 pane.setTop(buildHeader());
-                pane.setCenter(buildScrollableContent());
+                pane.setCenter(buildScrollableContent(backToDashboardAction));
 
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -102,9 +85,7 @@ public class Certificates {
         }
 
         // =================================================================
-        // HEADER (same glass-bar style as VillagerDashboard/GovernmentSchemes,
-        // plus a red notification-count badge on the bell, and a chevron next
-        // to the profile, matching the reference screenshot)
+        // SIDEBAR
         // =================================================================
 
         private VBox buildSidebar(Runnable backToDashboardAction) {
@@ -146,12 +127,6 @@ public class Certificates {
                 VBox logoBox = new VBox(logo);
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // ---------------- Nav items ----------------
-                // "Dashboard" is the only item that needs to actually navigate
-                // anywhere from this page - it just calls the Runnable it was
-                // handed. The rest are inactive placeholders for now, same as
-                // they'd be on any page other than their own.
-
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
                         backToDashboardAction.run();
@@ -159,51 +134,42 @@ public class Certificates {
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
                 projectsNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
                 });
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
                 complaintsNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
                 });
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
                 schemesNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
                 });
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", true);
-                
+
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
                 billsNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
                 });
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
                 announcementsNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
                 });
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
                 gramSabhaNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
                 });
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
                 aiAssistantNav.setOnMouseClicked(e -> {
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage
                                         .setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
                 });
-                // TODO: wire these the same way once each page exposes its own
-                // getXScene(Runnable backToDashboardAction) method.
 
                 VBox navItems = new VBox(4,
                                 dashboardNav,
@@ -235,10 +201,6 @@ public class Certificates {
                 return sidebar;
         }
 
-        /**
-         * Same nav-row builder as VillagerDashboard.java: no handler attached here -
-         * callers attach their own.
-         */
         private Label navItem(String text, boolean active) {
                 Label item = new Label(text);
                 item.setMaxWidth(Double.MAX_VALUE);
@@ -316,7 +278,6 @@ public class Certificates {
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                // Bell with a small red badge showing unread notification count.
                 Label bellIcon = new Label("\uD83D\uDD14");
                 bellIcon.setStyle("-fx-font-size: 15px;");
                 StackPane bell = new StackPane(bellIcon);
@@ -373,7 +334,7 @@ public class Certificates {
         // =================================================================
         // SCROLLABLE CONTENT
         // =================================================================
-        private ScrollPane buildScrollableContent() {
+        private ScrollPane buildScrollableContent(Runnable backToDashboardAction) {
                 VBox content = new VBox(20);
                 content.setPadding(new Insets(24, 32, 32, 32));
                 content.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -381,7 +342,7 @@ public class Certificates {
                 content.getChildren().addAll(
                                 buildTitleRow(),
                                 buildSectionLabel("Apply for Certificate"),
-                                buildCertificateGrid(),
+                                buildCertificateGrid(backToDashboardAction),
                                 buildMyApplicationsCard());
 
                 ScrollPane scrollPane = new ScrollPane(content);
@@ -390,8 +351,6 @@ public class Certificates {
                 return scrollPane;
         }
 
-        // ---- Title row: heading + subtitle on the left, "How it works?" on the right
-        // ----
         private HBox buildTitleRow() {
                 Label title = new Label("Certificates");
                 title.setStyle(
@@ -431,25 +390,36 @@ public class Certificates {
         }
 
         // ---- Certificate grid: only Residential, Birth, Death, Marriage ----
-        private HBox buildCertificateGrid() {
+        private HBox buildCertificateGrid(Runnable backToDashboardAction) {
+                // Rebuilds THIS exact Certificates scene - handed to CertificateApply
+                // as "backToCertificatesAction" so its back/breadcrumb/post-submit
+                // navigation always returns here, not to the dashboard.
+                Runnable backToCertificatesAction = () -> VillagerDashboard.homeStage
+                                .setScene(getCertificatesScene(backToDashboardAction));
+
                 // TODO: replace with CertificateService.getAvailableCertificateTypes()
                 HBox row = new HBox(16,
                                 certificateCard("\uD83C\uDFE0", FOREST_DEEP, "Residential Certificate",
-                                                "Proof of residence issued for your village address."),
+                                                "Proof of residence issued for your village address.",
+                                                backToCertificatesAction),
                                 certificateCard("\uD83D\uDC76", ROSE_PINK, "Birth Certificate",
-                                                "Official certificate of birth issued by Gram Panchayat."),
+                                                "Official certificate of birth issued by Gram Panchayat.",
+                                                backToCertificatesAction),
                                 certificateCard("\uD83D\uDD6F", SAFFRON_MAIN, "Death Certificate",
-                                                "Certificate issued for the registered death."),
+                                                "Certificate issued for the registered death.",
+                                                backToCertificatesAction),
                                 certificateCard("\uD83D\uDC8D", AI_VIOLET, "Marriage Certificate",
-                                                "Official proof of marriage registered with the Gram Panchayat."));
+                                                "Official proof of marriage registered with the Gram Panchayat.",
+                                                backToCertificatesAction));
                 return row;
         }
 
         /**
-         * One certificate card: colored icon chip, title, description, and an outline
-         * "Apply Now" button.
+         * One certificate card: colored icon chip, title, description, and an
+         * "Apply Now" button that now navigates to CertificateApply.
          */
-        private VBox certificateCard(String icon, String accent, String title, String description) {
+        private VBox certificateCard(String icon, String accent, String title, String description,
+                        Runnable backToCertificatesAction) {
                 Label iconLabel = new Label(icon);
                 iconLabel.setStyle("-fx-font-size: 20px;");
                 StackPane iconChip = new StackPane(iconLabel);
@@ -484,6 +454,11 @@ public class Certificates {
                                                 + "-fx-font-size: 11px; -fx-font-weight: 800;"
                                                 + "-fx-border-color: " + FOREST_DEEP + "; -fx-border-radius: 8;"
                                                 + "-fx-background-radius: 8; -fx-padding: 8; -fx-cursor: hand;");
+                applyBtn.setOnAction(e -> {
+                        CertificateApply certificateApply = new CertificateApply();
+                        VillagerDashboard.homeStage.setScene(
+                                        certificateApply.getApplyScene(backToCertificatesAction, title, description));
+                });
 
                 VBox card = new VBox(10, iconChip, titleLabel, descLabel, applyBtn);
                 card.setAlignment(Pos.TOP_CENTER);
@@ -510,7 +485,6 @@ public class Certificates {
                 HBox headerRow = new HBox(title, headerSpacer, viewAll);
                 headerRow.setAlignment(Pos.CENTER_LEFT);
 
-                // Column headers
                 HBox columnHeader = new HBox(
                                 tableCell("Certificate Type", 220, true),
                                 tableCell("Application ID", 160, true),
@@ -610,7 +584,6 @@ public class Certificates {
         // look and hover behavior)
         // =================================================================
 
-        /** Glass-panel style shared by every card on this screen. */
         private String cardStyle(int radius) {
                 return "-fx-background-color: rgba(255,255,255,0.88);"
                                 + "-fx-background-radius: " + radius + ";"
@@ -620,7 +593,6 @@ public class Certificates {
                                 + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
         }
 
-        /** Hover lift effect matching VillagerDashboard's card hover behavior. */
         private void addHoverLift(Region card, int radius) {
                 String base = cardStyle(radius);
                 String hover = "-fx-background-color: rgba(255,255,255,0.92);"
@@ -634,7 +606,6 @@ public class Certificates {
                 card.setOnMouseExited(e -> card.setStyle(base));
         }
 
-        /** Convert #RRGGBB hex to an rgba(r,g,b,a) CSS string. */
         private String rgba(String hex, double alpha) {
                 int r = Integer.parseInt(hex.substring(1, 3), 16);
                 int g = Integer.parseInt(hex.substring(3, 5), 16);
