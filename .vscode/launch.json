@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "VillagerMain",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.villager.VillagerMain",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
