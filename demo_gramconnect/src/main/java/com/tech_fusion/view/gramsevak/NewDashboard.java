@@ -274,7 +274,7 @@ public class NewDashboard extends Application {
                                                 "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
                                                 +
                                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
-                Image projectLogo = new Image("assets\\icon\\gc logo.jpeg");
+                Image projectLogo = new Image("assets\\images\\gramconnect.png");
                 ImageView imgView = new ImageView(projectLogo);
                 imgView.setFitHeight(50);
                 imgView.setFitWidth(60);
