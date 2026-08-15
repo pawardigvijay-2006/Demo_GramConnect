@@ -1,5 +1,8 @@
 package com.tech_fusion.view.villager;
 
+import java.util.Arrays;
+import java.util.List;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -36,6 +39,26 @@ import javafx.stage.Stage;
  * the sidebar navigation swaps out the whole center region, not
  * just the content below the header.
  *
+ * ============================================================
+ * NEW IN THIS VERSION
+ * ============================================================
+ * - Each scheme card previously had two buttons ("View Documents
+ *   Required" and "Apply Now"). Both are replaced with a single
+ *   "See Details" button.
+ * - "See Details" navigates to SchemeDetailPage.java, a new page
+ *   that shows AI-generated-style information about the scheme
+ *   (about section, key benefits, eligibility, documents required,
+ *   how to apply, apply-on-portal CTA) - matching the reference
+ *   design.
+ * - SchemeData is a small structured model (title, badge, about
+ *   text, benefits/eligibility/documents lists) so the detail page
+ *   has real content to show instead of just a title+description.
+ * - Navigation is conflict-free: SchemeDetailPage is handed both
+ *   the original "go to Dashboard" backAction AND a "go back to
+ *   Government Schemes list" callback, so its sidebar and
+ *   breadcrumb can return to the right place without re-wrapping
+ *   or fighting over which Runnable to call.
+ *
  * ARCHITECTURE NOTE: The scheme list below is hardcoded mock data,
  * marked with a TODO showing where a real SchemeService would plug
  * in later.
@@ -60,26 +83,116 @@ public class GovernmentSchemes{
     private static final String SIDEBAR_TOP = "#CDEBD8";
         private static final String SIDEBAR_MID = "#BCE3CC";
         private static final String SIDEBAR_BOT = "#A9D8BD";
-    
-    
+
+
 
     private String selectedCategory = "All Schemes";
 
-    // Kept only for standalone preview - the real app builds this pane inside
-    // VillagerDashboard's existing root/sidebar via getSchemesPane().
-//     @Override
-//     public void start(Stage stage) {
-//         BorderPane root = new BorderPane();
-//         root.setStyle("-fx-background-color: " + BACKGROUND + ";");
-//         root.setCenter(getSchemesPane());
+    // =================================================================
+    // SHARED DATA MODEL
+    // Package-visible so SchemeDetailPage can read the full scheme
+    // record it was navigated with. Replace with a real SchemeService
+    // call when one exists.
+    // =================================================================
+    static class SchemeData {
+        String icon;
+        String title;
+        String badge;
+        String shortDescription;
+        String aboutText;
+        List<String> benefits;
+        List<String> eligibility;
+        List<String> documents;
 
-//         Scene scene = new Scene(root, 1500, 850);
-//         stage.setTitle("GramConnect - Government Schemes");
-//         stage.setScene(scene);
-//         stage.setMinWidth(1000);
-//         stage.setMinHeight(700);
-//         stage.show();
-//     }
+        SchemeData(String icon, String title, String badge, String shortDescription, String aboutText,
+                        List<String> benefits, List<String> eligibility, List<String> documents) {
+                this.icon = icon;
+                this.title = title;
+                this.badge = badge;
+                this.shortDescription = shortDescription;
+                this.aboutText = aboutText;
+                this.benefits = benefits;
+                this.eligibility = eligibility;
+                this.documents = documents;
+        }
+    }
+
+    // TODO: replace with SchemeService.getSchemesForCategory(villageId, "Agriculture")
+    private static final List<SchemeData> SCHEMES = Arrays.asList(
+                    new SchemeData(
+                                    "\uD83C\uDF31",
+                                    "Soil Health Card Scheme",
+                                    "Central Government Scheme",
+                                    "Provides farmers with information on nutrient status of their soil along with "
+                                                    + "recommendations on appropriate dosage of nutrients to be applied for improving "
+                                                    + "soil health and its fertility.",
+                                    "The Soil Health Card Scheme aims to issue Soil Health Cards to farmers with the "
+                                                    + "information on nutrient status of their soil. This helps farmers apply the right "
+                                                    + "balance of nutrients and improve soil productivity.",
+                                    Arrays.asList(
+                                                    "Know the nutrient status of your soil",
+                                                    "Get crop-wise fertilizer recommendations",
+                                                    "Improve soil health and increase productivity",
+                                                    "Reduce input cost with balanced fertilizer use"),
+                                    Arrays.asList(
+                                                    "Be a citizen of India",
+                                                    "Be a farmer or landowner",
+                                                    "Have cultivable agricultural land",
+                                                    "Land records in your name"),
+                                    Arrays.asList(
+                                                    "Aadhaar Card",
+                                                    "Land Ownership Proof (7/12 extract)",
+                                                    "Bank Passbook",
+                                                    "Passport Size Photo",
+                                                    "Mobile Number Proof (Optional)")),
+                    new SchemeData(
+                                    "\uD83D\uDCA7",
+                                    "PM Krishi Sinchayee Yojana",
+                                    "Central Government Scheme",
+                                    "Focused on creating sources of assured irrigation, also creating protective irrigation "
+                                                    + "by harnessing rain water at micro level through 'Jal Sanchay' and 'Jal Sinchan'.",
+                                    "PM Krishi Sinchayee Yojana aims to ensure access to protective irrigation for every "
+                                                    + "farm ('Har Khet Ko Pani') and to improve on-farm water use efficiency to reduce "
+                                                    + "wastage and increase availability of water, both in duration and extent.",
+                                    Arrays.asList(
+                                                    "Assured irrigation reduces dependency on rainfall",
+                                                    "Subsidy support for micro-irrigation equipment",
+                                                    "Better water-use efficiency on the farm",
+                                                    "Higher and more stable crop yields"),
+                                    Arrays.asList(
+                                                    "Be a citizen of India",
+                                                    "Be a farmer or landowner with cultivable land",
+                                                    "Land or lease records in your name",
+                                                    "Willingness to adopt micro-irrigation methods"),
+                                    Arrays.asList(
+                                                    "Aadhaar Card",
+                                                    "Land Ownership / Lease Proof",
+                                                    "Bank Passbook",
+                                                    "Passport Size Photo")),
+                    new SchemeData(
+                                    "\u2600",
+                                    "Kusum Scheme",
+                                    "Central Government Scheme",
+                                    "Aimed at providing energy security to farmers and de-dieselizing the farm sector by "
+                                                    + "installing solar pumps and other renewable power plants.",
+                                    "The Kusum Scheme (Pradhan Mantri Kisan Urja Suraksha evam Utthaan Mahabhiyan) helps "
+                                                    + "farmers install solar-powered agricultural pumps and small solar power plants on "
+                                                    + "barren or fallow land, cutting diesel dependence and adding a new income source.",
+                                    Arrays.asList(
+                                                    "Reduced dependence on diesel pumps",
+                                                    "Lower recurring irrigation costs",
+                                                    "Extra income by selling surplus solar power",
+                                                    "Subsidy support on solar pump installation"),
+                                    Arrays.asList(
+                                                    "Be a citizen of India",
+                                                    "Be a farmer or group of farmers/cooperative",
+                                                    "Own cultivable or barren agricultural land",
+                                                    "Land records in your name"),
+                                    Arrays.asList(
+                                                    "Aadhaar Card",
+                                                    "Land Ownership Proof",
+                                                    "Bank Passbook",
+                                                    "Passport Size Photo")));
 
     /**
      * Public entry point used by VillagerDashboard's sidebar navigation:
@@ -88,10 +201,10 @@ public class GovernmentSchemes{
      * exactly like ProjectTransparency.getProjectBPane().
      */
     public Scene getSchemesScene(Runnable backAction) {
-        
+
         BorderPane pane = new BorderPane();
         pane.setTop(buildHeader());
-        pane.setCenter(buildScrollableContent());
+        pane.setCenter(buildScrollableContent(backAction));
         BorderPane root = new BorderPane();
         root.setLeft(buildSidebar(backAction));
         root.setCenter(pane);
@@ -137,12 +250,6 @@ public class GovernmentSchemes{
                 VBox logoBox = new VBox(logo);
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // ---------------- Nav items ----------------
-                // "Dashboard" is the only item that needs to actually navigate
-                // anywhere from this page - it just calls the Runnable it was
-                // handed. The rest are inactive placeholders for now, same as
-                // they'd be on any page other than their own.
-
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
                         backToDashboardAction.run();
@@ -150,40 +257,36 @@ public class GovernmentSchemes{
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
                 projectsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
                 });
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
                 complaintsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
                 });
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", true);
-                
+                schemesNav.setOnMouseClicked(e -> {
+                        VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
+                });
+
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
                 certificatesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
                 });
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
                 billsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
                 });
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
                 announcementsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
                 });
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
                 gramSabhaNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
                 });
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
                 aiAssistantNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
                         VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
                 });
                 // TODO: wire these the same way once each page exposes its own
@@ -356,7 +459,7 @@ public class GovernmentSchemes{
     // =================================================================
     // SCROLLABLE CONTENT
     // =================================================================
-    private ScrollPane buildScrollableContent() {
+    private ScrollPane buildScrollableContent(Runnable backAction) {
         VBox content = new VBox(20);
         content.setPadding(new Insets(24, 32, 32, 32));
         content.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -366,7 +469,7 @@ public class GovernmentSchemes{
                 buildTitleRow(),
                 buildCategoryTabs(),
                 buildSectionHeader(),
-                buildSchemeList());
+                buildSchemeList(backAction));
 
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
@@ -494,31 +597,22 @@ public class GovernmentSchemes{
     }
 
     // ---- Scheme list ----
-    private VBox buildSchemeList() {
-        // TODO: replace with SchemeService.getSchemesForCategory(villageId, "Agriculture")
-        VBox list = new VBox(16,
-                schemeCard("Soil Health Card Scheme",
-                        "Provides farmers with information on nutrient status of their soil along with "
-                                + "recommendations on appropriate dosage of nutrients to be applied for improving "
-                                + "soil health and its fertility."),
-                schemeCard("PM Krishi Sinchayee Yojana",
-                        "Focused on creating sources of assured irrigation, also creating protective irrigation "
-                                + "by harnessing rain water at micro level through 'Jal Sanchay' and 'Jal Sinchan'."),
-                schemeCard("Kusum Scheme",
-                        "Aimed at providing energy security to farmers and de-dieselizing the farm sector by "
-                                + "installing solar pumps and other renewable power plants.")
-        );
+    private VBox buildSchemeList(Runnable backAction) {
+        VBox list = new VBox(16);
+        for (SchemeData scheme : SCHEMES) {
+                list.getChildren().add(schemeCard(scheme, backAction));
+        }
         return list;
     }
 
-    /** One scheme row: title + description on the left, two stacked buttons on the right. */
-    private HBox schemeCard(String title, String description) {
-        Label titleLabel = new Label(title);
+    /** One scheme row: title + description on the left, a single "See Details" button on the right. */
+    private HBox schemeCard(SchemeData scheme, Runnable backAction) {
+        Label titleLabel = new Label(scheme.title);
         titleLabel.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: "
                         + TEXT_PRIMARY + ";");
 
-        Label descLabel = new Label(description);
+        Label descLabel = new Label(scheme.shortDescription);
         descLabel.setWrapText(true);
         descLabel.setMaxWidth(560);
         descLabel.setStyle(
@@ -527,27 +621,28 @@ public class GovernmentSchemes{
         VBox textColumn = new VBox(8, titleLabel, descLabel);
         HBox.setHgrow(textColumn, Priority.ALWAYS);
 
-        Button viewDocsBtn = new Button("View Documents Required");
-        viewDocsBtn.setMaxWidth(Double.MAX_VALUE);
-        viewDocsBtn.setStyle(
-                "-fx-font-family: " + FONT_FAMILY + ";"
-                        + "-fx-background-color: white;"
-                        + "-fx-text-fill: " + TEXT_PRIMARY + ";"
-                        + "-fx-font-size: 11px; -fx-font-weight: 700;"
-                        + "-fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 8;"
-                        + "-fx-background-radius: 8; -fx-padding: 8 14 8 14; -fx-cursor: hand;");
-
-        Button applyBtn = new Button("Apply Now");
-        applyBtn.setMaxWidth(Double.MAX_VALUE);
-        applyBtn.setStyle(
+        Button seeDetailsBtn = new Button("See Details");
+        seeDetailsBtn.setPrefWidth(210);
+        seeDetailsBtn.setMaxWidth(Double.MAX_VALUE);
+        seeDetailsBtn.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + ";"
                         + "-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");"
                         + "-fx-text-fill: white;"
-                        + "-fx-font-size: 11px; -fx-font-weight: 800;"
-                        + "-fx-background-radius: 8; -fx-padding: 8 14 8 14; -fx-cursor: hand;"
+                        + "-fx-font-size: 12px; -fx-font-weight: 800;"
+                        + "-fx-background-radius: 8; -fx-padding: 10 14 10 14; -fx-cursor: hand;"
                         + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.25), 6, 0.1, 0, 2);");
 
-        VBox buttonColumn = new VBox(8, viewDocsBtn, applyBtn);
+        // Navigation is conflict-free: SchemeDetailPage gets the original
+        // Dashboard backAction AND a dedicated "return to this list" callback,
+        // so its sidebar/breadcrumb never has to guess which page to return to.
+        seeDetailsBtn.setOnAction(e -> VillagerDashboard.homeStage.setScene(
+                        new SchemeDetailPage().getSchemeDetailScene(
+                                        scheme,
+                                        backAction,
+                                        () -> VillagerDashboard.homeStage.setScene(
+                                                        new GovernmentSchemes().getSchemesScene(backAction)))));
+
+        VBox buttonColumn = new VBox(seeDetailsBtn);
         buttonColumn.setPrefWidth(210);
         buttonColumn.setAlignment(Pos.CENTER_RIGHT);
 

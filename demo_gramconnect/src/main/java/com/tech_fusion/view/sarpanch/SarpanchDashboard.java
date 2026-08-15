@@ -5,6 +5,7 @@ import java.io.File;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -33,12 +34,15 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
  * GramConnect - Sarpanch Login Home (Dashboard) Page
  */
 public class SarpanchDashboard extends Application {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     /* ---------- Color palette (from the HTML template) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -106,7 +110,7 @@ public class SarpanchDashboard extends Application {
 
         root.setCenter(contentArea);
 
-        Scene scene = new Scene(root, 1300, 800);
+        Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
         dashboardScene = scene;
         return scene;
     }
