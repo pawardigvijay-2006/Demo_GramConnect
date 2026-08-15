@@ -47,13 +47,13 @@ public class NewScheme {
     // ============================================================
     // MAIN ENTRY POINT
     // ============================================================
-    public static VBox getNewSchemeContent() {
+    public static VBox getNewSchemeContent(Runnable backAction) {
 
         VBox mainContent = new VBox(24);
         mainContent.setPadding(new Insets(32, 40, 48, 40));
 
         mainContent.getChildren().addAll(
-                buildTopBar(),
+                buildTopBar(backAction),
                 buildSchemeInformationCard(),
                 buildEligibilityDetailsCard(),
                 buildRequiredDocumentsCard(),
@@ -67,7 +67,7 @@ public class NewScheme {
     // ============================================================
     // TOP BAR — Back button + Title + Subtitle
     // ============================================================
-    private static VBox buildTopBar() {
+    private static VBox buildTopBar(Runnable backAction) {
 
         VBox topBar = new VBox(14);
 
@@ -87,7 +87,11 @@ public class NewScheme {
 
         // Later: replace this with code that switches contentArea back
         // to GovSchemes.getSchemeContent().
-        backBtn.setOnAction(e -> System.out.println("Back to Government Schemes clicked"));
+        backBtn.setOnAction(e -> {
+                System.out.println("Back to Government Schemes clicked");
+                backAction.run();
+
+    });
 
         // ----- Title + subtitle -----
         Label title = new Label("Add New Government Scheme");
