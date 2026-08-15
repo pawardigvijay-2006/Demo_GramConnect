@@ -1,5 +1,11 @@
 package com.tech_fusion.view.villager;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -40,13 +46,20 @@ import javafx.stage.Stage;
  * homepageStage.setScene(new Scene(new
  * ComplaintsPage().getComplaintsPage(homepageStage), 1500, 850));
  *
- * The Stage reference is passed in (and threaded through the sidebar)
- * so that clicking a different nav item (Dashboard, Project transparency,
- * etc.) can swap the root on that SAME stage instead of opening a new
- * window - that's the whole point of a single-Stage, multi-page app.
- * Everything else (sidebar, header, colors, card styles) is copy-pasted
- * from VillagerDashboard.java / ProjectTransparency.java on purpose, so
- * all three screens look and feel identical.
+ * ============================================================
+ * NEW IN THIS VERSION
+ * ============================================================
+ * - "All Complaints" / "My Complaints" toggle above the list -> clicking
+ *   "My Complaints" filters the Recent Submissions list down to only the
+ *   complaints raised by the current villager (ComplaintData.mine == true).
+ * - "Register New Complaint" now actually navigates to NewComplaintPage
+ *   (title, location, description, upload photo, submit) on the SAME
+ *   shared homepageStage. Submitting adds the complaint to the shared
+ *   COMPLAINTS store (marked as "mine") and returns here with a
+ *   "Complaint Submitted" popup already shown.
+ * - COMPLAINTS is a static, in-memory store shared by ComplaintsPage and
+ *   NewComplaintPage so newly submitted complaints show up immediately.
+ *   Swap this out for a real ComplaintService/DB call later.
  * ============================================================
  */
 public class ComplaintsPage {
@@ -85,12 +98,96 @@ public class ComplaintsPage {
         private static final String SIDEBAR_BOT = "#A9D8BD";
         private static final String DELAYED_RED = "#D94C38";
 
+        // =================================================================
+        // SHARED DATA MODEL + STORE
+        // Package-visible so NewComplaintPage can read/append to it.
+        // Replace with a real ComplaintService/DB call when one exists.
+        // =================================================================
+        static class ComplaintData {
+                String icon;
+                String iconBg;
+                String iconColor;
+                String title;
+                String complaintId;
+                String date;
+                String location;
+                String description;
+                String status;
+                String pillBg;
+                String pillFg;
+                boolean mine;
+
+                ComplaintData(String icon, String iconBg, String iconColor, String title, String complaintId,
+                                String date, String location, String description, String status, String pillBg,
+                                String pillFg, boolean mine) {
+                        this.icon = icon;
+                        this.iconBg = iconBg;
+                        this.iconColor = iconColor;
+                        this.title = title;
+                        this.complaintId = complaintId;
+                        this.date = date;
+                        this.location = location;
+                        this.description = description;
+                        this.status = status;
+                        this.pillBg = pillBg;
+                        this.pillFg = pillFg;
+                        this.mine = mine;
+                }
+        }
+
+        // Static in-memory store shared across page instances so a newly
+        // submitted complaint is visible the moment we navigate back here.
+        static final List<ComplaintData> COMPLAINTS = new ArrayList<>();
+        private static int nextComplaintNumber = 22;
+
+        static {
+                COMPLAINTS.add(new ComplaintData("\uD83D\uDCA7", LIGHT_BLUE, SECONDARY,
+                                "Broken Water Pipe near Temple", "#CMP-2025-0012",
+                                "Oct 24, 2024", "Temple Square, Zone 4",
+                                "Water pipe near the temple has been leaking for two days.",
+                                "Assigned", LIGHT_BLUE, SECONDARY, true));
+                COMPLAINTS.add(new ComplaintData("\u2195", LIGHT_YELLOW, "#C2703D",
+                                "Pot hole on Main Road", "#CMP-2025-0015",
+                                "Oct 22, 2024", "Highway Junction",
+                                "Large pothole causing traffic slowdowns.",
+                                "Pending", LIGHT_YELLOW, "#C2703D", false));
+                COMPLAINTS.add(new ComplaintData("\uD83D\uDCA1", LIGHT_YELLOW, WARNING,
+                                "Non-functional Street Light", "#CMP-2025-0008",
+                                "Oct 15, 2024", "Gandhi Street",
+                                "Street light has not worked in over a week.",
+                                "Resolved", LIGHT_GREEN, PRIMARY, true));
+                COMPLAINTS.add(new ComplaintData("\uD83D\uDDD1", LIGHT_RED, ERROR,
+                                "Waste Accumulation near School", "#CMP-2025-0021",
+                                "Oct 25, 2024", "Primary School, North Wing",
+                                "Garbage has been piling up near the school entrance.",
+                                "Action Required", LIGHT_RED, ERROR, false));
+        }
+
+        /** Adds a newly submitted complaint (always marked as "mine"). */
+        static void addComplaint(String title, String location, String description) {
+                nextComplaintNumber++;
+                String id = String.format("#CMP-2025-%04d", nextComplaintNumber);
+                String date = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy"));
+                COMPLAINTS.add(0, new ComplaintData("\uD83D\uDCDD", LIGHT_YELLOW, "#C2703D",
+                                title, id, date, location, description,
+                                "Pending", LIGHT_YELLOW, "#C2703D", true));
+        }
+
+        // Instance state
+        private Runnable backAction;
+        private boolean showingMine = false;
+        private VBox complaintsListBox;
+        private Button allComplaintsBtn;
+        private Button myComplaintsBtn;
+
         /**
          * Builds the whole Complaints Management screen and returns it as a
          * single BorderPane, ready to be set as a Scene's root on the shared
          * homepageStage.
          */
         public Scene getComplaintsPage(Runnable backAction) {
+                this.backAction = backAction;
+
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
 
@@ -114,7 +211,6 @@ public class ComplaintsPage {
                 sidebar.setMinWidth(230);
                 sidebar.setMaxWidth(230);
 
-                // EXACT SAME SIDEBAR STYLE AS PROJECT TRANSPARENCY
                 sidebar.setStyle(
                                 "-fx-background-color: linear-gradient(to bottom, "
                                                 + SIDEBAR_TOP + ", "
@@ -126,21 +222,14 @@ public class ComplaintsPage {
                                                 + "-fx-effect: dropshadow(gaussian, "
                                                 + "rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
 
-                // =====================================================
-                // LOGO
-                // =====================================================
-
                 Image logoImage = new Image("assets\\images\\gramconnect.png");
-
                 ImageView logoIcon = new ImageView(logoImage);
-
                 logoIcon.setFitWidth(60);
                 logoIcon.setFitHeight(60);
                 logoIcon.setPreserveRatio(true);
                 logoIcon.setSmooth(true);
 
                 Label logoText = new Label("GramConnect");
-
                 logoText.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";"
                                                 + "-fx-text-fill: " + FOREST_DEEP + ";"
@@ -148,7 +237,6 @@ public class ComplaintsPage {
                                                 + "-fx-font-weight: 900;");
 
                 Label subtitle = new Label("Village Governance");
-
                 subtitle.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";"
                                                 + "-fx-text-fill: rgba(11,61,46,0.65);"
@@ -156,85 +244,53 @@ public class ComplaintsPage {
                                                 + "-fx-font-weight: 700;");
 
                 VBox logoTextBox = new VBox(0, logoText, subtitle);
-
                 HBox logo = new HBox(8, logoIcon, logoTextBox);
-
                 logo.setAlignment(Pos.CENTER_LEFT);
-
                 VBox logoBox = new VBox(logo);
-
-                logoBox.setPadding(
-                                new Insets(18, 18, 22, 18));
-
-                // =====================================================
-                // NAVIGATION
-                // Complaints is ACTIVE
-                // =====================================================
+                logoBox.setPadding(new Insets(18, 18, 22, 18));
 
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
-
-                dashboardNav.setOnMouseClicked(
-                                e -> {
-                                        backAction.run();
-                                });
+                dashboardNav.setOnMouseClicked(e -> backAction.run());
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
                 projectsNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage.setScene(
-                                                        new ProjectTransparency().getProjectScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage.setScene(
+                                                new ProjectTransparency().getProjectScene(backAction)));
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", true);
+                complaintsNav.setOnMouseClicked(
+                                e -> VillagerDashboard.homeStage.setScene(
+                                                new ComplaintsPage().getComplaintsPage(backAction)));
 
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
                 schemesNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new GovernmentSchemes().getSchemesScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new GovernmentSchemes().getSchemesScene(backAction)));
 
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
                 certificatesNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new Certificates().getCertificatesScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new Certificates().getCertificatesScene(backAction)));
 
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
                 billsNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new BillsAndPayments().getBillsScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new BillsAndPayments().getBillsScene(backAction)));
 
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
                 announcementsNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new Announcements().getAnnouncementScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new Announcements().getAnnouncementScene(backAction)));
 
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
                 gramSabhaNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new GramSabha().getGramSabhaScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new GramSabha().getGramSabhaScene(backAction)));
 
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
                 aiAssistantNav.setOnMouseClicked(
-                                e -> {
-                                        // backAction.run();
-                                        VillagerDashboard.homeStage
-                                                        .setScene(new AIAssistant().getAiAssiatantScene(backAction));
-                                });
+                                e -> VillagerDashboard.homeStage
+                                                .setScene(new AIAssistant().getAiAssiatantScene(backAction)));
 
                 VBox navItems = new VBox(
                                 4,
@@ -248,24 +304,12 @@ public class ComplaintsPage {
                                 gramSabhaNav,
                                 aiAssistantNav);
 
-                navItems.setPadding(
-                                new Insets(0, 10, 0, 10));
-
-                VBox.setVgrow(
-                                navItems,
-                                Priority.ALWAYS);
-
-                // =====================================================
-                // EMERGENCY ASSISTANCE
-                // =====================================================
+                navItems.setPadding(new Insets(0, 10, 0, 10));
+                VBox.setVgrow(navItems, Priority.ALWAYS);
 
                 Label emergency = new Label("\u26A0  Emergency assistance");
-
                 emergency.setWrapText(true);
-
-                emergency.setPadding(
-                                new Insets(10, 12, 10, 12));
-
+                emergency.setPadding(new Insets(10, 12, 10, 12));
                 emergency.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";"
                                                 + "-fx-text-fill: " + DELAYED_RED + ";"
@@ -275,14 +319,9 @@ public class ComplaintsPage {
                                                 + "-fx-background-radius: 10;");
 
                 VBox emergencyBox = new VBox(emergency);
+                emergencyBox.setPadding(new Insets(12, 16, 18, 18));
 
-                emergencyBox.setPadding(
-                                new Insets(12, 16, 18, 18));
-
-                sidebar.getChildren().addAll(
-                                logoBox,
-                                navItems,
-                                emergencyBox);
+                sidebar.getChildren().addAll(logoBox, navItems, emergencyBox);
 
                 return sidebar;
         }
@@ -290,20 +329,10 @@ public class ComplaintsPage {
         private Label navItem(String text, boolean active) {
 
                 Label item = new Label(text);
-
-                item.setMaxWidth(
-                                Double.MAX_VALUE);
-
-                item.setPadding(
-                                new Insets(10, 14, 10, 14));
-
-                // =====================================================
-                // ACTIVE ITEM
-                // EXACT SAME STYLE AS PROJECT TRANSPARENCY
-                // =====================================================
+                item.setMaxWidth(Double.MAX_VALUE);
+                item.setPadding(new Insets(10, 14, 10, 14));
 
                 if (active) {
-
                         item.setStyle(
                                         "-fx-font-family: " + FONT_FAMILY + ";"
                                                         + "-fx-background-color: rgba(255,255,255,0.65);"
@@ -316,15 +345,7 @@ public class ComplaintsPage {
                                                         + "-fx-border-width: 0 0 0 4;"
                                                         + "-fx-border-radius: 8;"
                                                         + "-fx-cursor: hand;");
-
-                }
-
-                // =====================================================
-                // INACTIVE ITEM
-                // =====================================================
-
-                else {
-
+                } else {
                         String baseStyle = "-fx-font-family: " + FONT_FAMILY + ";"
                                         + "-fx-text-fill: rgba(11,61,46,0.80);"
                                         + "-fx-font-size: 13px;"
@@ -332,8 +353,6 @@ public class ComplaintsPage {
                                         + "-fx-cursor: hand;";
 
                         item.setStyle(baseStyle);
-
-                        // ---------------- Hover ----------------
 
                         item.setOnMouseEntered(
                                         e -> item.setStyle(
@@ -345,10 +364,7 @@ public class ComplaintsPage {
                                                                         + "-fx-background-radius: 8;"
                                                                         + "-fx-cursor: hand;"));
 
-                        // ---------------- Mouse Exit ----------------
-
-                        item.setOnMouseExited(
-                                        e -> item.setStyle(baseStyle));
+                        item.setOnMouseExited(e -> item.setStyle(baseStyle));
                 }
 
                 return item;
@@ -364,11 +380,6 @@ public class ComplaintsPage {
                 return main;
         }
 
-        /**
-         * Same header pattern as the other pages, with two additions to match
-         * the reference screenshot: a red "unread" dot on the bell, and a
-         * round "?" help button next to the avatar photo.
-         */
         private HBox buildHeader() {
                 HBox header = new HBox(16);
                 header.setAlignment(Pos.CENTER_LEFT);
@@ -405,7 +416,6 @@ public class ComplaintsPage {
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                // Bell with a small red badge showing unread notification count.
                 Label bellIcon = new Label("\uD83D\uDD14");
                 bellIcon.setStyle("-fx-font-size: 15px;");
                 StackPane bell = new StackPane(bellIcon);
@@ -462,29 +472,25 @@ public class ComplaintsPage {
         private ScrollPane buildScrollableContent() {
 
                 VBox content = new VBox(14);
-
                 content.setPadding(new Insets(16, 24, 24, 24));
-
                 content.setFillWidth(true);
+
+                complaintsListBox = buildComplaintsList(showingMine);
 
                 content.getChildren().addAll(
                                 buildPageTitle(),
                                 buildStatCardsRow(),
                                 buildRegisterButton(),
                                 buildRecentSubmissionsHeader(),
-                                buildComplaintsList(),
+                                complaintsListBox,
                                 buildShowMoreLink());
 
                 ScrollPane scrollPane = new ScrollPane(content);
-
                 scrollPane.setFitToWidth(true);
                 scrollPane.setFitToHeight(false);
-
                 scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
                 scrollPane.setPannable(true);
-
                 scrollPane.setStyle(
                                 "-fx-background-color: transparent;"
                                                 + "-fx-background-insets: 0;"
@@ -518,12 +524,6 @@ public class ComplaintsPage {
                 return row;
         }
 
-        /**
-         * One stat card: icon chip top-left, status pill top-right, big
-         * number, small caption - plus a large, faint watermark of the same
-         * icon in the bottom-right corner (matches the reference design).
-         * The "Critical" card additionally gets a thick colored left border.
-         */
         private VBox statCard(String icon, String iconBg, String iconColor, String value, String caption,
                         String pillText, String pillFg, String pillBg, boolean criticalAccent) {
 
@@ -551,7 +551,6 @@ public class ComplaintsPage {
 
                 VBox textBlock = new VBox(4, valueLabel, captionLabel);
 
-                // Faint oversized watermark icon in the bottom-right corner.
                 Label watermark = new Label(icon);
                 watermark.setStyle("-fx-font-size: 46px; -fx-opacity: 0.08;");
                 StackPane.setAlignment(watermark, Pos.BOTTOM_RIGHT);
@@ -587,20 +586,42 @@ public class ComplaintsPage {
                                                 "-fx-background-radius: 8;" +
                                                 "-fx-padding: 12 22 12 22;" +
                                                 "-fx-cursor: hand;");
-                // TODO: wire this up to open a real "New Complaint" form/dialog.
+
+                register.setOnAction(e -> VillagerDashboard.homeStage.setScene(
+                                new NewComplaintPage().getNewComplaintScene(
+                                                backAction,
+                                                () -> VillagerDashboard.homeStage.setScene(
+                                                                new ComplaintsPage().getComplaintsPage(backAction)))));
 
                 HBox row = new HBox(register);
                 row.setAlignment(Pos.CENTER_LEFT);
                 return row;
         }
 
-        // ---- "Recent Submissions" header (title + Filter/Sort buttons) ----
+        // ---- "Recent Submissions" header (title + All/My toggle + Filter/Sort) ----
         private HBox buildRecentSubmissionsHeader() {
                 Label title = new Label("Recent Submissions");
                 title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                allComplaintsBtn = new Button("All Complaints");
+                myComplaintsBtn = new Button("My Complaints");
+
+                allComplaintsBtn.setOnAction(e -> {
+                        showingMine = false;
+                        refreshComplaintsList();
+                });
+                myComplaintsBtn.setOnAction(e -> {
+                        showingMine = true;
+                        refreshComplaintsList();
+                });
+
+                applyToggleStyles();
+
+                HBox toggleGroup = new HBox(6, allComplaintsBtn, myComplaintsBtn);
+                toggleGroup.setAlignment(Pos.CENTER_LEFT);
 
                 Button filter = new Button("\u2630  Filter");
                 filter.setStyle(headerButtonStyle());
@@ -609,9 +630,42 @@ public class ComplaintsPage {
                 sort.setStyle(headerButtonStyle());
                 // TODO: wire filter/sort up to real ComplaintService queries.
 
-                HBox row = new HBox(10, title, spacer, filter, sort);
+                HBox row = new HBox(10, title, spacer, toggleGroup, filter, sort);
                 row.setAlignment(Pos.CENTER_LEFT);
                 return row;
+        }
+
+        /** Rebuilds the visible list in place and re-styles the toggle buttons. */
+        private void refreshComplaintsList() {
+                complaintsListBox.getChildren().setAll(buildComplaintsList(showingMine).getChildren());
+                applyToggleStyles();
+        }
+
+        private void applyToggleStyles() {
+                allComplaintsBtn.setStyle(toggleButtonStyle(!showingMine));
+                myComplaintsBtn.setStyle(toggleButtonStyle(showingMine));
+        }
+
+        private String toggleButtonStyle(boolean active) {
+                if (active) {
+                        return "-fx-background-color: " + PRIMARY + ";" +
+                                        "-fx-text-fill: white;" +
+                                        "-fx-font-size: 11px;" +
+                                        "-fx-font-weight: bold;" +
+                                        "-fx-background-radius: 7;" +
+                                        "-fx-padding: 8 14 8 14;" +
+                                        "-fx-cursor: hand;";
+                }
+                return "-fx-background-color: " + BACKGROUND + ";" +
+                                "-fx-text-fill: " + TEXT_SECONDARY + ";" +
+                                "-fx-font-size: 11px;" +
+                                "-fx-font-weight: bold;" +
+                                "-fx-background-radius: 7;" +
+                                "-fx-padding: 8 14 8 14;" +
+                                "-fx-border-color: " + BORDER + ";" +
+                                "-fx-border-width: 1;" +
+                                "-fx-border-radius: 7;" +
+                                "-fx-cursor: hand;";
         }
 
         private String headerButtonStyle() {
@@ -625,25 +679,25 @@ public class ComplaintsPage {
         }
 
         // ---- Complaint list ----
-        private VBox buildComplaintsList() {
-                // TODO: replace with ComplaintService.getRecentComplaints(villageId)
-                VBox list = new VBox(12,
-                                complaintRow("\uD83D\uDCA7", LIGHT_BLUE, SECONDARY,
-                                                "Broken Water Pipe near Temple", "#CMP-2025-0012",
-                                                "Oct 24, 2024", "Temple Square, Zone 4",
-                                                "Assigned", LIGHT_BLUE, SECONDARY),
-                                complaintRow("\u2195", LIGHT_YELLOW, "#C2703D",
-                                                "Pot hole on Main Road", "#CMP-2025-0015",
-                                                "Oct 22, 2024", "Highway Junction",
-                                                "Pending", LIGHT_YELLOW, "#C2703D"),
-                                complaintRow("\uD83D\uDCA1", LIGHT_YELLOW, WARNING,
-                                                "Non-functional Street Light", "#CMP-2025-0008",
-                                                "Oct 15, 2024", "Gandhi Street",
-                                                "Resolved", LIGHT_GREEN, PRIMARY),
-                                complaintRow("\uD83D\uDDD1", LIGHT_RED, ERROR,
-                                                "Waste Accumulation near School", "#CMP-2025-0021",
-                                                "Oct 25, 2024", "Primary School, North Wing",
-                                                "Action Required", LIGHT_RED, ERROR));
+        private VBox buildComplaintsList(boolean mineOnly) {
+                VBox list = new VBox(12);
+
+                List<ComplaintData> source = mineOnly
+                                ? COMPLAINTS.stream().filter(c -> c.mine).collect(Collectors.toList())
+                                : COMPLAINTS;
+
+                if (source.isEmpty()) {
+                        Label empty = new Label(
+                                        mineOnly ? "You haven't registered any complaints yet."
+                                                        : "No complaints to show.");
+                        empty.setStyle("-fx-text-fill: " + TEXT_SECONDARY + "; -fx-font-size: 12px; -fx-padding: 12 0 12 0;");
+                        list.getChildren().add(empty);
+                } else {
+                        for (ComplaintData c : source) {
+                                list.getChildren().add(complaintRow(c));
+                        }
+                }
+
                 return list;
         }
 
@@ -652,23 +706,22 @@ public class ComplaintsPage {
          * + status pill on the top line, date + location on the second line,
          * and a "View Details ->" link underneath.
          */
-        private VBox complaintRow(String icon, String iconBg, String iconColor, String title, String complaintId,
-                        String date, String location, String status, String pillBg, String pillFg) {
+        private VBox complaintRow(ComplaintData c) {
 
-                Label iconLabel = new Label(icon);
-                iconLabel.setStyle("-fx-text-fill: " + iconColor + "; -fx-font-size: 15px;");
+                Label iconLabel = new Label(c.icon);
+                iconLabel.setStyle("-fx-text-fill: " + c.iconColor + "; -fx-font-size: 15px;");
                 StackPane iconCircle = new StackPane(iconLabel);
                 iconCircle.setPrefSize(40, 40);
                 iconCircle.setMaxSize(40, 40);
-                iconCircle.setStyle("-fx-background-color: " + iconBg + "; -fx-background-radius: 20;");
+                iconCircle.setStyle("-fx-background-color: " + c.iconBg + "; -fx-background-radius: 20;");
 
-                Label titleLabel = new Label(title);
+                Label titleLabel = new Label(c.title);
                 titleLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                Label dateLabel = new Label("\uD83D\uDCC5  " + date);
+                Label dateLabel = new Label("\uD83D\uDCC5  " + c.date);
                 dateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                Label locationLabel = new Label("\uD83D\uDCCD  " + location);
+                Label locationLabel = new Label("\uD83D\uDCCD  " + c.location);
                 locationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
                 HBox metaRow = new HBox(14, dateLabel, locationLabel);
@@ -682,11 +735,11 @@ public class ComplaintsPage {
                 VBox leftText = new VBox(5, titleLabel, metaRow, viewDetails);
                 HBox.setHgrow(leftText, Priority.ALWAYS);
 
-                Label idLabel = new Label(complaintId);
+                Label idLabel = new Label(c.complaintId);
                 idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                Label statusPill = new Label(status);
-                statusPill.setStyle("-fx-background-color: " + pillBg + "; -fx-text-fill: " + pillFg + "; "
+                Label statusPill = new Label(c.status);
+                statusPill.setStyle("-fx-background-color: " + c.pillBg + "; -fx-text-fill: " + c.pillFg + "; "
                                 + "-fx-background-radius: 10; -fx-padding: 4 12 4 12; -fx-font-size: 10px; -fx-font-weight: bold;");
 
                 VBox rightBlock = new VBox(8, idLabel, statusPill);
