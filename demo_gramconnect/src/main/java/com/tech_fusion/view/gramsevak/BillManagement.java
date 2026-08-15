@@ -5,6 +5,7 @@ import com.tech_fusion.model.gramsevak.Bill;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -18,17 +19,16 @@ import javafx.scene.text.Text;
 
 public class BillManagement {
 
-    public static VBox getBillManageContent() {
+    public static VBox getBillManageContent(Runnable propertyBillAction ) //Runnable waterBillAction
+     {
 
         VBox content = new VBox(20);
         content.setPadding(new Insets(25, 30, 30, 30));
         VBox.setVgrow(content, Priority.ALWAYS);
         content.setStyle("-fx-background-color: transparent;");
-
         // ============================================================
         // HEADER
         // ============================================================
-
         BorderPane titlePane = new BorderPane();
 
         VBox titleBox = new VBox(5);
@@ -49,13 +49,10 @@ public class BillManagement {
         );
 
         titleBox.getChildren().addAll(title, subtitle);
-
         // ============================================================
         // GENERATE BUTTONS
         // ============================================================
-
         Button waterBillButton = new Button("+  Generate Water Bill");
-
         waterBillButton.setStyle(
                 "-fx-background-color: #0B4F43;" +
                 "-fx-text-fill: white;" +
@@ -64,13 +61,11 @@ public class BillManagement {
                 "-fx-padding: 10 15 10 15;" +
                 "-fx-cursor: hand;"
         );
-
         waterBillButton.setOnAction(event ->
                 System.out.println("Generate Water Bill clicked")
         );
 
         Button propertyBillButton = new Button("+  Generate Property Bill");
-
         propertyBillButton.setStyle(
                 "-fx-background-color: white;" +
                 "-fx-text-fill: #0B4F43;" +
@@ -81,10 +76,10 @@ public class BillManagement {
                 "-fx-padding: 9 15 9 15;" +
                 "-fx-cursor: hand;"
         );
-
-        propertyBillButton.setOnAction(event ->
-                System.out.println("Generate Property Bill clicked")
-        );
+        propertyBillButton.setOnAction(event ->{
+                System.out.println("Generate Property Bill clicked");
+                propertyBillAction.run();
+     });
 
         HBox titleButtons = new HBox(10);
         titleButtons.setAlignment(Pos.CENTER_RIGHT);
@@ -107,25 +102,21 @@ public class BillManagement {
                 "128",
                 "#0B4F43"
         );
-
         VBox paidBills = createSummaryCard(
                 "PAID",
                 "96",
                 "#16803C"
         );
-
         VBox pendingBills = createSummaryCard(
                 "PENDING",
                 "24",
                 "#E67E1F"
         );
-
         VBox overdueBills = createSummaryCard(
                 "OVERDUE",
                 "8",
                 "#D93025"
         );
-
         HBox.setHgrow(totalBills, Priority.ALWAYS);
         HBox.setHgrow(paidBills, Priority.ALWAYS);
         HBox.setHgrow(pendingBills, Priority.ALWAYS);
@@ -137,15 +128,11 @@ public class BillManagement {
                 pendingBills,
                 overdueBills
         );
-
         // ============================================================
         // SEARCH + FILTERS
         // ============================================================
-
         VBox filterCard = new VBox(12);
-
         filterCard.setPadding(new Insets(18));
-
         filterCard.setStyle(
                 "-fx-background-color: white;" +
                 "-fx-background-radius: 14;" +
@@ -154,7 +141,6 @@ public class BillManagement {
         );
 
         Label filterTitle = new Label("Search & Filter Bills");
-
         filterTitle.setStyle(
                 "-fx-font-size: 15px;" +
                 "-fx-font-weight: bold;" +
@@ -222,15 +208,11 @@ public class BillManagement {
                 filterTitle,
                 filterBox
         );
-
         // ============================================================
         // BILL LIST CARD
         // ============================================================
-
         VBox billSection = new VBox(12);
-
         billSection.setPadding(new Insets(20));
-
         billSection.setStyle(
                 "-fx-background-color: white;" +
                 "-fx-background-radius: 16;" +
@@ -239,9 +221,7 @@ public class BillManagement {
         );
 
         BorderPane billHeader = new BorderPane();
-
         Label billTitle = new Label("Recent Bills");
-
         billTitle.setStyle(
                 "-fx-font-size: 18px;" +
                 "-fx-font-weight: bold;" +
@@ -249,7 +229,6 @@ public class BillManagement {
         );
 
         Label viewAll = new Label("View All →");
-
         viewAll.setStyle(
                 "-fx-font-size: 12px;" +
                 "-fx-font-weight: bold;" +
@@ -259,11 +238,9 @@ public class BillManagement {
 
         billHeader.setLeft(billTitle);
         billHeader.setRight(viewAll);
-
         // ============================================================
         // BILL ITEMS
         // ============================================================
-
         VBox billList = new VBox(8);
 
         Bill bill1 = new Bill(
@@ -274,7 +251,6 @@ public class BillManagement {
                 "15 Oct 2026",
                 "Paid"
         );
-
         Bill bill2 = new Bill(
                 "Anita Sharma",
                 "H-205",
@@ -283,7 +259,6 @@ public class BillManagement {
                 "20 Oct 2026",
                 "Pending"
         );
-
         Bill bill3 = new Bill(
                 "Vikram Singh",
                 "H-310",
@@ -292,7 +267,6 @@ public class BillManagement {
                 "10 Oct 2026",
                 "Overdue"
         );
-
         Bill bill4 = new Bill(
                 "Sunita Patil",
                 "H-115",
@@ -301,7 +275,6 @@ public class BillManagement {
                 "25 Oct 2026",
                 "Paid"
         );
-
         billList.getChildren().addAll(
                 createBillItem(bill1, "#16803C"),
                 createBillItem(bill2, "#E67E1F"),
@@ -313,25 +286,20 @@ public class BillManagement {
                 billHeader,
                 billList
         );
-
         // ============================================================
         // ADD EVERYTHING
         // ============================================================
-
         content.getChildren().addAll(
                 titlePane,
                 summaryCards,
                 filterCard,
                 billSection
         );
-
         return content;
     }
-
     // ============================================================
     // SUMMARY CARD
     // ============================================================
-
     private static VBox createSummaryCard(
             String titleText,
             String numberText,
@@ -364,13 +332,10 @@ public class BillManagement {
         );
         return card;
     }
-
     // ============================================================
     // SINGLE BILL ITEM
     // ============================================================
-
     private static HBox createBillItem( Bill bill, String accent) {
-
         HBox item = new HBox(15);
         HBox.setHgrow(item, Priority.ALWAYS);
         item.setAlignment(Pos.CENTER_LEFT);
@@ -379,11 +344,9 @@ public class BillManagement {
                 "-fx-background-color: #F8FAF9;" +
                 "-fx-background-radius: 10;"
         );
-
         // ------------------------------------------------------------
         // ICON
         // ------------------------------------------------------------
-
         VBox iconBox = new VBox();
         VBox.setVgrow(iconBox, Priority.ALWAYS);
         iconBox.setAlignment(Pos.CENTER);
@@ -393,21 +356,17 @@ public class BillManagement {
                 "-fx-background-color: " + rgba(accent, 0.12) + ";" +
                 "-fx-background-radius: 10;"
         );
-
         Label icon = new Label(
                 bill.getBillType().equals("Water")
                         ? "💧"
                         : "🏠"
         );
-
         icon.setStyle("-fx-font-size: 18px;");
 
         iconBox.getChildren().add(icon);
-
         // ------------------------------------------------------------
         // CITIZEN DETAILS
         // ------------------------------------------------------------
-
         VBox citizenBox = new VBox(3);
         VBox.setVgrow(citizenBox, Priority.ALWAYS);
 
@@ -421,11 +380,9 @@ public class BillManagement {
                 citizen,
                 house
         );
-
         // ------------------------------------------------------------
         // BILL TYPE
         // ------------------------------------------------------------
-
         VBox typeBox = new VBox(3);
         VBox.setVgrow(typeBox, Priority.ALWAYS);
 
@@ -439,11 +396,9 @@ public class BillManagement {
                 typeTitle,
                 type
         );
-
         // ------------------------------------------------------------
         // AMOUNT
         // ------------------------------------------------------------
-
         VBox amountBox = new VBox(3);
         VBox.setVgrow(amountBox, Priority.ALWAYS);
 
@@ -457,11 +412,9 @@ public class BillManagement {
                 amountTitle,
                 amount
         );
-
         // ------------------------------------------------------------
         // DUE DATE
         // ------------------------------------------------------------
-
         VBox dateBox = new VBox(3);
         VBox.setVgrow(dateBox, Priority.ALWAYS);
 
@@ -475,11 +428,9 @@ public class BillManagement {
                 dateTitle,
                 date
         );
-
         // ------------------------------------------------------------
         // SPACER
         // ------------------------------------------------------------
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -511,23 +462,23 @@ public class BillManagement {
 
         return item;
     }
-
     // ============================================================
     // RGBA HELPER
     // ============================================================
-
     private static String rgba( String hex,double alpha) {
 
         int r = Integer.parseInt(hex.substring(1, 3), 16);
-
         int g = Integer.parseInt(hex.substring(3, 5), 16);
-
         int b = Integer.parseInt(hex.substring(5, 7), 16);
-
         return "rgba(" +
                 r + "," +
                 g + "," +
                 b + "," +
                 alpha + ")";
+    }
+
+    public static Node getBillManageContent(Object object, Object object2) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBillManageContent'");
     }
 }
