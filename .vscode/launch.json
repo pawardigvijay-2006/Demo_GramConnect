@@ -6,9 +6,15 @@
     "configurations": [
         {
             "type": "java",
+<<<<<<< HEAD
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.gramsevak.Main",
+=======
             "name": "VillagerMain",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.VillagerMain",
+>>>>>>> origin/development
             "projectName": "demo_gramconnect"
         },
         {
