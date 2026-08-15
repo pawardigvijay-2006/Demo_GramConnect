@@ -9,6 +9,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -37,6 +39,12 @@ import javafx.stage.Stage;
  * (Filename/class name keep the original "BudgetManagment" spelling so
  * this drops straight into the existing project without breaking any
  * other references to it.)
+ *
+ * NEW: a "Managing Village" switcher lives in the sidebar (same as
+ * {@link Dashboard}) so the BDO can toggle which village under their
+ * block this budget view is currently scoped to ("All Villages" or
+ * any single village). The title-row subtitle updates live to reflect
+ * the current selection.
  */
 public class BudgetManagment extends Application {
 
@@ -54,7 +62,21 @@ public class BudgetManagment extends Application {
 
     private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
+    /** Villages under this BDO's block. "All Villages" aggregates every one below it. */
+    private static final String[] VILLAGES = {
+            "All Villages", "Rampur", "Sitapur", "Madhavpur", "Ward 4 Cluster"
+    };
+
     private Label selectedNavItem;
+
+    /** Currently active village scope, defaults to the aggregate view. */
+    private String selectedVillage = VILLAGES[0];
+
+    private Label villageNameLabel;
+    private Label villageChevron;
+    private VBox villageListBox;
+    private Label scopeSubtitleStrong;
+    private boolean villageListExpanded = false;
 
     @Override
     public void start(Stage stage) {
@@ -137,8 +159,10 @@ public class BudgetManagment extends Application {
 
         header.getChildren().addAll(avatar, nameBox);
 
+        VBox villageSelector = buildVillageSelector();
+
         VBox nav = new VBox(6);
-        nav.setPadding(new Insets(16, 12, 16, 12));
+        nav.setPadding(new Insets(12, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
         Runnable toDashboard = () -> {
@@ -195,8 +219,112 @@ public class BudgetManagment extends Application {
 
         footer.getChildren().addAll(divider, smallLinks);
 
-        sidebar.getChildren().addAll(header, nav, footer);
+        sidebar.getChildren().addAll(header, villageSelector, nav, footer);
         return sidebar;
+    }
+
+    /* ============================================================
+     *  VILLAGE SWITCHER — lets the BDO toggle scope between
+     *  "All Villages" and any single village under their block.
+     *  (Identical behaviour/markup to Dashboard's switcher.)
+     * ============================================================ */
+    private VBox buildVillageSelector() {
+        VBox wrap = new VBox(8);
+        wrap.setPadding(new Insets(0, 20, 16, 20));
+
+        Label caption = new Label("MANAGING VILLAGE");
+        caption.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.08em;");
+
+        HBox toggleRow = new HBox(10);
+        toggleRow.setAlignment(Pos.CENTER_LEFT);
+        toggleRow.setPadding(new Insets(11, 14, 11, 14));
+        toggleRow.setMaxWidth(Double.MAX_VALUE);
+        String toggleBase = "-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.12); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        String toggleHover = "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.18); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        toggleRow.setStyle(toggleBase);
+
+        Label pin = new Label("\uD83D\uDCCD");
+        pin.setStyle("-fx-font-size: 13px;");
+
+        villageNameLabel = new Label(selectedVillage);
+        villageNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        villageChevron = new Label("\u25BE");
+        villageChevron.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.65);");
+
+        toggleRow.getChildren().addAll(pin, villageNameLabel, spacer, villageChevron);
+        toggleRow.setOnMouseEntered(e -> toggleRow.setStyle(toggleHover));
+        toggleRow.setOnMouseExited(e -> toggleRow.setStyle(toggleBase));
+
+        villageListBox = new VBox(2);
+        villageListBox.setPadding(new Insets(6, 0, 0, 0));
+        villageListBox.setVisible(false);
+        villageListBox.setManaged(false);
+
+        ToggleGroup group = new ToggleGroup();
+        for (String village : VILLAGES) {
+            villageListBox.getChildren().add(villageToggle(village, group));
+        }
+
+        toggleRow.setOnMouseClicked(e -> {
+            villageListExpanded = !villageListExpanded;
+            villageListBox.setVisible(villageListExpanded);
+            villageListBox.setManaged(villageListExpanded);
+            villageChevron.setText(villageListExpanded ? "\u25B4" : "\u25BE");
+        });
+
+        wrap.getChildren().addAll(caption, toggleRow, villageListBox);
+        return wrap;
+    }
+
+    private ToggleButton villageToggle(String village, ToggleGroup group) {
+        ToggleButton btn = new ToggleButton(village);
+        btn.setToggleGroup(group);
+        btn.setSelected(village.equals(selectedVillage));
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(9, 14, 9, 14));
+
+        String baseStyle = "-fx-background-color: transparent; -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 600;" +
+                "-fx-text-fill: rgba(11,61,46,0.75); -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + SAFFRON_MAIN + "; -fx-cursor: hand;";
+
+        btn.setStyle(btn.isSelected() ? activeStyle : baseStyle);
+
+        btn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            btn.setStyle(isSelected ? activeStyle : baseStyle);
+            if (isSelected) {
+                selectedVillage = village;
+                villageNameLabel.setText(selectedVillage);
+                updateScopeSubtitle();
+                // Collapse the list once a village has been chosen.
+                villageListExpanded = false;
+                villageListBox.setVisible(false);
+                villageListBox.setManaged(false);
+                villageChevron.setText("\u25BE");
+            }
+        });
+
+        return btn;
+    }
+
+    /** Keeps the page's "Showing data for:" label in sync with the selected village. */
+    private void updateScopeSubtitle() {
+        if (scopeSubtitleStrong == null) return;
+        if (VILLAGES[0].equals(selectedVillage)) {
+            scopeSubtitleStrong.setText("All Villages (Block)");
+        } else {
+            scopeSubtitleStrong.setText(selectedVillage);
+        }
     }
 
     private HBox navItem(String icon, String text, boolean active) {
@@ -350,9 +478,10 @@ public class BudgetManagment extends Application {
         HBox subtitleRow = new HBox(4);
         Label subtitle = new Label("Showing data for:");
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
-        Label subtitleStrong = new Label("All Villages (Block)");
-        subtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        subtitleRow.getChildren().addAll(subtitle, subtitleStrong);
+        scopeSubtitleStrong = new Label("All Villages (Block)");
+        scopeSubtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        updateScopeSubtitle();
+        subtitleRow.getChildren().addAll(subtitle, scopeSubtitleStrong);
         text.getChildren().addAll(title, subtitleRow);
 
     
@@ -377,7 +506,7 @@ public class BudgetManagment extends Application {
     private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
 
-        VBox totalCard = statCard("TOTAL BLOCK BUDGET", "\u20B916.8 Cr", "\uD83C\uDFDB", "rgba(11,61,46,0.10)");
+        VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83C\uDFDB","TOTAL BLOCK BUDGET", "\u20B916.8 Cr");
         VBox utilRow = new VBox(6);
         HBox utilLabels = new HBox();
         utilLabels.setAlignment(Pos.CENTER_LEFT);
@@ -391,17 +520,17 @@ public class BudgetManagment extends Application {
         utilRow.getChildren().addAll(utilLabels, progressBar(0.74, FOREST_DEEP, 8));
         totalCard.getChildren().add(utilRow);
 
-        VBox sanctionedCard = statCard("SANCTIONED AMOUNT", "\u20B912.5 Cr", "\u2705", "rgba(14,140,140,0.12)");
+        VBox sanctionedCard = kpiCard(SAFFRON_MAIN, "\u2705", "SANCTIONED AMOUNT", "\u20B912.5 Cr");
         Label sanctionedFooter = new Label("\u2197 +5% vs last quarter");
         sanctionedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
         sanctionedCard.getChildren().add(sanctionedFooter);
 
-        VBox releasedCard = statCard("RELEASED FUNDS", "\u20B98.4 Cr", "\u20B9", "rgba(124,92,252,0.12)");
+        VBox releasedCard = kpiCard(CONTEXT_TEAL, "\u20B9","RELEASED FUNDS", "\u20B98.4 Cr");
         Label releasedFooter = new Label("67% of sanctioned amount");
         releasedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         releasedCard.getChildren().add(releasedFooter);
 
-        VBox pendingCard = statCard("PENDING ALLOCATIONS", "\u20B94.1 Cr", "\uD83D\uDCCB", "rgba(224,122,31,0.12)");
+        VBox pendingCard = kpiCard(AI_VIOLET, "\uD83D\uDCCB", "PENDING ALLOCATIONS", "\u20B94.1 Cr");
         Label pendingFooter = new Label("Requires action this month");
         pendingFooter.setPadding(new Insets(6, 10, 6, 10));
         pendingFooter.setMaxWidth(Region.USE_PREF_SIZE);
@@ -417,29 +546,47 @@ public class BudgetManagment extends Application {
         return row;
     }
 
-    private VBox statCard(String label, String value, String icon, String iconBg) {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setStyle(cardStyle(18));
-        card.setMinHeight(150);
 
-        HBox top = new HBox();
-        top.setAlignment(Pos.CENTER_LEFT);
-        Label heading = new Label(label);
-        heading.setWrapText(true);
-        heading.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
-                "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 16px; -fx-padding: 8; -fx-background-color: " + iconBg + "; -fx-background-radius: 50%;");
-        top.getChildren().addAll(heading, spacer, iconLabel);
+     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
+        VBox card = new VBox();
+        card.setPrefWidth(320);
+        card.setMinHeight(190);
+        card.setStyle(cardStyle(16));
 
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        Region strip = new Region();
+        strip.setPrefHeight(6);
+        strip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 16 16 0 0;");
 
-        card.getChildren().addAll(top, valueLabel);
-        addHoverLift(card, 18);
+        VBox inner = new VBox(20);
+        inner.setPadding(new Insets(20, 24, 24, 24));
+        VBox.setVgrow(inner, Priority.ALWAYS);
+
+        HBox head = new HBox(12);
+        head.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconChip = new StackPane();
+        iconChip.setPrefSize(48, 48);
+        iconChip.setMinSize(48, 48);
+        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 12;");
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 18px; -fx-text-fill: " + accent + ";");
+        iconChip.getChildren().add(ic);
+        Label lbl = new Label(labelText);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+            "-fx-text-fill: rgba(11,61,46,0.80); -fx-letter-spacing: 0.08em;");
+        lbl.setWrapText(true);
+        head.getChildren().addAll(iconChip, lbl);
+
+        Region grow = new Region();
+        VBox.setVgrow(grow, Priority.ALWAYS);
+
+        VBox bottom = new VBox(10);
+        Label stat = new Label(statText);
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 40px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        bottom.getChildren().add(stat);
+
+        inner.getChildren().addAll(head, grow, bottom);
+        card.getChildren().addAll(strip, inner);
+        addHoverLift(card, 16);
         return card;
     }
 
