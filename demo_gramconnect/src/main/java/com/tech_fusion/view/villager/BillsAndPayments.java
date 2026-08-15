@@ -1,5 +1,8 @@
 package com.tech_fusion.view.villager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -30,6 +33,22 @@ import javafx.scene.control.Label;
  * ComplaintsPage.getComplaintsPage()):
  *
  *      root.setCenter(new BillsAndPayments().getBillsPane());
+ *
+ * ============================================================
+ * NEW IN THIS VERSION
+ * ============================================================
+ * - BillData is a small shared model (bill type, IDs, amounts, due
+ *   date, status, UPI id) so "Pay Now" has real data to hand off.
+ * - BILLS / PAYMENT_HISTORY are static, in-memory stores (same
+ *   pattern as ComplaintsPage.COMPLAINTS) shared with PayBillPage,
+ *   so a successful payment is reflected here immediately without
+ *   re-fetching anything.
+ * - Each "My Bills" card's "Pay Now" button now navigates to
+ *   PayBillPage.getPayBillScene(bill, backAction, backToBills),
+ *   passing the specific BillData for that card.
+ * - markBillPaid(...) is called by PayBillPage after a successful
+ *   Razorpay UPI payment: it flips the bill's status to PAID (so it
+ *   drops out of "My Bills") and adds a row to Payment History.
  * ============================================================
  */
 public class BillsAndPayments {
@@ -51,10 +70,108 @@ public class BillsAndPayments {
         private static final String SIDEBAR_TOP = "#CDEBD8";
         private static final String SIDEBAR_MID = "#BCE3CC";
         private static final String SIDEBAR_BOT = "#A9D8BD";
-        // private static final String DELAYED_RED = "#D94C38";
+
+        // =================================================================
+        // SHARED DATA MODEL + STORE
+        // Package-visible so PayBillPage can read/update it directly.
+        // Replace with a real BillingService/DB call when one exists.
+        // =================================================================
+        static class BillData {
+                String icon;
+                String iconColor;
+                String name;
+                String billId;
+                String consumerId;
+                String consumerName;
+                String billingPeriod;
+                String dueDate;
+                double amount;
+                double lateFee;
+                String status; // "DUE", "UPCOMING", "PAID"
+                String statusColor;
+                String upiId;
+
+                BillData(String icon, String iconColor, String name, String billId, String consumerId,
+                                String consumerName, String billingPeriod, String dueDate, double amount,
+                                double lateFee, String status, String statusColor, String upiId) {
+                        this.icon = icon;
+                        this.iconColor = iconColor;
+                        this.name = name;
+                        this.billId = billId;
+                        this.consumerId = consumerId;
+                        this.consumerName = consumerName;
+                        this.billingPeriod = billingPeriod;
+                        this.dueDate = dueDate;
+                        this.amount = amount;
+                        this.lateFee = lateFee;
+                        this.status = status;
+                        this.statusColor = statusColor;
+                        this.upiId = upiId;
+                }
+        }
+
+        /** One row in the Payment History table. */
+        static class PaymentRecord {
+                String icon;
+                String iconColor;
+                String name;
+                String reference;
+                String date;
+                double amount;
+
+                PaymentRecord(String icon, String iconColor, String name, String reference, String date,
+                                double amount) {
+                        this.icon = icon;
+                        this.iconColor = iconColor;
+                        this.name = name;
+                        this.reference = reference;
+                        this.date = date;
+                        this.amount = amount;
+                }
+        }
+
+        // TODO: replace with BillingService.getBillsForVillager(userId) /
+        // PaymentService.getPaymentHistory(userId).
+        static final List<BillData> BILLS = new ArrayList<>();
+        static final List<PaymentRecord> PAYMENT_HISTORY = new ArrayList<>();
+
+        static {
+                BILLS.add(new BillData(
+                                "\uD83D\uDCA7", "#3A8CD6", "Water Bill",
+                                "WB/2024/000123", "WCON-88213", "Ramesh Suresh Patil",
+                                "Apr 2024 - May 2024", "25 May 2024",
+                                240.00, 0.00, "DUE", DELAYED_RED, "gramconnect@upi"));
+                BILLS.add(new BillData(
+                                "\uD83C\uDFE0", FOREST_DEEP, "Property Tax",
+                                "PT/2024/000789", "PCON-55210", "Ramesh Suresh Patil",
+                                "FY 2024-25", "15 Jun 2024",
+                                1200.00, 0.00, "DUE", DELAYED_RED, "gramconnect@upi"));
+
+                PAYMENT_HISTORY.add(new PaymentRecord(
+                                "\uD83D\uDCA7", "#3A8CD6", "Water Bill",
+                                "WB/2024/000098", "10 Apr 2024", 220.00));
+                PAYMENT_HISTORY.add(new PaymentRecord(
+                                "\uD83C\uDFE0", FOREST_DEEP, "Property Tax",
+                                "PT/2023/000654", "20 Jan 2024", 1150.00));
+        }
+
+        /**
+         * Called by PayBillPage after a successful Razorpay UPI payment. Marks the
+         * bill as PAID (so it drops out of "My Bills") and adds it to the top of
+         * Payment History.
+         */
+        static void markBillPaid(BillData bill, String razorpayPaymentId, String paidOn) {
+                bill.status = "PAID";
+                PAYMENT_HISTORY.add(0, new PaymentRecord(
+                                bill.icon, bill.iconColor, bill.name, bill.billId, paidOn, bill.amount + bill.lateFee));
+        }
+
+        // Instance state
+        private Runnable backAction;
 
         /** Public entry point - returns the fully built Bills & Payments screen. */
         public Scene getBillsScene(Runnable backToDashboardAction) {
+                this.backAction = backToDashboardAction;
 
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -67,7 +184,7 @@ public class BillsAndPayments {
 
         // =================================================================
         // SIDEBAR - identical structure/colors to VillagerDashboard.java,
-        // except "Project transparency" is the active row here, and
+        // except "Bills & Payments" is the active row here, and
         // "Dashboard" calls the Runnable instead of homeStage.setScene(...)
         // directly (this class never touches a Stage at all).
         // =================================================================
@@ -110,53 +227,43 @@ public class BillsAndPayments {
                 VBox logoBox = new VBox(logo);
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // ---------------- Nav items ----------------
-                // "Dashboard" is the only item that needs to actually navigate
-                // anywhere from this page - it just calls the Runnable it was
-                // handed. The rest are inactive placeholders for now, same as
-                // they'd be on any page other than their own.
-
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
                         backToDashboardAction.run();
                 });
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
-                projectsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                projectsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
                 });
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
-                complaintsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                complaintsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
                 });
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
-                schemesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                schemesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
                 });
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
-                certificatesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                certificatesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
                 });
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", true);
-                
+                billsNav.setOnMouseClicked(e -> {
+                        VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
+                });
+
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
-                announcementsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                announcementsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
                 });
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", false);
-                gramSabhaNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                gramSabhaNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
                 });
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
-                aiAssistantNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                aiAssistantNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
                 });
                 // TODO: wire these the same way once each page exposes its own
@@ -368,7 +475,7 @@ public class BillsAndPayments {
         }
 
         // =================================================================
-        // MY BILLS (Water Bill + Property Tax only)
+        // MY BILLS (Water Bill + Property Tax only, skips anything already PAID)
         // =================================================================
         private VBox buildMyBillsCard() {
 
@@ -396,12 +503,21 @@ public class BillsAndPayments {
                 HBox header = new HBox(title, headerSpacer, viewAll);
                 header.setAlignment(Pos.CENTER_LEFT);
 
-                HBox billsRow = new HBox(
-                                18,
-                                billCard("\uD83D\uDCA7", "#3A8CD6", "Water Bill", "\u20B9240.00", "Due Date: 25 May 2024", "DUE",
-                                                DELAYED_RED),
-                                billCard("\uD83C\uDFE0", FOREST_DEEP, "Property Tax", "\u20B91,200.00", "Due Date: 15 Jun 2024",
-                                                "UPCOMING", CONTEXT_TEAL));
+                HBox billsRow = new HBox(18);
+                boolean anyPending = false;
+                for (BillData bill : BILLS) {
+                        if (!"PAID".equals(bill.status)) {
+                                billsRow.getChildren().add(billCard(bill));
+                                anyPending = true;
+                        }
+                }
+                if (!anyPending) {
+                        Label allPaid = new Label("You're all caught up - no pending bills.");
+                        allPaid.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: "
+                                                        + TEXT_SECONDARY + ";");
+                        billsRow.getChildren().add(allPaid);
+                }
 
                 VBox card = new VBox(16, header, billsRow);
                 card.setPadding(new Insets(24));
@@ -411,17 +527,16 @@ public class BillsAndPayments {
         }
 
         /** One "My Bills" card: icon chip, name, amount, due date, status pill, Pay Now button. */
-        private VBox billCard(String icon, String iconColor, String name, String amount, String dueDate,
-                        String statusText, String statusColor) {
+        private VBox billCard(BillData bill) {
 
-                Label iconLabel = new Label(icon);
+                Label iconLabel = new Label(bill.icon);
                 iconLabel.setStyle("-fx-font-size: 18px;");
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(44, 44);
                 iconChip.setMaxSize(44, 44);
-                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 12;");
+                iconChip.setStyle("-fx-background-color: " + bill.iconColor + "; -fx-background-radius: 12;");
 
-                Label nameLabel = new Label(name);
+                Label nameLabel = new Label(bill.name);
                 nameLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 14px;" +
@@ -431,25 +546,25 @@ public class BillsAndPayments {
                 HBox top = new HBox(12, iconChip, nameLabel);
                 top.setAlignment(Pos.CENTER_LEFT);
 
-                Label amountLabel = new Label(amount);
+                Label amountLabel = new Label("\u20B9" + moneyFormat(bill.amount + bill.lateFee));
                 amountLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 22px;" +
                                                 "-fx-font-weight: 900;" +
                                                 "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                Label dueLabel = new Label(dueDate);
+                Label dueLabel = new Label("Due Date: " + bill.dueDate);
                 dueLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 11px;" +
                                                 "-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                Label statusPill = new Label(statusText);
+                Label statusPill = new Label(bill.status);
                 statusPill.setPadding(new Insets(4, 10, 4, 10));
                 statusPill.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
-                                                "-fx-background-color: " + rgba(statusColor, 0.14) + ";" +
-                                                "-fx-text-fill: " + statusColor + ";" +
+                                                "-fx-background-color: " + rgba(bill.statusColor, 0.14) + ";" +
+                                                "-fx-text-fill: " + bill.statusColor + ";" +
                                                 "-fx-background-radius: 999;" +
                                                 "-fx-font-size: 10px;" +
                                                 "-fx-font-weight: 800;");
@@ -467,6 +582,16 @@ public class BillsAndPayments {
                                                 "-fx-padding: 10;" +
                                                 "-fx-cursor: hand;" +
                                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.30), 8, 0.1, 0, 3);");
+
+                // Navigation is conflict-free: PayBillPage gets the original Dashboard
+                // backAction AND a dedicated "return to Bills & Payments" callback, so
+                // it never has to guess which page to return to.
+                payNow.setOnAction(e -> VillagerDashboard.homeStage.setScene(
+                                new PayBillPage().getPayBillScene(
+                                                bill,
+                                                backAction,
+                                                () -> VillagerDashboard.homeStage.setScene(
+                                                                new BillsAndPayments().getBillsScene(backAction)))));
 
                 VBox card = new VBox(10, top, amountLabel, dueLabel, statusPill, payNow);
                 card.setPadding(new Insets(18));
@@ -533,12 +658,11 @@ public class BillsAndPayments {
                                 tableHeaderLabel("Status"),
                                 tableHeaderLabel("Receipt"));
 
-                // TODO: replace with PaymentService.getPaymentHistory(userId), restricted here
-                // to Water Bill + Property Tax as requested.
-                addHistoryRow(table, 1, "\uD83D\uDCA7", "#3A8CD6", "Water Bill", "WB/2024/000123", "10 May 2024",
-                                "\u20B9240.00");
-                addHistoryRow(table, 2, "\uD83C\uDFE0", FOREST_DEEP, "Property Tax", "PT/2024/000789", "20 Apr 2024",
-                                "\u20B91,200.00");
+                int rowIndex = 1;
+                for (PaymentRecord record : PAYMENT_HISTORY) {
+                        addHistoryRow(table, rowIndex, record);
+                        rowIndex++;
+                }
 
                 VBox card = new VBox(16, header, table);
                 card.setPadding(new Insets(24));
@@ -559,17 +683,16 @@ public class BillsAndPayments {
         }
 
         /** Adds one "paid bill" row (icon+name, ref, date, amount, PAID pill, download receipt button). */
-        private void addHistoryRow(GridPane table, int rowIndex, String icon, String iconColor, String name,
-                        String reference, String date, String amount) {
+        private void addHistoryRow(GridPane table, int rowIndex, PaymentRecord record) {
 
-                Label iconLabel = new Label(icon);
+                Label iconLabel = new Label(record.icon);
                 iconLabel.setStyle("-fx-font-size: 13px;");
                 StackPane iconChip = new StackPane(iconLabel);
                 iconChip.setPrefSize(28, 28);
                 iconChip.setMaxSize(28, 28);
-                iconChip.setStyle("-fx-background-color: " + iconColor + "; -fx-background-radius: 8;");
+                iconChip.setStyle("-fx-background-color: " + record.iconColor + "; -fx-background-radius: 8;");
 
-                Label nameLabel = new Label(name);
+                Label nameLabel = new Label(record.name);
                 nameLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 12px;" +
@@ -578,9 +701,9 @@ public class BillsAndPayments {
                 HBox typeCell = new HBox(8, iconChip, nameLabel);
                 typeCell.setAlignment(Pos.CENTER_LEFT);
 
-                Label refLabel = rowText(reference, TEXT_SECONDARY, 600);
-                Label dateLabel = rowText(date, TEXT_SECONDARY, 600);
-                Label amountLabel = rowText(amount, TEXT_PRIMARY, 800);
+                Label refLabel = rowText(record.reference, TEXT_SECONDARY, 600);
+                Label dateLabel = rowText(record.date, TEXT_SECONDARY, 600);
+                Label amountLabel = rowText("\u20B9" + moneyFormat(record.amount), TEXT_PRIMARY, 800);
 
                 Label statusPill = new Label("Paid");
                 statusPill.setPadding(new Insets(3, 10, 3, 10));
@@ -605,7 +728,7 @@ public class BillsAndPayments {
                                                 "-fx-background-radius: 8;" +
                                                 "-fx-cursor: hand;");
                 // TODO: wire to ReceiptService.downloadReceipt(reference)
-                downloadButton.setOnMouseClicked(e -> System.out.println("Download receipt: " + reference));
+                downloadButton.setOnMouseClicked(e -> System.out.println("Download receipt: " + record.reference));
 
                 Insets pad = new Insets(12, 4, 12, 4);
                 for (var node : new javafx.scene.Node[] { typeCell, refLabel, dateLabel, amountLabel, statusPill,
@@ -631,6 +754,10 @@ public class BillsAndPayments {
                                                 "-fx-font-weight: " + weight + ";" +
                                                 "-fx-text-fill: " + color + ";");
                 return label;
+        }
+
+        private String moneyFormat(double amount) {
+                return new java.text.DecimalFormat("#,##0.00").format(amount);
         }
 
         // =================================================================
