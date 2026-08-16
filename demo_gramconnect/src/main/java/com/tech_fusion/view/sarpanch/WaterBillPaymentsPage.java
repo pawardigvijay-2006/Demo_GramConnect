@@ -1,11 +1,22 @@
 package com.tech_fusion.view.sarpanch;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
@@ -14,8 +25,6 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -27,24 +36,24 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 /**
- * GramConnect - Citizen Services Page.
+ * GramConnect - Water Bill Payments Page.
  *
- * Lets the Sarpanch approve certificate applications, building permissions,
- * water connections, and manage property/water tax records. Visual language,
- * sidebar and top bar are kept identical to SarpanchDashboard, ProjectTrackerPage
- * and SarpanchComplaintsPage; navigation follows the same Runnable-based pattern
- * used across those pages, so this page can be opened from (and returned to)
- * every other page in the sidebar.
+ * Opened from the "Water Bill Payments" action card on CitizenServicesPage.
+ * Shows all water bill revenue collected from villagers, broken down
+ * individually per household / billing period, along with summary stats,
+ * a status filter and a search box. Visual language, sidebar and top bar
+ * match CitizenServicesPage exactly, and navigation follows the same
+ * Runnable-based pattern used across the app.
  */
-public class CitizenServicesPage {
+public class WaterBillPaymentsPage {
 
     /* ---------- Color palette (kept identical to the other pages) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
     private static final String FOREST_LIGHT  = "#0F4736";
     private static final String SAFFRON_MAIN  = "#E07A1F";
     private static final String CONTEXT_TEAL  = "#0E8C8C";
-    private static final String AI_VIOLET     = "#7C5CFC";
-    //private static final String DELAYED_RED   = "#D94C38";
+    //private static final String AI_VIOLET     = "#7C5CFC";
+    private static final String DELAYED_RED   = "#D94C38";
     private static final String SIDEBAR_TOP   = "#CDEBD8";
     private static final String SIDEBAR_MID   = "#Bce3cc";
     private static final String SIDEBAR_BOT   = "#A9D8BD";
@@ -54,15 +63,76 @@ public class CitizenServicesPage {
     private static final String BACKGROUND_IMAGE_PATH =
         "/assets/images/BackgroundImage.png";
 
-    /** The action to run to navigate back to the Dashboard (passed in from SarpanchDashboard). */
+    private Runnable backToCitizenServicesAction;
     private Runnable backToDashboardAction;
 
+    /* ============================================================
+     *  DATA MODEL
+     * ============================================================ */
+    public static class WaterBillRecord {
+        private final SimpleStringProperty villagerName;
+        private final SimpleStringProperty householdId;
+        private final SimpleStringProperty ward;
+        private final SimpleStringProperty billingPeriod;
+        private final SimpleStringProperty unitsConsumed;
+        private final SimpleStringProperty amount;
+        private final SimpleStringProperty status;
+        private final SimpleStringProperty paymentDate;
+
+        public WaterBillRecord(String villagerName, String householdId, String ward, String billingPeriod,
+                                String unitsConsumed, String amount, String status, String paymentDate) {
+            this.villagerName = new SimpleStringProperty(villagerName);
+            this.householdId = new SimpleStringProperty(householdId);
+            this.ward = new SimpleStringProperty(ward);
+            this.billingPeriod = new SimpleStringProperty(billingPeriod);
+            this.unitsConsumed = new SimpleStringProperty(unitsConsumed);
+            this.amount = new SimpleStringProperty(amount);
+            this.status = new SimpleStringProperty(status);
+            this.paymentDate = new SimpleStringProperty(paymentDate);
+        }
+
+        public String getVillagerName() { return villagerName.get(); }
+        public String getHouseholdId() { return householdId.get(); }
+        public String getWard() { return ward.get(); }
+        public String getBillingPeriod() { return billingPeriod.get(); }
+        public String getUnitsConsumed() { return unitsConsumed.get(); }
+        public String getAmount() { return amount.get(); }
+        public String getStatus() { return status.get(); }
+        public String getPaymentDate() { return paymentDate.get(); }
+
+        /** Numeric amount, stripped of currency symbol/commas, used for summary totals. */
+        public double getAmountValue() {
+            try {
+                return Double.parseDouble(amount.get().replace("\u20B9", "").replace(",", "").trim());
+            } catch (NumberFormatException e) {
+                return 0.0;
+            }
+        }
+    }
+
+    /** Sample water bill revenue records, one row per villager/household per billing period. */
+    private List<WaterBillRecord> loadRecords() {
+        List<WaterBillRecord> records = new ArrayList<>();
+        records.add(new WaterBillRecord("Ramesh Kadam", "HH-101", "Ward 1", "Jul 2026", "12 KL", "\u20B9480", "Paid", "05 Aug 2026"));
+        records.add(new WaterBillRecord("Sunita Jadhav", "HH-102", "Ward 1", "Jul 2026", "9 KL", "\u20B9360", "Paid", "03 Aug 2026"));
+        records.add(new WaterBillRecord("Vitthal More", "HH-103", "Ward 2", "Jul 2026", "15 KL", "\u20B9600", "Pending", "\u2014"));
+        records.add(new WaterBillRecord("Anita Pawar", "HH-104", "Ward 2", "Jul 2026", "7 KL", "\u20B9280", "Paid", "07 Aug 2026"));
+        records.add(new WaterBillRecord("Ganesh Shinde", "HH-105", "Ward 3", "Jul 2026", "11 KL", "\u20B9440", "Overdue", "\u2014"));
+        records.add(new WaterBillRecord("Kavita Deshmukh", "HH-106", "Ward 3", "Jul 2026", "10 KL", "\u20B9400", "Paid", "02 Aug 2026"));
+        records.add(new WaterBillRecord("Prakash Bhosale", "HH-107", "Ward 1", "Jun 2026", "13 KL", "\u20B9520", "Paid", "06 Jul 2026"));
+        records.add(new WaterBillRecord("Meera Kale", "HH-108", "Ward 4", "Jul 2026", "8 KL", "\u20B9320", "Pending", "\u2014"));
+        records.add(new WaterBillRecord("Suresh Gaikwad", "HH-109", "Ward 4", "Jul 2026", "14 KL", "\u20B9560", "Paid", "08 Aug 2026"));
+        records.add(new WaterBillRecord("Lata Patil", "HH-110", "Ward 2", "Jun 2026", "9 KL", "\u20B9360", "Paid", "04 Jul 2026"));
+        records.add(new WaterBillRecord("Dinesh Wagh", "HH-111", "Ward 5", "Jul 2026", "16 KL", "\u20B9640", "Overdue", "\u2014"));
+        records.add(new WaterBillRecord("Sarika Chavan", "HH-112", "Ward 5", "Jul 2026", "10 KL", "\u20B9400", "Paid", "05 Aug 2026"));
+        return records;
+    }
+
     /**
-     * Builds the Citizen Services scene and returns it.
-     * backToDashboardAction is stored and invoked when the user clicks "Dashboard"
-     * in the sidebar, matching the Runnable navigation pattern used by every other page.
+     * Builds the Water Bill Payments scene and returns it.
      */
-    public Scene getCitizenServicesScene(Runnable backToDashboardAction) {
+    public Scene getWaterBillPaymentsScene(Runnable backToCitizenServicesAction, Runnable backToDashboardAction) {
+        this.backToCitizenServicesAction = backToCitizenServicesAction;
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
@@ -95,7 +165,7 @@ public class CitizenServicesPage {
     }
 
     /* ============================================================
-     *  SIDEBAR  (identical to the other pages, "Citizen Services" active)
+     *  SIDEBAR  (identical to CitizenServicesPage, "Citizen Services" active)
      * ============================================================ */
     private VBox buildSidebar() {
         VBox sidebar = new VBox();
@@ -135,29 +205,26 @@ public class CitizenServicesPage {
         nav.setPadding(new Insets(16, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
-        dashboardNav.setOnMouseClicked(e -> {
-            System.out.println("Back to Dashboard clicked");
-            backToDashboardAction.run();
-        });
+        dashboardNav.setOnMouseClicked(e -> backToDashboardAction.run());
 
         HBox projectTrackerNav = navItem("\uD83D\uDDC2", "Project Tracker", false);
         projectTrackerNav.setOnMouseClicked(e -> {
-            System.out.println("Project Tracker clicked");
             ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
             SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
         });
 
         HBox complaintsNav = navItem("\u26A0", "Complaints", false);
         complaintsNav.setOnMouseClicked(e -> {
-            System.out.println("Complaints clicked");
             SarpanchComplaintsPage complaintsPage = new SarpanchComplaintsPage();
             SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", true);
+        citizenServicesNav.setOnMouseClicked(e -> backToCitizenServicesAction.run());
+
         HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
         announcementsNav.setOnMouseClicked(e -> {
-            System.out.println("Announcements clicked");
             AnnouncementsPage announcementsPage = new AnnouncementsPage();
             SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
             SarpanchDashboard.myStage.setScene(announcementsPage.getAnnouncementsScene(backToDashboardAction));
@@ -167,7 +234,7 @@ public class CitizenServicesPage {
             dashboardNav,
             projectTrackerNav,
             complaintsNav,
-            navItem("\uD83D\uDCC4", "Citizen Services", true),
+            citizenServicesNav,
             announcementsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
@@ -235,6 +302,7 @@ public class CitizenServicesPage {
             wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
                 "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
             wrap.setMaxWidth(Double.MAX_VALUE);
+            wrap.setCursor(javafx.scene.Cursor.HAND);
             return wrap;
         } else {
             String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
@@ -338,50 +406,167 @@ public class CitizenServicesPage {
     /* ============================================================
      *  MAIN CONTENT
      * ============================================================ */
+    private ObservableList<WaterBillRecord> allRecords;
+    private FilteredList<WaterBillRecord> filteredRecords;
+
     private VBox buildMainContent() {
-        VBox main = new VBox(32);
+        VBox main = new VBox(28);
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
+        HBox breadcrumb = new HBox(8);
+        breadcrumb.setAlignment(Pos.CENTER_LEFT);
+        Label backArrow = new Label("\u2190 Citizen Services");
+        backArrow.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700;" +
+            "-fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
+        backArrow.setOnMouseClicked(e -> backToCitizenServicesAction.run());
+        breadcrumb.getChildren().add(backArrow);
+
         VBox welcome = new VBox(6);
-        Label welcomeTitle = new Label("Citizen Services");
+        Label welcomeTitle = new Label("Water Bill Payments");
         welcomeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label welcomeSub = new Label("Manage property and water tax records, and review water bill and property tax payments collected from every villager.");
+        Label welcomeSub = new Label("All water bill revenue collected from villagers, broken down by household and billing period.");
         welcomeSub.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.70);");
         welcomeSub.setWrapText(true);
         welcome.getChildren().addAll(welcomeTitle, welcomeSub);
 
-        main.getChildren().addAll(
-            welcome,
-            buildQuickStatsRow(),
-            buildFeatureGrid()
-        );
+        List<WaterBillRecord> records = loadRecords();
+        allRecords = FXCollections.observableArrayList(records);
+        filteredRecords = new FilteredList<>(allRecords, r -> true);
+
+        double totalCollected = 0;
+        int paidCount = 0, pendingCount = 0, overdueCount = 0;
+        for (WaterBillRecord r : records) {
+            if (null != r.getStatus()) switch (r.getStatus()) {
+                case "Paid" -> {
+                    totalCollected += r.getAmountValue();
+                    paidCount++;
+                }
+                case "Pending" -> pendingCount++;
+                case "Overdue" -> overdueCount++;
+                default -> {
+                }
+            }
+        }
+
+        HBox statsRow = new HBox(24);
+        statsRow.setAlignment(Pos.TOP_LEFT);
+        VBox s1 = kpiCard(CONTEXT_TEAL, "\u20B9", "TOTAL REVENUE COLLECTED", "\u20B9" + String.format("%,.0f", totalCollected));
+        VBox s2 = kpiCard(FOREST_DEEP, "\uD83D\uDCC4", "TOTAL RECORDS", String.valueOf(records.size()));
+        VBox s3 = kpiCard(SAFFRON_MAIN, "\u2713", "PAID", String.valueOf(paidCount));
+        VBox s4 = kpiCard(DELAYED_RED, "!", "PENDING / OVERDUE", String.valueOf(pendingCount + overdueCount));
+        HBox.setHgrow(s1, Priority.ALWAYS);
+        HBox.setHgrow(s2, Priority.ALWAYS);
+        HBox.setHgrow(s3, Priority.ALWAYS);
+        HBox.setHgrow(s4, Priority.ALWAYS);
+        statsRow.getChildren().addAll(s1, s2, s3, s4);
+
+        HBox toolsRow = buildToolsRow();
+        TableView<WaterBillRecord> table = buildTable();
+
+        main.getChildren().addAll(breadcrumb, welcome, statsRow, toolsRow, table);
         return main;
     }
 
-    /* ============================================================
-     *  QUICK STATS ROW (same KPI-card visual language as the other pages)
-     * ============================================================ */
-    private HBox buildQuickStatsRow() {
-        HBox row = new HBox(24);
-        row.setAlignment(Pos.TOP_LEFT);
+    private HBox buildToolsRow() {
+        HBox row = new HBox(16);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(4, 0, 4, 0));
 
-        //VBox kpi1 = kpiCard(FOREST_DEEP, "\uD83D\uDCDC", "CERTIFICATE REQUESTS", "12");
-        //VBox kpi2 = kpiCard(SAFFRON_MAIN, "\uD83C\uDFD7", "BUILDING PERMISSIONS", "4");
-        VBox kpi3 = kpiCard(CONTEXT_TEAL, "\uD83D\uDCA7", "OVERALL REVENUE AMOUNT", "24,010");
-        VBox kpi4 = kpiCard(AI_VIOLET, "\u20B9", "TAX RECORDS PENDING", "9");
+        HBox searchBox = new HBox(8);
+        searchBox.setAlignment(Pos.CENTER_LEFT);
+        searchBox.setPadding(new Insets(0, 16, 0, 16));
+        searchBox.setPrefWidth(340);
+        searchBox.setPrefHeight(42);
+        searchBox.setStyle(cardStyle(12));
+        Label searchIcon = new Label("\uD83D\uDD0D");
+        searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search by villager or household ID...");
+        searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
+            "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+        searchBox.getChildren().addAll(searchIcon, searchField);
 
-        //HBox.setHgrow(kpi1, Priority.ALWAYS);
-        //HBox.setHgrow(kpi2, Priority.ALWAYS);
-        HBox.setHgrow(kpi3, Priority.ALWAYS);
-        HBox.setHgrow(kpi4, Priority.ALWAYS);
-        row.getChildren().addAll(kpi3, kpi4);
+        Label filterLbl = new Label("Status:");
+        filterLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        ComboBox<String> statusFilter = new ComboBox<>(FXCollections.observableArrayList("All", "Paid", "Pending", "Overdue"));
+        statusFilter.setValue("All");
+        statusFilter.setPrefHeight(42);
+        statusFilter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-background-radius: 10;");
+
+        searchField.textProperty().addListener((obs, oldV, newV) -> applyFilter(searchField.getText(), statusFilter.getValue()));
+        statusFilter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(searchField.getText(), statusFilter.getValue()));
+
+        row.getChildren().addAll(searchBox, filterLbl, statusFilter);
         return row;
     }
 
+    private void applyFilter(String query, String status) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        filteredRecords.setPredicate(r -> {
+            boolean matchesQuery = q.isEmpty()
+                || r.getVillagerName().toLowerCase().contains(q)
+                || r.getHouseholdId().toLowerCase().contains(q)
+                || r.getWard().toLowerCase().contains(q);
+            boolean matchesStatus = "All".equals(status) || r.getStatus().equals(status);
+            return matchesQuery && matchesStatus;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private TableView<WaterBillRecord> buildTable() {
+        TableView<WaterBillRecord> table = new TableView<>();
+        table.setItems(filteredRecords);
+        table.setStyle(cardStyle(16) + " -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px;");
+        table.setPrefHeight(480);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        TableColumn<WaterBillRecord, String> nameCol = new TableColumn<>("Villager");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("villagerName"));
+
+        TableColumn<WaterBillRecord, String> hhCol = new TableColumn<>("Household ID");
+        hhCol.setCellValueFactory(new PropertyValueFactory<>("householdId"));
+
+        TableColumn<WaterBillRecord, String> wardCol = new TableColumn<>("Ward");
+        wardCol.setCellValueFactory(new PropertyValueFactory<>("ward"));
+
+        TableColumn<WaterBillRecord, String> periodCol = new TableColumn<>("Billing Period");
+        periodCol.setCellValueFactory(new PropertyValueFactory<>("billingPeriod"));
+
+        TableColumn<WaterBillRecord, String> unitsCol = new TableColumn<>("Units Consumed");
+        unitsCol.setCellValueFactory(new PropertyValueFactory<>("unitsConsumed"));
+
+        TableColumn<WaterBillRecord, String> amountCol = new TableColumn<>("Amount");
+        amountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+
+        TableColumn<WaterBillRecord, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setCellFactory(col -> new javafx.scene.control.TableCell<WaterBillRecord, String>() {
+            @Override
+            protected void updateItem(String value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) { setText(null); setStyle(""); return; }
+                setText(value);
+                String color = "Paid".equals(value) ? CONTEXT_TEAL : "Pending".equals(value) ? SAFFRON_MAIN : DELAYED_RED;
+                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: 800;");
+            }
+        });
+
+        TableColumn<WaterBillRecord, String> dateCol = new TableColumn<>("Payment Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
+
+        table.getColumns().addAll(nameCol, hhCol, wardCol, periodCol, unitsCol, amountCol, statusCol, dateCol);
+        return table;
+    }
+
+    /* ============================================================
+     *  KPI CARD (same visual language as CitizenServicesPage)
+     * ============================================================ */
     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
         VBox card = new VBox();
-        card.setPrefWidth(320);
+        card.setPrefWidth(300);
         card.setMinHeight(140);
         card.setStyle(cardStyle(16));
 
@@ -408,140 +593,15 @@ public class CitizenServicesPage {
         head.getChildren().addAll(iconChip, lbl);
 
         Label stat = new Label(statText);
-        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
         inner.getChildren().addAll(head, stat);
         card.getChildren().addAll(strip, inner);
-        addHoverLift(card, 16);
         return card;
     }
 
     /* ============================================================
-     *  FEATURE GRID
-     * ============================================================ */
-    private VBox buildFeatureGrid() {
-        VBox wrap = new VBox(20);
-
-        HBox head = new HBox(12);
-        head.setAlignment(Pos.CENTER_LEFT);
-        StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(40, 40);
-        iconChip.setMinSize(40, 40);
-        iconChip.setStyle("-fx-background-color: rgba(11,61,46,0.10); -fx-background-radius: 999;");
-        Label hIcon = new Label("\uD83D\uDCC4");
-        hIcon.setStyle("-fx-font-size: 16px; -fx-text-fill: " + FOREST_DEEP + ";");
-        iconChip.getChildren().add(hIcon);
-        Label title = new Label("Citizen Services Actions");
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        head.getChildren().addAll(iconChip, title);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(24);
-        grid.setVgap(24);
-        for (int i = 0; i < 3; i++) {
-            ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth(100.0 / 3.0);
-            grid.getColumnConstraints().add(cc);
-        }
-
-        String[][] features = {
-            //{"\uD83E\uDDFE", "Manage Property Tax & Water Tax Records", "Track dues, update payments and manage records for property and water tax.", FOREST_DEEP},
-            {"\uD83D\uDCA7", "Water Bill Payments", "View water bill revenue collected from every villager, broken down by household and billing period.", CONTEXT_TEAL},
-            {"\u20B9", "Property Tax Payments", "View property tax revenue collected from every villager, broken down by owner and property.", AI_VIOLET}
-        };
-
-        Runnable[] openActions = {
-            //() -> openManagePropertyWaterTaxPage(),
-            () -> openWaterBillPaymentsPage(),
-            () -> openPropertyTaxPaymentsPage()
-        };
-
-        for (int i = 0; i < features.length; i++) {
-            VBox card = featureCard(features[i][0], features[i][1], features[i][2], features[i][3], openActions[i]);
-            grid.add(card, i % 3, i / 3);
-        }
-
-        wrap.getChildren().addAll(head, grid);
-        return wrap;
-    }
-
-    /** A single clickable action tile for one Citizen Services feature. */
-    private VBox featureCard(String icon, String titleText, String description, String accent,
-                             Runnable openAction) {
-        VBox card = new VBox(16);
-        card.setPadding(new Insets(24));
-        card.setPrefHeight(190);
-        card.setStyle(cardStyle(20));
-        card.setCursor(javafx.scene.Cursor.HAND);
-
-        StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(70, 70);
-        iconChip.setMinSize(60, 60);
-        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 14;");
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 20px; -fx-text-fill: " + accent + ";");
-        iconChip.getChildren().add(ic);
-
-        Label title = new Label(titleText);
-        title.setWrapText(true);
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-
-        Label desc = new Label(description);
-        desc.setWrapText(true);
-        desc.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.65);");
-
-        Region grow = new Region();
-        VBox.setVgrow(grow, Priority.ALWAYS);
-
-        Label openPill = new Label("Open \u2192");
-        openPill.setPadding(new Insets(6, 14, 6, 14));
-        openPill.setMaxWidth(Region.USE_PREF_SIZE);
-        openPill.setStyle("-fx-background-color: " + rgba(accent, 0.10) + "; -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + accent + ";");
-
-        card.getChildren().addAll(iconChip, title, desc, grow, openPill);
-        addHoverLift(card, 20);
-
-        // Placeholder handler — wire this up to the actual feature screen when it's built.
-        card.setOnMouseClicked(e -> openAction.run());
-
-        return card;
-    }
-
-    /** Runnable to hand to a sub-screen so it can return to this Citizen Services page. */
-    private Runnable createBackToCitizenServicesAction() {
-        return () -> {
-            System.out.println("Back to Citizen Services clicked");
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
-            SarpanchDashboard.myStage.setScene(getCitizenServicesScene(backToDashboardAction));
-        };
-    }
-
-    // private void openManagePropertyWaterTaxPage() {
-    //     System.out.println("[Citizen Services] Opened: Manage Property Tax & Water Tax Records");
-    //     // TODO: replace with the real screen.
-    // }
-
-    private void openWaterBillPaymentsPage() {
-        System.out.println("[Citizen Services] Opened: Water Bill Payments");
-        WaterBillPaymentsPage waterBillPaymentsPage = new WaterBillPaymentsPage();
-        SarpanchDashboard.myStage.setTitle("GramConnect - Water Bill Payments");
-        SarpanchDashboard.myStage.setScene(
-            waterBillPaymentsPage.getWaterBillPaymentsScene(createBackToCitizenServicesAction(), backToDashboardAction)
-        );
-    }
-
-    private void openPropertyTaxPaymentsPage() {
-        System.out.println("[Citizen Services] Opened: Property Tax Payments");
-        PropertyTaxPaymentsPage propertyTaxPaymentsPage = new PropertyTaxPaymentsPage();
-        SarpanchDashboard.myStage.setTitle("GramConnect - Property Tax Payments");
-        SarpanchDashboard.myStage.setScene(
-            propertyTaxPaymentsPage.getPropertyTaxPaymentsScene(createBackToCitizenServicesAction(), backToDashboardAction)
-        );
-    }
-
-    /* ============================================================
-     *  HELPERS (kept identical to the other pages)
+     *  HELPERS
      * ============================================================ */
     private String cardStyle(int radius) {
         return "-fx-background-color: rgba(255,255,255,0.88);" +
@@ -550,19 +610,6 @@ public class CitizenServicesPage {
                "-fx-border-radius: " + radius + ";" +
                "-fx-border-width: 1;" +
                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
-    }
-
-    private void addHoverLift(Region card, int radius) {
-        String base = cardStyle(radius);
-        String hover = "-fx-background-color: rgba(255,255,255,0.92);" +
-               "-fx-background-radius: " + radius + ";" +
-               "-fx-border-color: rgba(255,255,255,0.6);" +
-               "-fx-border-radius: " + radius + ";" +
-               "-fx-border-width: 1;" +
-               "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.12), 24, 0.15, 0, 8);" +
-               "-fx-translate-y: -2;";
-        card.setOnMouseEntered(e -> card.setStyle(hover));
-        card.setOnMouseExited(e -> card.setStyle(base));
     }
 
     private String rgba(String hex, double alpha) {
