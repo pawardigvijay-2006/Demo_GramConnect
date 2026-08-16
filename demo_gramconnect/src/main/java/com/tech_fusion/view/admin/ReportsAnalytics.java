@@ -1,6 +1,8 @@
 package com.tech_fusion.view.admin;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -9,6 +11,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -41,6 +45,11 @@ import javafx.stage.Stage;
  * the active nav item, and Runnable-based navigation wired through
  * the shared {@code Dashboard.myStage} so every page can reach every
  * other page from the sidebar.
+ *
+ * The "Managing Village" switcher in the sidebar is now identical in
+ * look/behaviour to the one on {@link Dashboard}: a single collapsed
+ * row showing the active village that expands into a selectable list
+ * on click.
  */
 public class ReportsAnalytics extends Application {
 
@@ -58,7 +67,22 @@ public class ReportsAnalytics extends Application {
 
     private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
+    /** Villages under this BDO's block. First entry is the "all villages" aggregate view. */
+    private static final List<String> VILLAGES = Arrays.asList(
+            "All Villages", "Sitapur", "Rampur", "Kondli", "Main St.", "North Vill.", "East Ward"
+    );
+
     private Label selectedNavItem;
+
+    /** Currently selected village (defaults to the block-wide aggregate view). */
+    private String selectedVillage = VILLAGES.get(0);
+
+    /** Live references so selecting a village can refresh the page without a full rebuild. */
+    private Label subtitleLabel;
+    private Label villageNameLabel;
+    private Label villageChevron;
+    private VBox villageListBox;
+    private boolean villageListExpanded = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -138,8 +162,10 @@ public class ReportsAnalytics extends Application {
 
         header.getChildren().addAll(avatar, nameBox);
 
+        VBox villageSelector = buildVillageSelector();
+
         VBox nav = new VBox(6);
-        nav.setPadding(new Insets(16, 12, 16, 12));
+        nav.setPadding(new Insets(4, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
         Runnable toDashboard = () -> {
@@ -196,8 +222,117 @@ public class ReportsAnalytics extends Application {
         );
         footer.getChildren().addAll(divider,  smallLinks);
 
-        sidebar.getChildren().addAll(header, nav, footer);
+        sidebar.getChildren().addAll(header, villageSelector, nav, footer);
         return sidebar;
+    }
+
+    /* ============================================================
+     *  VILLAGE SWITCHER — identical in look/behaviour to the one on
+     *  Dashboard: a collapsed "Managing Village" row that expands
+     *  into a selectable list of villages under this BDO's block.
+     * ============================================================ */
+    private VBox buildVillageSelector() {
+        VBox wrap = new VBox(8);
+        wrap.setPadding(new Insets(0, 20, 16, 20));
+
+        Label caption = new Label("MANAGING VILLAGE");
+        caption.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.08em;");
+
+        HBox toggleRow = new HBox(10);
+        toggleRow.setAlignment(Pos.CENTER_LEFT);
+        toggleRow.setPadding(new Insets(11, 14, 11, 14));
+        toggleRow.setMaxWidth(Double.MAX_VALUE);
+        String toggleBase = "-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.12); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        String toggleHover = "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.18); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        toggleRow.setStyle(toggleBase);
+
+        Label pin = new Label("\uD83D\uDCCD");
+        pin.setStyle("-fx-font-size: 13px;");
+
+        villageNameLabel = new Label(displayName(selectedVillage));
+        villageNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        villageChevron = new Label("\u25BE");
+        villageChevron.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.65);");
+
+        toggleRow.getChildren().addAll(pin, villageNameLabel, spacer, villageChevron);
+        toggleRow.setOnMouseEntered(e -> toggleRow.setStyle(toggleHover));
+        toggleRow.setOnMouseExited(e -> toggleRow.setStyle(toggleBase));
+
+        villageListBox = new VBox(2);
+        villageListBox.setPadding(new Insets(6, 0, 0, 0));
+        villageListBox.setVisible(false);
+        villageListBox.setManaged(false);
+
+        ToggleGroup group = new ToggleGroup();
+        for (String village : VILLAGES) {
+            villageListBox.getChildren().add(villageToggle(village, group));
+        }
+
+        toggleRow.setOnMouseClicked(e -> {
+            villageListExpanded = !villageListExpanded;
+            villageListBox.setVisible(villageListExpanded);
+            villageListBox.setManaged(villageListExpanded);
+            villageChevron.setText(villageListExpanded ? "\u25B4" : "\u25BE");
+        });
+
+        wrap.getChildren().addAll(caption, toggleRow, villageListBox);
+        return wrap;
+    }
+
+    private ToggleButton villageToggle(String village, ToggleGroup group) {
+        ToggleButton btn = new ToggleButton(displayName(village));
+        btn.setToggleGroup(group);
+        btn.setSelected(village.equals(selectedVillage));
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(9, 14, 9, 14));
+
+        String baseStyle = "-fx-background-color: transparent; -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 600;" +
+                "-fx-text-fill: rgba(11,61,46,0.75); -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + SAFFRON_MAIN + "; -fx-cursor: hand;";
+
+        btn.setStyle(btn.isSelected() ? activeStyle : baseStyle);
+
+        btn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            btn.setStyle(isSelected ? activeStyle : baseStyle);
+            if (isSelected) {
+                selectedVillage = village;
+                villageNameLabel.setText(displayName(selectedVillage));
+                updateScopeSubtitle();
+                // Collapse the list once a village has been chosen.
+                villageListExpanded = false;
+                villageListBox.setVisible(false);
+                villageListBox.setManaged(false);
+                villageChevron.setText("\u25BE");
+                // NOTE: the KPI/chart values on this demo page are static placeholders.
+                // Wire this hook up to your data layer to pull per-village figures
+                // (e.g. reload buildStatCardsRow()/buildAnalyticsMidSection() here).
+            }
+        });
+
+        return btn;
+    }
+
+    private String displayName(String village) {
+        return village.equals("All Villages") ? "All Villages (Block)" : village;
+    }
+
+    /** Keeps the page subtitle in sync with whichever village is currently selected. */
+    private void updateScopeSubtitle() {
+        if (subtitleLabel == null) return;
+        subtitleLabel.setText(VILLAGES.get(0).equals(selectedVillage)
+                ? "Showing data for: All Villages (Block)"
+                : "Showing data for: " + selectedVillage);
     }
 
     private HBox navItem(String icon, String text, boolean active) {
@@ -348,9 +483,11 @@ public class ReportsAnalytics extends Application {
         VBox text = new VBox(6);
         Label title = new Label("Reports & Block Analytics");
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label subtitle = new Label("Showing data for: All Villages (Block)");
-        subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
-        text.getChildren().addAll(title, subtitle);
+
+        subtitleLabel = new Label();
+        subtitleLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
+        updateScopeSubtitle();
+        text.getChildren().addAll(title, subtitleLabel);
 
         Label dateRange = new Label("\uD83D\uDCC5  Q3 (Oct-Dec 2023)  \u25BE");
         dateRange.setPadding(new Insets(12, 18, 12, 18));
@@ -383,10 +520,9 @@ public class ReportsAnalytics extends Application {
     /* ============================================================
      *  STAT CARDS ROW
      * ============================================================ */
-    private HBox buildStatCardsRow() {
+   private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
-
-        VBox budgetCard = statCard("TOTAL BLOCK BUDGET", "\u20B916.8Cr", "\uD83D\uDCB0", "rgba(11,61,46,0.10)");
+        VBox budgetCard = kpiCard( FOREST_LIGHT,"\uD83D\uDCB0","TOTAL BLOCK BUDGET" ,"16.8cr");
         VBox budgetExtra = new VBox(8);
         budgetExtra.getChildren().add(progressBar(0.74, CONTEXT_TEAL, 8));
         Label budgetFootnote = new Label("74% Utilized     \u20B912.4Cr");
@@ -394,19 +530,20 @@ public class ReportsAnalytics extends Application {
         budgetExtra.getChildren().add(budgetFootnote);
         budgetCard.getChildren().add(budgetExtra);
 
-        VBox successCard = statCard("PROJECT SUCCESS RATE", "88%", "\u2705", "rgba(14,140,140,0.12)");
+        VBox successCard = kpiCard(SAFFRON_MAIN , "\u2705","PROJECT SUCCESS RATE","88%");
         Label successFooter = new Label("\u2197  5% from last quarter");
         successFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
         successCard.getChildren().add(successFooter);
 
-        VBox approvalCard = statCard("AVG. APPROVAL TIME", "4.2 Days", "\uD83D\uDCCB", "rgba(124,92,252,0.12)");
+        VBox approvalCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCB","AVG. APPROVAL TIME","4.2day");
         Label approvalFooter = new Label("Target: <5 Days");
         approvalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
         approvalCard.getChildren().add(approvalFooter);
 
-        VBox grievanceCard = statCard("ACTIVE GRIEVANCES", "12", "\u26A0", "rgba(217,76,56,0.12)");
+        VBox grievanceCard = kpiCard(AI_VIOLET,"\u26A0","ACTIVE GRIEVANCES","12" );
         VBox grievanceValueWrap = (VBox) grievanceCard.getChildren().get(1);
-        Label grievanceValue = (Label) grievanceValueWrap.getChildren().get(0);
+        VBox bottom = (VBox) grievanceValueWrap.getChildren().get(2);
+        Label grievanceValue = (Label) bottom.getChildren().get(0);
         grievanceValue.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + DELAYED_RED + ";");
         VBox grievanceExtra = new VBox(4);
@@ -425,30 +562,49 @@ public class ReportsAnalytics extends Application {
         return row;
     }
 
-    private VBox statCard(String label, String value, String icon, String iconBg) {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setStyle(cardStyle(18));
-        card.setMinHeight(150);
 
-        HBox top = new HBox();
-        top.setAlignment(Pos.CENTER_LEFT);
-        Label heading = new Label(label);
-        heading.setWrapText(true);
-        heading.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
-                "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 16px; -fx-padding: 8; -fx-background-color: " + iconBg + "; -fx-background-radius: 50%;");
-        top.getChildren().addAll(heading, spacer, iconLabel);
 
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
-        VBox valueWrap = new VBox(valueLabel);
-        card.getChildren().addAll(top, valueWrap);
-        addHoverLift(card, 18);
+    private VBox kpiCard(String accent, String icon, String labelText, String statText) {
+        VBox card = new VBox();
+        card.setPrefWidth(320);
+        card.setMinHeight(190);
+        card.setStyle(cardStyle(16));
+
+        Region strip = new Region();
+        strip.setPrefHeight(6);
+        strip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 16 16 0 0;");
+
+        VBox inner = new VBox(20);
+        inner.setPadding(new Insets(20, 24, 24, 24));
+        VBox.setVgrow(inner, Priority.ALWAYS);
+
+        HBox head = new HBox(12);
+        head.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconChip = new StackPane();
+        iconChip.setPrefSize(48, 48);
+        iconChip.setMinSize(48, 48);
+        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 12;");
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 18px; -fx-text-fill: " + accent + ";");
+        iconChip.getChildren().add(ic);
+        Label lbl = new Label(labelText);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+            "-fx-text-fill: rgba(11,61,46,0.80); -fx-letter-spacing: 0.08em;");
+        lbl.setWrapText(true);
+        head.getChildren().addAll(iconChip, lbl);
+
+        Region grow = new Region();
+        VBox.setVgrow(grow, Priority.ALWAYS);
+
+        VBox bottom = new VBox(10);
+        Label stat = new Label(statText);
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 40px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        bottom.getChildren().add(stat);
+
+        inner.getChildren().addAll(head, grow, bottom);
+        card.getChildren().addAll(strip, inner);
+        addHoverLift(card, 16);
         return card;
     }
 
