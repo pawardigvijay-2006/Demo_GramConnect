@@ -1,7 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -47,7 +45,7 @@ public class AnnouncementsPage {
     private static final String SAFFRON_MAIN  = "#E07A1F";
     private static final String CONTEXT_TEAL  = "#0E8C8C";
     private static final String AI_VIOLET     = "#7C5CFC";
-    private static final String DELAYED_RED   = "#D94C38";
+    //private static final String DELAYED_RED   = "#D94C38";
     private static final String SIDEBAR_TOP   = "#CDEBD8";
     private static final String SIDEBAR_MID   = "#Bce3cc";
     private static final String SIDEBAR_BOT   = "#A9D8BD";
@@ -55,7 +53,7 @@ public class AnnouncementsPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+        "/assets/images/BackgroundImage.png";
 
     /** The action to run to navigate back to the Dashboard (passed in from SarpanchDashboard). */
     private Runnable backToDashboardAction;
@@ -69,7 +67,7 @@ public class AnnouncementsPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -126,7 +124,7 @@ public class AnnouncementsPage {
         avatar.getChildren().addAll(avatarCircle, avatarInitials);
 
         VBox nameBox = new VBox(2);
-        Label name = new Label("Sarpanch Patil");
+        Label name = new Label("Sarpanch");
         name.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         Label role = new Label("Gram Panchayat");
         role.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65); -fx-letter-spacing: 0.05em;");
@@ -450,14 +448,12 @@ public class AnnouncementsPage {
         String[][] features = {
             {"\u270D", "Create Announcements", "Draft a new announcement for the village with a title, message and category.", CONTEXT_TEAL},
             {"\uD83D\uDD8A", "Edit Announcements", "Update the text, date or attachments of an announcement that's already posted.", SAFFRON_MAIN},
-            {"\uD83D\uDDD1", "Delete Announcements", "Remove outdated or incorrect announcements from the village notice board.", DELAYED_RED},
             {"\uD83D\uDCE3", "Publish Gram Sabha Notices", "Publish Gram Sabha Meeting Announcements and Gram Sabha Meeting Summaries.", AI_VIOLET}
         };
 
         Runnable[] openActions = {
             () -> openCreateAnnouncementsPage(),
             () -> openEditAnnouncementsPage(),
-            () -> openDeleteAnnouncementsPage(),
             () -> openPublishGramSabhaNoticesPage()
         };
 
@@ -514,34 +510,39 @@ public class AnnouncementsPage {
     }
 
     /** Runnable to hand to a sub-screen so it can return to this Announcements page. */
-    // private Runnable createBackToAnnouncementsAction() {
-    //     return () -> {
-    //         System.out.println("Back to Announcements clicked");
-    //         SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
-    //         SarpanchDashboard.myStage.setScene(getAnnouncementsScene(backToDashboardAction));
-    //     };
-    // }
+    private Runnable createBackToAnnouncementsAction() {
+        return () -> {
+            System.out.println("Back to Announcements clicked");
+            SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
+            SarpanchDashboard.myStage.setScene(getAnnouncementsScene(backToDashboardAction));
+        };
+    }
 
     private void openCreateAnnouncementsPage() {
         System.out.println("[Announcements] Opened: Create Announcements");
-        // TODO: replace with the real screen, following the same
-        // getXScene(createBackToAnnouncementsAction(), backToDashboardAction) pattern
-        // used by ProjectTrackerPage's feature tiles.
+        CreateAnnouncementsPage createAnnouncementsPage = new CreateAnnouncementsPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Create Announcement");
+        SarpanchDashboard.myStage.setScene(
+            createAnnouncementsPage.getCreateAnnouncementsScene(createBackToAnnouncementsAction(), backToDashboardAction)
+        );
     }
 
     private void openEditAnnouncementsPage() {
         System.out.println("[Announcements] Opened: Edit Announcements");
-        // TODO: replace with the real screen.
-    }
-
-    private void openDeleteAnnouncementsPage() {
-        System.out.println("[Announcements] Opened: Delete Announcements");
-        // TODO: replace with the real screen.
+        EditAnnouncementsPage editAnnouncementsPage = new EditAnnouncementsPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Edit Announcements");
+        SarpanchDashboard.myStage.setScene(
+            editAnnouncementsPage.getEditAnnouncementsScene(createBackToAnnouncementsAction(), backToDashboardAction)
+        );
     }
 
     private void openPublishGramSabhaNoticesPage() {
         System.out.println("[Announcements] Opened: Publish Gram Sabha Notices");
-        // TODO: replace with the real screen (e.g. Gram Sabha Meeting Announcement / Summary).
+        PublishGramSabhaNoticesPage publishGramSabhaNoticesPage = new PublishGramSabhaNoticesPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Publish Gram Sabha Notices");
+        SarpanchDashboard.myStage.setScene(
+            publishGramSabhaNoticesPage.getPublishGramSabhaNoticesScene(createBackToAnnouncementsAction(),backToDashboardAction)
+        );
     }
 
     /* ============================================================
