@@ -284,6 +284,17 @@ public class EditAnnouncementsPage {
         createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
         createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+createBtn.setOnMouseClicked(e -> {
+            System.out.println("Create Project clicked");
+            CreateProjectPage createProjectPage = new CreateProjectPage();
+            Runnable backToProjectTrackerAction = () -> {
+                ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
+                SarpanchDashboard.myStage.setTitle("GramConnect - Project Tracker");
+                SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
+            };
+            SarpanchDashboard.myStage.setTitle("GramConnect - Create Project");
+            SarpanchDashboard.myStage.setScene(createProjectPage.getCreateProjectScene(backToProjectTrackerAction, backToDashboardAction));
+        });
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));

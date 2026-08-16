@@ -1,4 +1,17 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "java.debug.settings.onBuildFailureProceed": true
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.project.sourcePaths": [
+        "demo_gramconnect\\src\\main\\java"
+    ],
+    "java.project.referencedLibraries": [
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.base.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.controls.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.fxml.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.graphics.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.media.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.swing.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx.web.jar",
+        "d:\\JAVA2026\\javafx-sdk-21.0.12\\lib\\javafx-swt.jar"
+    ]
 }

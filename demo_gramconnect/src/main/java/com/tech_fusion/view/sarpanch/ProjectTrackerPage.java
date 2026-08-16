@@ -191,6 +191,7 @@ public class ProjectTrackerPage {
         createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
         createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+        createBtn.setOnMouseClicked(e -> openCreateProjectPage());
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -546,6 +547,15 @@ public class ProjectTrackerPage {
         VerifyGpsTimestampPage page = new VerifyGpsTimestampPage();
         SarpanchDashboard.myStage.setScene(
             page.getVerifyGpsTimestampScene(createBackToProjectTrackerAction(), backToDashboardAction)
+        );
+    }
+
+    private void openCreateProjectPage() {
+        System.out.println("[Project Tracker] Opened: Create Project");
+        CreateProjectPage page = new CreateProjectPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Create Project");
+        SarpanchDashboard.myStage.setScene(
+            page.getCreateProjectScene(createBackToProjectTrackerAction(), backToDashboardAction)
         );
     }
 
