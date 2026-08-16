@@ -246,6 +246,8 @@ public class ProjectTransparency {
                 item.setMaxWidth(Double.MAX_VALUE);
                 item.setPadding(new Insets(10, 14, 10, 14));
 
+                
+
                 if (active) {
                         item.setStyle(
                                         "-fx-font-family: " + FONT_FAMILY + ";"

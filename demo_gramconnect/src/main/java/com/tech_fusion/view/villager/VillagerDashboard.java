@@ -79,7 +79,7 @@ public class VillagerDashboard extends Application {
 
         private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-        private static final String BACKGROUND = "#EFF5F1";
+        private static final String BACKGROUND = "#f8f8f8";
 
         private static final String TEXT_PRIMARY = FOREST_DEEP;
         private static final String TEXT_SECONDARY = "rgba(11,61,46,0.65)";

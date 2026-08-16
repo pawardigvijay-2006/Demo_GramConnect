@@ -1,8 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -55,7 +52,7 @@ public class CitizenServicesPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+        "/assets/images/BackgroundImage.png";
 
     /** The action to run to navigate back to the Dashboard (passed in from SarpanchDashboard). */
     private Runnable backToDashboardAction;
@@ -69,7 +66,7 @@ public class CitizenServicesPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -278,7 +275,7 @@ public class CitizenServicesPage {
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);"
         );
 
-        Image projectLogo = new Image("assets/images/ProjectLogo.png");
+        Image projectLogo = new Image("/assets/images/ProjectLogo.png");
         ImageView imgView = new ImageView(projectLogo);
         imgView.setFitHeight(50);
         imgView.setFitWidth(60);
@@ -349,7 +346,7 @@ public class CitizenServicesPage {
         VBox welcome = new VBox(6);
         Label welcomeTitle = new Label("Citizen Services");
         welcomeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label welcomeSub = new Label("Approve certificates, building permissions and water connections, and manage tax records for every villager.");
+        Label welcomeSub = new Label("Manage property and water tax records, and review water bill and property tax payments collected from every villager.");
         welcomeSub.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.70);");
         welcomeSub.setWrapText(true);
         welcome.getChildren().addAll(welcomeTitle, welcomeSub);
@@ -369,16 +366,16 @@ public class CitizenServicesPage {
         HBox row = new HBox(24);
         row.setAlignment(Pos.TOP_LEFT);
 
-        VBox kpi1 = kpiCard(FOREST_DEEP, "\uD83D\uDCDC", "CERTIFICATE REQUESTS", "12");
-        VBox kpi2 = kpiCard(SAFFRON_MAIN, "\uD83C\uDFD7", "BUILDING PERMISSIONS", "4");
-        VBox kpi3 = kpiCard(CONTEXT_TEAL, "\uD83D\uDCA7", "WATER CONNECTIONS", "7");
+        //VBox kpi1 = kpiCard(FOREST_DEEP, "\uD83D\uDCDC", "CERTIFICATE REQUESTS", "12");
+        //VBox kpi2 = kpiCard(SAFFRON_MAIN, "\uD83C\uDFD7", "BUILDING PERMISSIONS", "4");
+        VBox kpi3 = kpiCard(CONTEXT_TEAL, "\uD83D\uDCA7", "OVERALL REVENUE AMOUNT", "24,010");
         VBox kpi4 = kpiCard(AI_VIOLET, "\u20B9", "TAX RECORDS PENDING", "9");
 
-        HBox.setHgrow(kpi1, Priority.ALWAYS);
-        HBox.setHgrow(kpi2, Priority.ALWAYS);
+        //HBox.setHgrow(kpi1, Priority.ALWAYS);
+        //HBox.setHgrow(kpi2, Priority.ALWAYS);
         HBox.setHgrow(kpi3, Priority.ALWAYS);
         HBox.setHgrow(kpi4, Priority.ALWAYS);
-        row.getChildren().addAll(kpi1, kpi2, kpi3, kpi4);
+        row.getChildren().addAll(kpi3, kpi4);
         return row;
     }
 
@@ -441,29 +438,27 @@ public class CitizenServicesPage {
         GridPane grid = new GridPane();
         grid.setHgap(24);
         grid.setVgap(24);
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 3; i++) {
             ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth(25);
+            cc.setPercentWidth(100.0 / 3.0);
             grid.getColumnConstraints().add(cc);
         }
 
         String[][] features = {
-            {"\uD83D\uDCDC", "Approve Certificate Applications", "Review and approve birth, income, residence and caste certificate requests.", CONTEXT_TEAL},
-            {"\uD83C\uDFD7", "Approve Building Permissions", "Verify site plans and sanction new construction and renovation permits.", SAFFRON_MAIN},
-            {"\uD83D\uDCA7", "Approve Water Connections", "Review applications and approve new household water connections.", AI_VIOLET},
-            {"\uD83E\uDDFE", "Manage Property Tax & Water Tax Records", "Track dues, update payments and manage records for property and water tax.", FOREST_DEEP}
+            //{"\uD83E\uDDFE", "Manage Property Tax & Water Tax Records", "Track dues, update payments and manage records for property and water tax.", FOREST_DEEP},
+            {"\uD83D\uDCA7", "Water Bill Payments", "View water bill revenue collected from every villager, broken down by household and billing period.", CONTEXT_TEAL},
+            {"\u20B9", "Property Tax Payments", "View property tax revenue collected from every villager, broken down by owner and property.", AI_VIOLET}
         };
 
         Runnable[] openActions = {
-            () -> openApproveCertificateApplicationsPage(),
-            () -> openApproveBuildingPermissionsPage(),
-            () -> openApproveWaterConnectionsPage(),
-            () -> openManagePropertyWaterTaxPage()
+            //() -> openManagePropertyWaterTaxPage(),
+            () -> openWaterBillPaymentsPage(),
+            () -> openPropertyTaxPaymentsPage()
         };
 
         for (int i = 0; i < features.length; i++) {
             VBox card = featureCard(features[i][0], features[i][1], features[i][2], features[i][3], openActions[i]);
-            grid.add(card, i % 4, i / 4);
+            grid.add(card, i % 3, i / 3);
         }
 
         wrap.getChildren().addAll(head, grid);
@@ -480,8 +475,8 @@ public class CitizenServicesPage {
         card.setCursor(javafx.scene.Cursor.HAND);
 
         StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(48, 48);
-        iconChip.setMinSize(48, 48);
+        iconChip.setPrefSize(70, 70);
+        iconChip.setMinSize(60, 60);
         iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 14;");
         Label ic = new Label(icon);
         ic.setStyle("-fx-font-size: 20px; -fx-text-fill: " + accent + ";");
@@ -514,34 +509,35 @@ public class CitizenServicesPage {
     }
 
     /** Runnable to hand to a sub-screen so it can return to this Citizen Services page. */
-    // private Runnable createBackToCitizenServicesAction() {
-    //     return () -> {
-    //         System.out.println("Back to Citizen Services clicked");
-    //         SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
-    //         SarpanchDashboard.myStage.setScene(getCitizenServicesScene(backToDashboardAction));
-    //     };
+    private Runnable createBackToCitizenServicesAction() {
+        return () -> {
+            System.out.println("Back to Citizen Services clicked");
+            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setScene(getCitizenServicesScene(backToDashboardAction));
+        };
+    }
+
+    // private void openManagePropertyWaterTaxPage() {
+    //     System.out.println("[Citizen Services] Opened: Manage Property Tax & Water Tax Records");
+    //     // TODO: replace with the real screen.
     // }
 
-    private void openApproveCertificateApplicationsPage() {
-        System.out.println("[Citizen Services] Opened: Approve Certificate Applications");
-        // TODO: replace with the real screen, following the same
-        // getXScene(createBackToCitizenServicesAction(), backToDashboardAction) pattern
-        // used by ProjectTrackerPage's feature tiles.
+    private void openWaterBillPaymentsPage() {
+        System.out.println("[Citizen Services] Opened: Water Bill Payments");
+        WaterBillPaymentsPage waterBillPaymentsPage = new WaterBillPaymentsPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Water Bill Payments");
+        SarpanchDashboard.myStage.setScene(
+            waterBillPaymentsPage.getWaterBillPaymentsScene(createBackToCitizenServicesAction(), backToDashboardAction)
+        );
     }
 
-    private void openApproveBuildingPermissionsPage() {
-        System.out.println("[Citizen Services] Opened: Approve Building Permissions");
-        // TODO: replace with the real screen.
-    }
-
-    private void openApproveWaterConnectionsPage() {
-        System.out.println("[Citizen Services] Opened: Approve Water Connections");
-        // TODO: replace with the real screen.
-    }
-
-    private void openManagePropertyWaterTaxPage() {
-        System.out.println("[Citizen Services] Opened: Manage Property Tax & Water Tax Records");
-        // TODO: replace with the real screen.
+    private void openPropertyTaxPaymentsPage() {
+        System.out.println("[Citizen Services] Opened: Property Tax Payments");
+        PropertyTaxPaymentsPage propertyTaxPaymentsPage = new PropertyTaxPaymentsPage();
+        SarpanchDashboard.myStage.setTitle("GramConnect - Property Tax Payments");
+        SarpanchDashboard.myStage.setScene(
+            propertyTaxPaymentsPage.getPropertyTaxPaymentsScene(createBackToCitizenServicesAction(), backToDashboardAction)
+        );
     }
 
     /* ============================================================

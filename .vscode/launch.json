@@ -6,9 +6,9 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Main",
+            "name": "VillagerMain",
             "request": "launch",
-            "mainClass": "com.tech_fusion.view.admin.Main",
+            "mainClass": "com.tech_fusion.view.villager.VillagerMain",
             "projectName": "demo_gramconnect"
         },
         {
