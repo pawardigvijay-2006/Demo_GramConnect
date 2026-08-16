@@ -1,5 +1,9 @@
 package com.tech_fusion.view.villager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -30,6 +34,22 @@ import javafx.scene.layout.*;
  * ComplaintsPage.getComplaintsPage()):
  *
  *      root.setCenter(new GramSabha().getGramSabhaPane());
+ *
+ * ============================================================
+ * NEW IN THIS VERSION
+ * ============================================================
+ * - MeetingData is a shared model (date/time/venue, about text,
+ *   presiding details, full agenda, highlights, and the quick-
+ *   summary attendance breakdown) so a "View" click has real data
+ *   to hand off.
+ * - MEETINGS is a static, in-memory store (same pattern as
+ *   ComplaintsPage.COMPLAINTS) shared with MeetingDetailPage.
+ * - Each row in "Previous Meetings" now has its "View" link wired
+ *   to navigate to MeetingDetailPage.getMeetingDetailScene(meeting,
+ *   backAction, backToGramSabha) - conflict-free navigation, same
+ *   pattern as every other detail page in this app.
+ * - Fixed a pre-existing bug where the "Bills & Payments" sidebar
+ *   item opened ComplaintsPage instead of BillsAndPayments.
  * ============================================================
  */
 public class GramSabha {
@@ -52,9 +72,143 @@ public class GramSabha {
         private static final String SIDEBAR_BOT = "#A9D8BD";
         private static final String DELAYED_RED = "#D94C38";
 
+        // =================================================================
+        // SHARED DATA MODEL + STORE
+        // Package-visible so MeetingDetailPage can read the full record it
+        // was navigated with. Replace with a real GramSabhaService call
+        // when one exists.
+        // =================================================================
+        static class MeetingData {
+                String date; // "12 May 2024"
+                String dayLabel; // "Sunday"
+                String timeRange; // "10:30 AM - 01:15 PM"
+                String venue;
+                String status; // "Completed"
+                String agendaSummary; // short text shown in the Previous Meetings row
+                int attendanceCount; // e.g. 45
+                int attendanceCapacity; // e.g. 60
 
-        /** Public entry point - returns the fully built Bills & Payments screen. */
+                String aboutText;
+                String presidedBy;
+                String organizedBy;
+                String meetingType;
+                String quorumStatus;
+                List<String> agenda;
+                List<String> highlights;
+
+                int totalRegisteredVoters;
+                int totalAttendance;
+                double attendancePercent;
+                int male;
+                int female;
+                String duration;
+                String signedOn;
+
+                MeetingData(String date, String dayLabel, String timeRange, String venue, String status,
+                                String agendaSummary, int attendanceCount, int attendanceCapacity, String aboutText,
+                                String presidedBy, String organizedBy, String meetingType, String quorumStatus,
+                                List<String> agenda, List<String> highlights, int totalRegisteredVoters,
+                                int totalAttendance, double attendancePercent, int male, int female, String duration,
+                                String signedOn) {
+                        this.date = date;
+                        this.dayLabel = dayLabel;
+                        this.timeRange = timeRange;
+                        this.venue = venue;
+                        this.status = status;
+                        this.agendaSummary = agendaSummary;
+                        this.attendanceCount = attendanceCount;
+                        this.attendanceCapacity = attendanceCapacity;
+                        this.aboutText = aboutText;
+                        this.presidedBy = presidedBy;
+                        this.organizedBy = organizedBy;
+                        this.meetingType = meetingType;
+                        this.quorumStatus = quorumStatus;
+                        this.agenda = agenda;
+                        this.highlights = highlights;
+                        this.totalRegisteredVoters = totalRegisteredVoters;
+                        this.totalAttendance = totalAttendance;
+                        this.attendancePercent = attendancePercent;
+                        this.male = male;
+                        this.female = female;
+                        this.duration = duration;
+                        this.signedOn = signedOn;
+                }
+        }
+
+        // TODO: replace with GramSabhaService.getPreviousMeetings(villageId)
+        static final List<MeetingData> MEETINGS = new ArrayList<>();
+
+        static {
+                MEETINGS.add(new MeetingData(
+                                "12 May 2024", "Sunday", "10:30 AM - 01:15 PM", "Gram Panchayat Office, Suryapuri",
+                                "Completed", "Budget Approval & Water Management", 45, 60,
+                                "The Gram Sabha meeting was held to discuss village development works, review "
+                                                + "ongoing projects, approve new proposals and present the financial "
+                                                + "report for transparency and better governance.",
+                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
+                                "Achieved (1/10th of total voters)",
+                                Arrays.asList(
+                                                "Discussion on village development works",
+                                                "Review of ongoing projects",
+                                                "Approval of new proposals",
+                                                "Financial report presentation",
+                                                "Any other matter with the permission of the chair",
+                                                "Open forum for villagers"),
+                                Arrays.asList(
+                                                "2 new development proposals were approved.",
+                                                "Water tank repair and street light installation discussed.",
+                                                "Budget allocation for road construction approved.",
+                                                "3 major complaints raised by villagers.",
+                                                "Financial report for FY 2023-24 presented."),
+                                620, 452, 73.0, 276, 176, "2h 45m", "13 May 2024 05:30 PM"));
+
+                MEETINGS.add(new MeetingData(
+                                "10 Mar 2024", "Sunday", "10:00 AM - 12:20 PM", "Gram Panchayat Office, Suryapuri",
+                                "Completed", "Village Road & Drainage Work", 42, 60,
+                                "The Gram Sabha meeting was held to review the condition of village roads and "
+                                                + "drainage lines, and to approve the repair and construction "
+                                                + "schedule for the coming quarter.",
+                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
+                                "Achieved (1/10th of total voters)",
+                                Arrays.asList(
+                                                "Review of village road conditions",
+                                                "Drainage work proposal discussion",
+                                                "Contractor selection for road repair",
+                                                "Budget allocation for drainage lines",
+                                                "Open forum for villagers"),
+                                Arrays.asList(
+                                                "Drainage repair work approved for 3 wards.",
+                                                "Road resurfacing budget approved.",
+                                                "2 complaints on waterlogging raised and noted.",
+                                                "Contractor shortlisting committee formed."),
+                                610, 401, 65.7, 245, 156, "2h 20m", "11 Mar 2024 04:00 PM"));
+
+                MEETINGS.add(new MeetingData(
+                                "14 Jan 2024", "Sunday", "10:00 AM - 12:00 PM", "Gram Panchayat Office, Suryapuri",
+                                "Completed", "New Scheme Proposals", 40, 60,
+                                "The Gram Sabha meeting was held to introduce new government welfare schemes to "
+                                                + "villagers and collect proposals for local development priorities "
+                                                + "for the upcoming financial year.",
+                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
+                                "Achieved (1/10th of total voters)",
+                                Arrays.asList(
+                                                "Introduction of new government schemes",
+                                                "Collection of villager development proposals",
+                                                "Prioritization of local development works",
+                                                "Open forum for villagers"),
+                                Arrays.asList(
+                                                "5 new scheme applications registered on the spot.",
+                                                "Streetlight expansion proposal shortlisted.",
+                                                "Community hall renovation proposal noted for review."),
+                                600, 380, 63.3, 230, 150, "2h 00m", "15 Jan 2024 03:30 PM"));
+        }
+
+        // Instance state
+        private Runnable backAction;
+
+        /** Public entry point - returns the fully built Gram Sabha screen. */
         public Scene getGramSabhaScene(Runnable backToDashboardAction) {
+                this.backAction = backToDashboardAction;
 
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
@@ -67,9 +221,9 @@ public class GramSabha {
 
         // =================================================================
         // SIDEBAR - identical structure/colors to VillagerDashboard.java,
-        // except "Project transparency" is the active row here, and
-        // "Dashboard" calls the Runnable instead of homeStage.setScene(...)
-        // directly (this class never touches a Stage at all).
+        // except "Gram Sabha" is the active row here, and "Dashboard" calls
+        // the Runnable instead of homeStage.setScene(...) directly (this
+        // class never touches a Stage at all).
         // =================================================================
         private VBox buildSidebar(Runnable backToDashboardAction) {
                 VBox sidebar = new VBox();
@@ -110,54 +264,45 @@ public class GramSabha {
                 VBox logoBox = new VBox(logo);
                 logoBox.setPadding(new Insets(18, 18, 22, 18));
 
-                // ---------------- Nav items ----------------
-                // "Dashboard" is the only item that needs to actually navigate
-                // anywhere from this page - it just calls the Runnable it was
-                // handed. The rest are inactive placeholders for now, same as
-                // they'd be on any page other than their own.
-
                 Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", false);
                 dashboardNav.setOnMouseClicked(e -> {
                         backToDashboardAction.run();
                 });
 
                 Label projectsNav = navItem("\uD83C\uDFD7  Project transparency", false);
-                projectsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                projectsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new ProjectTransparency().getProjectScene(backToDashboardAction));
                 });
 
                 Label complaintsNav = navItem("\uD83D\uDCAC  Complaints", false);
-                complaintsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                complaintsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
                 });
                 Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
-                schemesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                schemesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new GovernmentSchemes().getSchemesScene(backToDashboardAction));
                 });
                 Label certificatesNav = navItem("\uD83D\uDCDC  Certificates", false);
-                certificatesNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                certificatesNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Certificates().getCertificatesScene(backToDashboardAction));
                 });
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
-                billsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
-                        VillagerDashboard.homeStage.setScene(new ComplaintsPage().getComplaintsPage(backToDashboardAction));
+                billsNav.setOnMouseClicked(e -> {
+                        // Fixed: this previously reopened ComplaintsPage instead of BillsAndPayments.
+                        VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
                 });
 
                 Label announcementsNav = navItem("\uD83D\uDCE2  Announcements", false);
-                announcementsNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                announcementsNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new Announcements().getAnnouncementScene(backToDashboardAction));
                 });
                 Label gramSabhaNav = navItem("\uD83D\uDC65  Gram Sabha", true);
-                
+                gramSabhaNav.setOnMouseClicked(e -> {
+                        VillagerDashboard.homeStage.setScene(new GramSabha().getGramSabhaScene(backToDashboardAction));
+                });
+
                 Label aiAssistantNav = navItem("\uD83E\uDD16  AI village assistant", false);
-                aiAssistantNav.setOnMouseClicked(e ->{
-                        // Runnable backToProjectTransparency = () -> back();
+                aiAssistantNav.setOnMouseClicked(e -> {
                         VillagerDashboard.homeStage.setScene(new AIAssistant().getAiAssiatantScene(backToDashboardAction));
                 });
                 // TODO: wire these the same way once each page exposes its own
@@ -585,10 +730,11 @@ public class GramSabha {
                                 tableHeaderLabel("Attendance"),
                                 tableHeaderLabel("Minutes"));
 
-                // TODO: replace with GramSabhaService.getPreviousMeetings(villageId)
-                addMeetingRow(table, 1, "12 May 2024", "Budget Approval & Water Management", "45 / 60");
-                addMeetingRow(table, 2, "10 Mar 2024", "Village Road & Drainage Work", "42 / 60");
-                addMeetingRow(table, 3, "14 Jan 2024", "New Scheme Proposals", "40 / 60");
+                int rowIndex = 1;
+                for (MeetingData meeting : MEETINGS) {
+                        addMeetingRow(table, rowIndex, meeting);
+                        rowIndex++;
+                }
 
                 Label viewAll = new Label("View All Meetings \u2192");
                 viewAll.setStyle(
@@ -619,10 +765,11 @@ public class GramSabha {
                 return label;
         }
 
-        private void addMeetingRow(GridPane table, int rowIndex, String date, String agenda, String attendance) {
+        /** Adds one "previous meeting" row; its "View" link opens MeetingDetailPage for that meeting. */
+        private void addMeetingRow(GridPane table, int rowIndex, MeetingData meeting) {
                 Label dateIcon = new Label("\uD83D\uDCC5");
                 dateIcon.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_SECONDARY + ";");
-                Label dateLabel = new Label(date);
+                Label dateLabel = new Label(meeting.date);
                 dateLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 12px;" +
@@ -631,7 +778,7 @@ public class GramSabha {
                 HBox dateCell = new HBox(6, dateIcon, dateLabel);
                 dateCell.setAlignment(Pos.CENTER_LEFT);
 
-                Label agendaLabel = new Label(agenda);
+                Label agendaLabel = new Label(meeting.agendaSummary);
                 agendaLabel.setWrapText(true);
                 agendaLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
@@ -639,7 +786,7 @@ public class GramSabha {
                                                 "-fx-font-weight: 700;" +
                                                 "-fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                Label attendanceLabel = new Label(attendance);
+                Label attendanceLabel = new Label(meeting.attendanceCount + " / " + meeting.attendanceCapacity);
                 attendanceLabel.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 12px;" +
@@ -657,7 +804,15 @@ public class GramSabha {
                                                 "-fx-cursor: hand;");
                 HBox viewCell = new HBox(4, viewIcon, viewLabel);
                 viewCell.setAlignment(Pos.CENTER_LEFT);
-                // TODO: wire to GramSabhaService.viewMinutes(meetingDate)
+
+                // Navigation is conflict-free: MeetingDetailPage gets the original
+                // Dashboard backAction AND a dedicated "return to Gram Sabha" callback.
+                viewCell.setOnMouseClicked(e -> VillagerDashboard.homeStage.setScene(
+                                new MeetingDetailPage().getMeetingDetailScene(
+                                                meeting,
+                                                backAction,
+                                                () -> VillagerDashboard.homeStage.setScene(
+                                                                new GramSabha().getGramSabhaScene(backAction)))));
 
                 Insets pad = new Insets(12, 4, 12, 4);
                 for (var node : new javafx.scene.Node[] { dateCell, agendaLabel, attendanceLabel, viewCell }) {

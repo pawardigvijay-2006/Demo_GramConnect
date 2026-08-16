@@ -4,6 +4,7 @@ import java.io.File;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -27,9 +28,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 
 public class ProjectTrackerPage {
+
+        Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
 
     /* ---------- Color palette (kept identical to SarpanchDashboard) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -45,7 +50,7 @@ public class ProjectTrackerPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+        "/assets/images/BackgroundImage.png";
 
     /** The action to run to navigate back to the Dashboard (passed in from SarpanchDashboard). */
     private Runnable backToDashboardAction;
@@ -59,7 +64,7 @@ public class ProjectTrackerPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -84,7 +89,7 @@ public class ProjectTrackerPage {
 
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================
@@ -440,18 +445,14 @@ public class ProjectTrackerPage {
 
         String[][] features = {
             {"\uD83D\uDCC1", "View All Projects", "Browse the complete list of ongoing, completed and pending projects.", CONTEXT_TEAL},
-            {"\uD83D\uDCB0", "Allocate Budget", "Assign budget allocations to approved projects across categories.", SAFFRON_MAIN},
-            {"\u2696",       "Approve Budget Changes", "Review and sanction requested changes to allocated project budgets.", AI_VIOLET},
-            {"\uD83D\uDCC8", "Monitor Project Progress", "Track real-time progress, milestones and delays for every project.", FOREST_DEEP},
+            {"\uD83D\uDCC8", "Project Updates", "View each project's stage-by-stage timeline and proof of expenditure.", SAFFRON_MAIN},
             {"\uD83E\uDD16", "View AI Analysis", "See AI-generated insights and risk flags for project execution.", AI_VIOLET},
             {"\uD83D\uDCCD", "Verify GPS & Timestamp", "Validate site photos against GPS location and capture timestamp.", CONTEXT_TEAL}
         };
 
         Runnable[] openActions = {
             () -> openViewAllProjectsPage(),
-            () -> openAllocateBudgetPage(),
-            () -> openApproveBudgetChangesPage(),
-            () -> openMonitorProjectProgressPage(),
+            () -> openProjectUpdatesPage(),
             () -> openViewAiAnalysisPage(),
             () -> openVerifyGpsTimestampPage()
         };
@@ -524,27 +525,11 @@ public class ProjectTrackerPage {
         );
     }
 
-    private void openAllocateBudgetPage() {
-        System.out.println("[Project Tracker] Opened: Allocate Budget");
-        AllocateBudgetPage page = new AllocateBudgetPage();
+    private void openProjectUpdatesPage() {
+        System.out.println("[Project Tracker] Opened: Project Updates");
+        ProjectUpdatesPage page = new ProjectUpdatesPage();
         SarpanchDashboard.myStage.setScene(
-            page.getAllocateBudgetScene(createBackToProjectTrackerAction(), backToDashboardAction)
-        );
-    }
-
-    private void openApproveBudgetChangesPage() {
-        System.out.println("[Project Tracker] Opened: Approve Budget Changes");
-        ApproveBudgetChangesPage page = new ApproveBudgetChangesPage();
-        SarpanchDashboard.myStage.setScene(
-            page.getApproveBudgetChangesScene(createBackToProjectTrackerAction(), backToDashboardAction)
-        );
-    }
-
-    private void openMonitorProjectProgressPage() {
-        System.out.println("[Project Tracker] Opened: Monitor Project Progress");
-        MonitorProjectProgressPage page = new MonitorProjectProgressPage();
-        SarpanchDashboard.myStage.setScene(
-            page.getMonitorProjectProgressScene(createBackToProjectTrackerAction(), backToDashboardAction)
+            page.getProjectUpdatesScene(createBackToProjectTrackerAction(), backToDashboardAction)
         );
     }
 
