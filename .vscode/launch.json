@@ -6,6 +6,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.gramsevak.Main",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.login.Main",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.sarpanch.Main",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
             "name": "VillagerMain",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.VillagerMain",
