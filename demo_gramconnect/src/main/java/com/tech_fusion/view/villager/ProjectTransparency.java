@@ -495,10 +495,10 @@ public class ProjectTransparency {
                 Region tabSpacer = new Region();
                 HBox.setHgrow(tabSpacer, Priority.ALWAYS);
 
-                ComboBox<String> categoryFilter = new ComboBox<>();
-                categoryFilter.getItems().addAll("All Categories", "Roads", "Water", "Electricity");
-                categoryFilter.setValue("All Categories");
-                categoryFilter.setStyle("-fx-font-size: 11px;");
+                // ComboBox<String> categoryFilter = new ComboBox<>();
+                // categoryFilter.getItems().addAll("All Categories", "Roads", "Water", "Electricity");
+                // categoryFilter.setValue("All Categories");
+                // categoryFilter.setStyle("-fx-font-size: 11px;");
 
                 TextField searchProject = new TextField();
                 searchProject.setPromptText("Search project...");
@@ -506,8 +506,9 @@ public class ProjectTransparency {
                 searchProject.setStyle("-fx-background-color: " + BACKGROUND + "; -fx-background-radius: 6; "
                                 + "-fx-font-size: 11px; -fx-padding: 6 10 6 10;");
 
-                HBox filterRow = new HBox(8, tabs, tabSpacer, categoryFilter, searchProject);
+                HBox filterRow = new HBox(8, tabs, tabSpacer,searchProject);
                 filterRow.setAlignment(Pos.CENTER_LEFT);
+                
 
                 // TODO: replace with ProjectService.getProjectsForVillage(villageId)
                 VBox list = new VBox(16,
