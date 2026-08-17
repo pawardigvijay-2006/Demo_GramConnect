@@ -1,14 +1,22 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
@@ -28,21 +36,23 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 /**
- * GramConnect - Sarpanch Complaints Page.
+ * GramConnect - Water Bill Payments Page.
  *
- * Shows every complaint raised by villagers with the panchayat, backed by
- * {@link ComplaintStore} so new complaints appear here as soon as they're
- * automatically. Visual language, sidebar and top bar are kept identical to
- * {@link SarpanchDashboard} and {@link ProjectTrackerPage}; navigation follows
- * the same Runnable-based pattern used across those pages.
+ * Opened from the "Water Bill Payments" action card on CitizenServicesPage.
+ * Shows all water bill revenue collected from villagers, broken down
+ * individually per household / billing period, along with summary stats,
+ * a status filter and a search box. Visual language, sidebar and top bar
+ * match CitizenServicesPage exactly, and navigation follows the same
+ * Runnable-based pattern used across the app.
  */
-public class SarpanchComplaintsPage {
+public class WaterBillPaymentsPage {
 
+    /* ---------- Color palette (kept identical to the other pages) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
     private static final String FOREST_LIGHT  = "#0F4736";
     private static final String SAFFRON_MAIN  = "#E07A1F";
     private static final String CONTEXT_TEAL  = "#0E8C8C";
-    private static final String AI_VIOLET     = "#7C5CFC";
+    //private static final String AI_VIOLET     = "#7C5CFC";
     private static final String DELAYED_RED   = "#D94C38";
     private static final String SIDEBAR_TOP   = "#CDEBD8";
     private static final String SIDEBAR_MID   = "#Bce3cc";
@@ -51,22 +61,82 @@ public class SarpanchComplaintsPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+        "/assets/images/BackgroundImage.png";
 
+    private Runnable backToCitizenServicesAction;
     private Runnable backToDashboardAction;
-    private String activeFilter = "All";
-    private String searchQuery = "";
+
+    /* ============================================================
+     *  DATA MODEL
+     * ============================================================ */
+    public static class WaterBillRecord {
+        private final SimpleStringProperty villagerName;
+        private final SimpleStringProperty householdId;
+        private final SimpleStringProperty ward;
+        private final SimpleStringProperty billingPeriod;
+        private final SimpleStringProperty unitsConsumed;
+        private final SimpleStringProperty amount;
+        private final SimpleStringProperty status;
+        private final SimpleStringProperty paymentDate;
+
+        public WaterBillRecord(String villagerName, String householdId, String ward, String billingPeriod,
+                                String unitsConsumed, String amount, String status, String paymentDate) {
+            this.villagerName = new SimpleStringProperty(villagerName);
+            this.householdId = new SimpleStringProperty(householdId);
+            this.ward = new SimpleStringProperty(ward);
+            this.billingPeriod = new SimpleStringProperty(billingPeriod);
+            this.unitsConsumed = new SimpleStringProperty(unitsConsumed);
+            this.amount = new SimpleStringProperty(amount);
+            this.status = new SimpleStringProperty(status);
+            this.paymentDate = new SimpleStringProperty(paymentDate);
+        }
+
+        public String getVillagerName() { return villagerName.get(); }
+        public String getHouseholdId() { return householdId.get(); }
+        public String getWard() { return ward.get(); }
+        public String getBillingPeriod() { return billingPeriod.get(); }
+        public String getUnitsConsumed() { return unitsConsumed.get(); }
+        public String getAmount() { return amount.get(); }
+        public String getStatus() { return status.get(); }
+        public String getPaymentDate() { return paymentDate.get(); }
+
+        /** Numeric amount, stripped of currency symbol/commas, used for summary totals. */
+        public double getAmountValue() {
+            try {
+                return Double.parseDouble(amount.get().replace("\u20B9", "").replace(",", "").trim());
+            } catch (NumberFormatException e) {
+                return 0.0;
+            }
+        }
+    }
+
+    /** Sample water bill revenue records, one row per villager/household per billing period. */
+    private List<WaterBillRecord> loadRecords() {
+        List<WaterBillRecord> records = new ArrayList<>();
+        records.add(new WaterBillRecord("Ramesh Kadam", "HH-101", "Ward 1", "Jul 2026", "12 KL", "\u20B9480", "Paid", "05 Aug 2026"));
+        records.add(new WaterBillRecord("Sunita Jadhav", "HH-102", "Ward 1", "Jul 2026", "9 KL", "\u20B9360", "Paid", "03 Aug 2026"));
+        records.add(new WaterBillRecord("Vitthal More", "HH-103", "Ward 2", "Jul 2026", "15 KL", "\u20B9600", "Pending", "\u2014"));
+        records.add(new WaterBillRecord("Anita Pawar", "HH-104", "Ward 2", "Jul 2026", "7 KL", "\u20B9280", "Paid", "07 Aug 2026"));
+        records.add(new WaterBillRecord("Ganesh Shinde", "HH-105", "Ward 3", "Jul 2026", "11 KL", "\u20B9440", "Overdue", "\u2014"));
+        records.add(new WaterBillRecord("Kavita Deshmukh", "HH-106", "Ward 3", "Jul 2026", "10 KL", "\u20B9400", "Paid", "02 Aug 2026"));
+        records.add(new WaterBillRecord("Prakash Bhosale", "HH-107", "Ward 1", "Jun 2026", "13 KL", "\u20B9520", "Paid", "06 Jul 2026"));
+        records.add(new WaterBillRecord("Meera Kale", "HH-108", "Ward 4", "Jul 2026", "8 KL", "\u20B9320", "Pending", "\u2014"));
+        records.add(new WaterBillRecord("Suresh Gaikwad", "HH-109", "Ward 4", "Jul 2026", "14 KL", "\u20B9560", "Paid", "08 Aug 2026"));
+        records.add(new WaterBillRecord("Lata Patil", "HH-110", "Ward 2", "Jun 2026", "9 KL", "\u20B9360", "Paid", "04 Jul 2026"));
+        records.add(new WaterBillRecord("Dinesh Wagh", "HH-111", "Ward 5", "Jul 2026", "16 KL", "\u20B9640", "Overdue", "\u2014"));
+        records.add(new WaterBillRecord("Sarika Chavan", "HH-112", "Ward 5", "Jul 2026", "10 KL", "\u20B9400", "Paid", "05 Aug 2026"));
+        return records;
+    }
 
     /**
-     * Builds the Complaints scene and returns it.
-     * backToDashboardAction is stored and invoked when the user clicks "Dashboard"
-     * in the sidebar, matching the Runnable navigation pattern used by ProjectTrackerPage.
+     * Builds the Water Bill Payments scene and returns it.
      */
-    public Scene getComplaintsScene(Runnable backToDashboardAction) {
+    public Scene getWaterBillPaymentsScene(Runnable backToCitizenServicesAction, Runnable backToDashboardAction) {
+        this.backToCitizenServicesAction = backToCitizenServicesAction;
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -94,14 +164,8 @@ public class SarpanchComplaintsPage {
         return new Scene(root, 1300, 800);
     }
 
-    /** Rebuilds and swaps in a fresh Complaints scene, e.g. after a status change or filter click. */
-    private void refresh() {
-        SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
-        SarpanchDashboard.myStage.setScene(getComplaintsScene(backToDashboardAction));
-    }
-
     /* ============================================================
-     *  SIDEBAR (identical to SarpanchDashboard / ProjectTrackerPage, "Complaints" active)
+     *  SIDEBAR  (identical to CitizenServicesPage, "Citizen Services" active)
      * ============================================================ */
     private VBox buildSidebar() {
         VBox sidebar = new VBox();
@@ -149,12 +213,15 @@ public class SarpanchComplaintsPage {
             SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
         });
 
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
-        citizenServicesNav.setOnMouseClicked(e -> {
-            CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
-            SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
+        HBox complaintsNav = navItem("\u26A0", "Complaints", false);
+        complaintsNav.setOnMouseClicked(e -> {
+            SarpanchComplaintsPage complaintsPage = new SarpanchComplaintsPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
+            SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
+
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", true);
+        citizenServicesNav.setOnMouseClicked(e -> backToCitizenServicesAction.run());
 
         HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
         announcementsNav.setOnMouseClicked(e -> {
@@ -166,7 +233,7 @@ public class SarpanchComplaintsPage {
         nav.getChildren().addAll(
             dashboardNav,
             projectTrackerNav,
-            navItem("\u26A0", "Complaints", true),
+            complaintsNav,
             citizenServicesNav,
             announcementsNav
         );
@@ -246,6 +313,7 @@ createBtn.setOnMouseClicked(e -> {
             wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
                 "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
             wrap.setMaxWidth(Double.MAX_VALUE);
+            wrap.setCursor(javafx.scene.Cursor.HAND);
             return wrap;
         } else {
             String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
@@ -273,7 +341,7 @@ createBtn.setOnMouseClicked(e -> {
     }
 
     /* ============================================================
-     *  TOP NAVIGATION BAR (identical to SarpanchDashboard / ProjectTrackerPage)
+     *  TOP NAVIGATION BAR (identical to the other pages)
      * ============================================================ */
     private HBox buildTopBar() {
         HBox topBar = new HBox(24);
@@ -286,7 +354,7 @@ createBtn.setOnMouseClicked(e -> {
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);"
         );
 
-        Image projectLogo = new Image("assets/images/ProjectLogo.png");
+        Image projectLogo = new Image("/assets/images/ProjectLogo.png");
         ImageView imgView = new ImageView(projectLogo);
         imgView.setFitHeight(50);
         imgView.setFitWidth(60);
@@ -300,11 +368,10 @@ createBtn.setOnMouseClicked(e -> {
             "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
-        TextField searchField = new TextField(searchQuery);
-        searchField.setPromptText("Search complaints by villager, village or category...");
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search citizen requests...");
         searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
             "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
-        searchField.setOnAction(e -> { searchQuery = searchField.getText(); refresh(); });
         HBox.setHgrow(searchField, Priority.ALWAYS);
         searchBox.getChildren().addAll(searchIcon, searchField);
 
@@ -350,56 +417,167 @@ createBtn.setOnMouseClicked(e -> {
     /* ============================================================
      *  MAIN CONTENT
      * ============================================================ */
+    private ObservableList<WaterBillRecord> allRecords;
+    private FilteredList<WaterBillRecord> filteredRecords;
+
     private VBox buildMainContent() {
-        VBox main = new VBox(32);
+        VBox main = new VBox(28);
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
+        HBox breadcrumb = new HBox(8);
+        breadcrumb.setAlignment(Pos.CENTER_LEFT);
+        Label backArrow = new Label("\u2190 Citizen Services");
+        backArrow.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700;" +
+            "-fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
+        backArrow.setOnMouseClicked(e -> backToCitizenServicesAction.run());
+        breadcrumb.getChildren().add(backArrow);
+
         VBox welcome = new VBox(6);
-        Label welcomeTitle = new Label("Villager Complaints");
+        Label welcomeTitle = new Label("Water Bill Payments");
         welcomeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label welcomeSub = new Label("Every complaint filed by a villager is recorded here automatically. Review evidence, take action and keep villagers informed.");
+        Label welcomeSub = new Label("All water bill revenue collected from villagers, broken down by household and billing period.");
         welcomeSub.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.70);");
         welcomeSub.setWrapText(true);
         welcome.getChildren().addAll(welcomeTitle, welcomeSub);
 
-        main.getChildren().addAll(
-            welcome,
-            buildQuickStatsRow(),
-            buildFilterBar(),
-            buildComplaintsList()
-        );
+        List<WaterBillRecord> records = loadRecords();
+        allRecords = FXCollections.observableArrayList(records);
+        filteredRecords = new FilteredList<>(allRecords, r -> true);
+
+        double totalCollected = 0;
+        int paidCount = 0, pendingCount = 0, overdueCount = 0;
+        for (WaterBillRecord r : records) {
+            if (null != r.getStatus()) switch (r.getStatus()) {
+                case "Paid" -> {
+                    totalCollected += r.getAmountValue();
+                    paidCount++;
+                }
+                case "Pending" -> pendingCount++;
+                case "Overdue" -> overdueCount++;
+                default -> {
+                }
+            }
+        }
+
+        HBox statsRow = new HBox(24);
+        statsRow.setAlignment(Pos.TOP_LEFT);
+        VBox s1 = kpiCard(CONTEXT_TEAL, "\u20B9", "TOTAL REVENUE COLLECTED", "\u20B9" + String.format("%,.0f", totalCollected));
+        VBox s2 = kpiCard(FOREST_DEEP, "\uD83D\uDCC4", "TOTAL RECORDS", String.valueOf(records.size()));
+        VBox s3 = kpiCard(SAFFRON_MAIN, "\u2713", "PAID", String.valueOf(paidCount));
+        VBox s4 = kpiCard(DELAYED_RED, "!", "PENDING / OVERDUE", String.valueOf(pendingCount + overdueCount));
+        HBox.setHgrow(s1, Priority.ALWAYS);
+        HBox.setHgrow(s2, Priority.ALWAYS);
+        HBox.setHgrow(s3, Priority.ALWAYS);
+        HBox.setHgrow(s4, Priority.ALWAYS);
+        statsRow.getChildren().addAll(s1, s2, s3, s4);
+
+        HBox toolsRow = buildToolsRow();
+        TableView<WaterBillRecord> table = buildTable();
+
+        main.getChildren().addAll(breadcrumb, welcome, statsRow, toolsRow, table);
         return main;
     }
 
-    /* ============================================================
-     *  QUICK STATS ROW (same KPI-card visual language as Dashboard / Project Tracker)
-     * ============================================================ */
-    private HBox buildQuickStatsRow() {
-        HBox row = new HBox(24);
-        row.setAlignment(Pos.TOP_LEFT);
+    private HBox buildToolsRow() {
+        HBox row = new HBox(16);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(4, 0, 4, 0));
 
-        int total = ComplaintStore.getAll().size();
-        int pending = ComplaintStore.countByStatus("Pending");
-        int inProgress = ComplaintStore.countByStatus("In Progress");
-        int resolved = ComplaintStore.countByStatus("Resolved");
+        HBox searchBox = new HBox(8);
+        searchBox.setAlignment(Pos.CENTER_LEFT);
+        searchBox.setPadding(new Insets(0, 16, 0, 16));
+        searchBox.setPrefWidth(340);
+        searchBox.setPrefHeight(42);
+        searchBox.setStyle(cardStyle(12));
+        Label searchIcon = new Label("\uD83D\uDD0D");
+        searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search by villager or household ID...");
+        searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
+            "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+        searchBox.getChildren().addAll(searchIcon, searchField);
 
-        VBox kpi1 = kpiCard(FOREST_DEEP, "\u26A0", "TOTAL COMPLAINTS", String.valueOf(total));
-        VBox kpi2 = kpiCard(SAFFRON_MAIN, "\u23F3", "PENDING", String.valueOf(pending));
-        VBox kpi3 = kpiCard(CONTEXT_TEAL, "\u25B6", "IN PROGRESS", String.valueOf(inProgress));
-        VBox kpi4 = kpiCard(AI_VIOLET, "\u2714", "RESOLVED", String.valueOf(resolved));
+        Label filterLbl = new Label("Status:");
+        filterLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
 
-        HBox.setHgrow(kpi1, Priority.ALWAYS);
-        HBox.setHgrow(kpi2, Priority.ALWAYS);
-        HBox.setHgrow(kpi3, Priority.ALWAYS);
-        HBox.setHgrow(kpi4, Priority.ALWAYS);
-        row.getChildren().addAll(kpi1, kpi2, kpi3, kpi4);
+        ComboBox<String> statusFilter = new ComboBox<>(FXCollections.observableArrayList("All", "Paid", "Pending", "Overdue"));
+        statusFilter.setValue("All");
+        statusFilter.setPrefHeight(42);
+        statusFilter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-background-radius: 10;");
+
+        searchField.textProperty().addListener((obs, oldV, newV) -> applyFilter(searchField.getText(), statusFilter.getValue()));
+        statusFilter.valueProperty().addListener((obs, oldV, newV) -> applyFilter(searchField.getText(), statusFilter.getValue()));
+
+        row.getChildren().addAll(searchBox, filterLbl, statusFilter);
         return row;
     }
 
+    private void applyFilter(String query, String status) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        filteredRecords.setPredicate(r -> {
+            boolean matchesQuery = q.isEmpty()
+                || r.getVillagerName().toLowerCase().contains(q)
+                || r.getHouseholdId().toLowerCase().contains(q)
+                || r.getWard().toLowerCase().contains(q);
+            boolean matchesStatus = "All".equals(status) || r.getStatus().equals(status);
+            return matchesQuery && matchesStatus;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private TableView<WaterBillRecord> buildTable() {
+        TableView<WaterBillRecord> table = new TableView<>();
+        table.setItems(filteredRecords);
+        table.setStyle(cardStyle(16) + " -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px;");
+        table.setPrefHeight(480);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        TableColumn<WaterBillRecord, String> nameCol = new TableColumn<>("Villager");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("villagerName"));
+
+        TableColumn<WaterBillRecord, String> hhCol = new TableColumn<>("Household ID");
+        hhCol.setCellValueFactory(new PropertyValueFactory<>("householdId"));
+
+        TableColumn<WaterBillRecord, String> wardCol = new TableColumn<>("Ward");
+        wardCol.setCellValueFactory(new PropertyValueFactory<>("ward"));
+
+        TableColumn<WaterBillRecord, String> periodCol = new TableColumn<>("Billing Period");
+        periodCol.setCellValueFactory(new PropertyValueFactory<>("billingPeriod"));
+
+        TableColumn<WaterBillRecord, String> unitsCol = new TableColumn<>("Units Consumed");
+        unitsCol.setCellValueFactory(new PropertyValueFactory<>("unitsConsumed"));
+
+        TableColumn<WaterBillRecord, String> amountCol = new TableColumn<>("Amount");
+        amountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+
+        TableColumn<WaterBillRecord, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setCellFactory(col -> new javafx.scene.control.TableCell<WaterBillRecord, String>() {
+            @Override
+            protected void updateItem(String value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) { setText(null); setStyle(""); return; }
+                setText(value);
+                String color = "Paid".equals(value) ? CONTEXT_TEAL : "Pending".equals(value) ? SAFFRON_MAIN : DELAYED_RED;
+                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: 800;");
+            }
+        });
+
+        TableColumn<WaterBillRecord, String> dateCol = new TableColumn<>("Payment Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
+
+        table.getColumns().addAll(nameCol, hhCol, wardCol, periodCol, unitsCol, amountCol, statusCol, dateCol);
+        return table;
+    }
+
+    /* ============================================================
+     *  KPI CARD (same visual language as CitizenServicesPage)
+     * ============================================================ */
     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
         VBox card = new VBox();
-        card.setPrefWidth(320);
+        card.setPrefWidth(300);
         card.setMinHeight(140);
         card.setStyle(cardStyle(16));
 
@@ -426,251 +604,16 @@ createBtn.setOnMouseClicked(e -> {
         head.getChildren().addAll(iconChip, lbl);
 
         Label stat = new Label(statText);
-        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
         inner.getChildren().addAll(head, stat);
         card.getChildren().addAll(strip, inner);
-        addHoverLift(card, 16);
         return card;
     }
 
     /* ============================================================
-     *  FILTER BAR
+     *  HELPERS
      * ============================================================ */
-    private HBox buildFilterBar() {
-        HBox bar = new HBox(10);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        String[] filters = {"All", "Pending", "In Progress", "Resolved", "Rejected"};
-        for (String filter : filters) {
-            bar.getChildren().add(filterChip(filter));
-        }
-        return bar;
-    }
-
-    private Label filterChip(String filter) {
-        boolean active = filter.equals(activeFilter);
-        Label chip = new Label(filter);
-        chip.setPadding(new Insets(9, 18, 9, 18));
-        String base = active
-            ? "-fx-background-color: " + FOREST_DEEP + "; -fx-background-radius: 999;" +
-              "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: white; -fx-cursor: hand;"
-            : "-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 999; -fx-border-color: white; -fx-border-radius: 999;" +
-              "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + "; -fx-cursor: hand;";
-        chip.setStyle(base);
-        chip.setOnMouseClicked(e -> { activeFilter = filter; refresh(); });
-        return chip;
-    }
-
-    /* ============================================================
-     *  COMPLAINTS LIST
-     * ============================================================ */
-    private VBox buildComplaintsList() {
-        VBox wrap = new VBox(20);
-
-        HBox head = new HBox(12);
-        head.setAlignment(Pos.CENTER_LEFT);
-        StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(40, 40);
-        iconChip.setMinSize(40, 40);
-        iconChip.setStyle("-fx-background-color: rgba(11,61,46,0.10); -fx-background-radius: 999;");
-        Label hIcon = new Label("\u26A0");
-        hIcon.setStyle("-fx-font-size: 16px; -fx-text-fill: " + FOREST_DEEP + ";");
-        iconChip.getChildren().add(hIcon);
-        Label title = new Label(activeFilter.equals("All") ? "All Complaints" : activeFilter + " Complaints");
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        head.getChildren().addAll(iconChip, title);
-
-        VBox list = new VBox(18);
-        List<Complaint> all = ComplaintStore.getAll();
-        boolean any = false;
-        for (Complaint c : all) {
-            if (!activeFilter.equals("All") && !c.getStatus().equalsIgnoreCase(activeFilter)) continue;
-            if (!searchQuery.isBlank()) {
-                String q = searchQuery.toLowerCase();
-                boolean matches = c.getVillagerName().toLowerCase().contains(q)
-                    || c.getVillage().toLowerCase().contains(q)
-                    || c.getCategory().toLowerCase().contains(q);
-                if (!matches) continue;
-            }
-            list.getChildren().add(complaintCard(c));
-            any = true;
-        }
-        if (!any) {
-            VBox empty = card();
-            Label emptyLabel = new Label("No complaints match this view.");
-            emptyLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.60);");
-            empty.getChildren().add(emptyLabel);
-            list.getChildren().add(empty);
-        }
-
-        wrap.getChildren().addAll(head, list);
-        return wrap;
-    }
-
-    /** A single, information-dense complaint card so the Sarpanch can act with full context at a glance. */
-    private VBox complaintCard(Complaint c) {
-        VBox card = card();
-
-        HBox top = new HBox(14);
-        top.setAlignment(Pos.CENTER_LEFT);
-        VBox who = new VBox(2);
-        Label villager = new Label(c.getVillagerName() + "  \u2022  " + c.getVillage());
-        villager.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label idLine = new Label(c.getId() + "   \u00B7   Filed " + c.getFormattedDate());
-        idLine.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.55);");
-        who.getChildren().addAll(villager, idLine);
-
-        Region grow = new Region();
-        HBox.setHgrow(grow, Priority.ALWAYS);
-
-        Label categoryTag = new Label(categoryIcon(c.getCategory()) + "  " + c.getCategory());
-        categoryTag.setPadding(new Insets(6, 14, 6, 14));
-        categoryTag.setStyle("-fx-background-color: rgba(11,61,46,0.06); -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
-
-        Label priorityPill = new Label(c.getPriority().toUpperCase() + " PRIORITY");
-        priorityPill.setPadding(new Insets(6, 14, 6, 14));
-        String priorityColor = priorityColor(c.getPriority());
-        priorityPill.setStyle("-fx-background-color: " + rgba(priorityColor, 0.14) + "; -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + priorityColor + ";");
-
-        Label statusPill = new Label(c.getStatus());
-        statusPill.setPadding(new Insets(6, 14, 6, 14));
-        String statusColor = statusColor(c.getStatus());
-        statusPill.setStyle("-fx-background-color: " + statusColor + "; -fx-background-radius: 999;" +
-            "-fx-effect: dropshadow(gaussian, " + rgba(statusColor, 0.25) + ", 6, 0.2, 0, 2);" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: white;");
-
-        top.getChildren().addAll(who, grow, categoryTag, priorityPill, statusPill);
-
-        Label description = new Label(c.getDescription());
-        description.setWrapText(true);
-        description.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.78);");
-
-        HBox meta = new HBox(18);
-        meta.setAlignment(Pos.CENTER_LEFT);
-        meta.getChildren().add(metaChip("\uD83D\uDCDE", c.getContactNumber() == null || c.getContactNumber().isBlank() ? "No contact provided" : c.getContactNumber()));
-        if (c.getGpsLocation() != null && !c.getGpsLocation().isBlank()) {
-            meta.getChildren().add(metaChip("\uD83D\uDCCD", "GPS evidence: " + c.getGpsLocation()));
-        }
-        if (c.getOfficerRemark() != null && !c.getOfficerRemark().isBlank()) {
-            meta.getChildren().add(metaChip("\uD83D\uDCDD", "Note: " + c.getOfficerRemark()));
-        }
-
-        TextField remarkField = new TextField();
-        remarkField.setPromptText("Add a note for this complaint (visible to the villager)...");
-        remarkField.setStyle(fieldStyle());
-        HBox.setHgrow(remarkField, Priority.ALWAYS);
-
-        Label feedback = new Label();
-        feedback.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
-
-        HBox actions = new HBox(10);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        if ("Pending".equalsIgnoreCase(c.getStatus())) {
-            actions.getChildren().add(cardActionButton("Mark In Progress", CONTEXT_TEAL, () -> {
-                ComplaintStore.updateStatus(c.getId(), "In Progress", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Resolve", FOREST_DEEP, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Resolved", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Reject", DELAYED_RED, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Rejected", remarkField.getText());
-                refresh();
-            }));
-        } else if ("In Progress".equalsIgnoreCase(c.getStatus())) {
-            actions.getChildren().add(cardActionButton("Resolve", FOREST_DEEP, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Resolved", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Reject", DELAYED_RED, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Rejected", remarkField.getText());
-                refresh();
-            }));
-        } else {
-            actions.getChildren().add(cardActionButton("Reopen", SAFFRON_MAIN, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Pending", remarkField.getText());
-                refresh();
-            }));
-        }
-
-        VBox noteRow = new VBox(8);
-        noteRow.getChildren().addAll(new HBox(10, remarkField), new HBox(12, actions, feedback));
-
-        card.getChildren().addAll(top, description, meta, noteRow);
-        addHoverLift(card, 20);
-        return card;
-    }
-
-    private HBox metaChip(String icon, String text) {
-        HBox chip = new HBox(6);
-        chip.setAlignment(Pos.CENTER_LEFT);
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 12px;");
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.62);");
-        chip.getChildren().addAll(ic, lbl);
-        return chip;
-    }
-
-    private String categoryIcon(String category) {
-        if (category == null) return "\uD83D\uDCC1";
-        return switch (category) {
-            case "Water Supply" -> "\uD83D\uDCA7";
-            case "Roads" -> "\uD83D\uDEE3";
-            case "Electricity" -> "\uD83D\uDCA1";
-            case "Sanitation" -> "\uD83E\uDDF9";
-            case "Education" -> "\uD83C\uDF93";
-            default -> "\uD83D\uDCC1";
-        };
-    }
-
-    private String priorityColor(String priority) {
-        if (priority == null) return CONTEXT_TEAL;
-        return switch (priority) {
-            case "High" -> DELAYED_RED;
-            case "Medium" -> SAFFRON_MAIN;
-            default -> CONTEXT_TEAL;
-        };
-    }
-
-    private String statusColor(String status) {
-        if (status == null) return CONTEXT_TEAL;
-        return switch (status) {
-            case "Pending" -> SAFFRON_MAIN;
-            case "In Progress" -> CONTEXT_TEAL;
-            case "Resolved" -> FOREST_DEEP;
-            case "Rejected" -> DELAYED_RED;
-            default -> CONTEXT_TEAL;
-        };
-    }
-
-    private javafx.scene.control.Button cardActionButton(String text, String color, Runnable onClick) {
-        javafx.scene.control.Button button = new javafx.scene.control.Button(text);
-        button.setPadding(new Insets(9, 16, 9, 16));
-        button.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 9; -fx-text-fill: white;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 800; -fx-cursor: hand;");
-        button.setOnAction(e -> onClick.run());
-        return button;
-    }
-
-    private String fieldStyle() {
-        return "-fx-background-color: white; -fx-background-radius: 9; -fx-border-color: rgba(11,61,46,0.16); -fx-border-radius: 9;" +
-            " -fx-padding: 9 12 9 12; -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: " + FOREST_DEEP + ";";
-    }
-
-    /* ============================================================
-     *  HELPERS (kept identical to SarpanchDashboard / ProjectTrackerPage)
-     * ============================================================ */
-    private VBox card() {
-        VBox card = new VBox(14);
-        card.setPadding(new Insets(24));
-        card.setStyle(cardStyle(20));
-        return card;
-    }
-
     private String cardStyle(int radius) {
         return "-fx-background-color: rgba(255,255,255,0.88);" +
                "-fx-background-radius: " + radius + ";" +
@@ -678,19 +621,6 @@ createBtn.setOnMouseClicked(e -> {
                "-fx-border-radius: " + radius + ";" +
                "-fx-border-width: 1;" +
                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
-    }
-
-    private void addHoverLift(Region card, int radius) {
-        String base = cardStyle(radius);
-        String hover = "-fx-background-color: rgba(255,255,255,0.92);" +
-               "-fx-background-radius: " + radius + ";" +
-               "-fx-border-color: rgba(255,255,255,0.6);" +
-               "-fx-border-radius: " + radius + ";" +
-               "-fx-border-width: 1;" +
-               "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.12), 24, 0.15, 0, 8);" +
-               "-fx-translate-y: -2;";
-        card.setOnMouseEntered(e -> card.setStyle(hover));
-        card.setOnMouseExited(e -> card.setStyle(base));
     }
 
     private String rgba(String hex, double alpha) {
