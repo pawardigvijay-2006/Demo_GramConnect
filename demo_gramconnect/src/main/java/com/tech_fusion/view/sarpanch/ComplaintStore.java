@@ -22,33 +22,41 @@ public final class ComplaintStore {
     static {
         // Seed with demo data so the Sarpanch Complaints page is populated on first run,
         // matching the sample-data style already used across the other pages.
+        // Titles are included here (via the title-aware constructor overload) purely so
+        // the demo data renders sensibly under the new card layout; this is unrelated to,
+        // and does not wire up, the villager-side submission flow.
         COMPLAINTS.add(new Complaint(
             "Ramesh Kadam", "Ward 4 - Main Street", "9822012345",
-            "Roads", "Large pothole near the bus stop is causing accidents, especially at night.",
+            "Roads", "Pothole Near Bus Stop",
+            "Large pothole near the bus stop is causing accidents, especially at night.",
             "High", "18.5211 N, 73.8571 E", "Pending",
             LocalDateTime.now().minusHours(5)
         ));
         COMPLAINTS.add(new Complaint(
             "Sunita Pawar", "Near School Area", "9822098765",
-            "Water Supply", "No water supply for the last 3 days in the eastern lane.",
+            "Water Supply", "No Water Supply for 3 Days",
+            "No water supply for the last 3 days in the eastern lane.",
             "High", "18.5204 N, 73.8567 E", "In Progress",
             LocalDateTime.now().minusDays(1)
         ));
         COMPLAINTS.add(new Complaint(
             "Ganesh More", "Gram Panchayat Office", "9822011122",
-            "Electricity", "Streetlight outside the primary school has not worked for two weeks.",
+            "Electricity", "Streetlight Outside School Not Working",
+            "Streetlight outside the primary school has not worked for two weeks.",
             "Medium", null, "Pending",
             LocalDateTime.now().minusDays(2)
         ));
         COMPLAINTS.add(new Complaint(
             "Anita Jadhav", "Ward 2", "9822033445",
-            "Sanitation", "Garbage has not been collected from the community bin in over a week.",
+            "Sanitation", "Garbage Not Collected",
+            "Garbage has not been collected from the community bin in over a week.",
             "Medium", null, "Resolved",
             LocalDateTime.now().minusDays(4)
         ));
         COMPLAINTS.add(new Complaint(
             "Vitthal Shinde", "Ward 4 - Main Street", "9822055667",
-            "Roads", "Drainage water is overflowing onto the road after every rain.",
+            "Roads", "Drainage Overflow After Rain",
+            "Drainage water is overflowing onto the road after every rain.",
             "Low", null, "Rejected",
             LocalDateTime.now().minusDays(6)
         ));
@@ -95,5 +103,15 @@ public final class ComplaintStore {
                 return;
             }
         }
+    }
+
+    /** Looks up a single complaint by id (used by the Complaint Details screen). */
+    public static Complaint getById(String complaintId) {
+        for (Complaint c : COMPLAINTS) {
+            if (c.getId().equals(complaintId)) {
+                return c;
+            }
+        }
+        return null;
     }
 }

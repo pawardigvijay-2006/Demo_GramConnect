@@ -1,6 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
 import java.util.List;
 
 import javafx.geometry.Insets;
@@ -51,8 +50,7 @@ public class SarpanchComplaintsPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     private Runnable backToDashboardAction;
     private String activeFilter = "All";
     private String searchQuery = "";
@@ -66,7 +64,7 @@ public class SarpanchComplaintsPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -192,6 +190,17 @@ public class SarpanchComplaintsPage {
         createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
         createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+createBtn.setOnMouseClicked(e -> {
+            System.out.println("Create Project clicked");
+            CreateProjectPage createProjectPage = new CreateProjectPage();
+            Runnable backToProjectTrackerAction = () -> {
+                ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
+                SarpanchDashboard.myStage.setTitle("GramConnect - Project Tracker");
+                SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
+            };
+            SarpanchDashboard.myStage.setTitle("GramConnect - Create Project");
+            SarpanchDashboard.myStage.setScene(createProjectPage.getCreateProjectScene(backToProjectTrackerAction, backToDashboardAction));
+        });
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -496,32 +505,43 @@ public class SarpanchComplaintsPage {
         return wrap;
     }
 
-    /** A single, information-dense complaint card so the Sarpanch can act with full context at a glance. */
+    /**
+     * A single, compact complaint card mirroring the row layout used on the
+     * Villager Login's ComplaintsPage: a category icon, the complaint title,
+     * and a meta line with who filed it, where, and when. Full detail
+     * (description + photo) lives one tap away on the Complaint Details
+     * screen, reached via "View Details".
+     */
     private VBox complaintCard(Complaint c) {
         VBox card = card();
 
         HBox top = new HBox(14);
         top.setAlignment(Pos.CENTER_LEFT);
-        VBox who = new VBox(2);
-        Label villager = new Label(c.getVillagerName() + "  \u2022  " + c.getVillage());
-        villager.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label idLine = new Label(c.getId() + "   \u00B7   Filed " + c.getFormattedDate());
-        idLine.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.55);");
-        who.getChildren().addAll(villager, idLine);
+
+        StackPane iconCircle = new StackPane();
+        iconCircle.setPrefSize(44, 44);
+        iconCircle.setMinSize(44, 44);
+        iconCircle.setStyle("-fx-background-color: rgba(11,61,46,0.08); -fx-background-radius: 999;");
+        Label iconLabel = new Label(categoryIcon(c.getCategory()));
+        iconLabel.setStyle("-fx-font-size: 17px; -fx-text-fill: " + FOREST_DEEP + ";");
+        iconCircle.getChildren().add(iconLabel);
+
+        VBox info = new VBox(6);
+        Label titleLabel = new Label(c.getTitle());
+        titleLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        HBox metaRow = new HBox(18);
+        metaRow.setAlignment(Pos.CENTER_LEFT);
+        metaRow.getChildren().addAll(
+            metaChip("\uD83D\uDC64", c.getVillagerName()),
+            metaChip("\uD83D\uDCCD", c.getVillage()),
+            metaChip("\uD83D\uDCC5", c.getFormattedDate())
+        );
+        info.getChildren().addAll(titleLabel, metaRow);
+        HBox.setHgrow(info, Priority.ALWAYS);
 
         Region grow = new Region();
         HBox.setHgrow(grow, Priority.ALWAYS);
-
-        Label categoryTag = new Label(categoryIcon(c.getCategory()) + "  " + c.getCategory());
-        categoryTag.setPadding(new Insets(6, 14, 6, 14));
-        categoryTag.setStyle("-fx-background-color: rgba(11,61,46,0.06); -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
-
-        Label priorityPill = new Label(c.getPriority().toUpperCase() + " PRIORITY");
-        priorityPill.setPadding(new Insets(6, 14, 6, 14));
-        String priorityColor = priorityColor(c.getPriority());
-        priorityPill.setStyle("-fx-background-color: " + rgba(priorityColor, 0.14) + "; -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + priorityColor + ";");
 
         Label statusPill = new Label(c.getStatus());
         statusPill.setPadding(new Insets(6, 14, 6, 14));
@@ -530,67 +550,28 @@ public class SarpanchComplaintsPage {
             "-fx-effect: dropshadow(gaussian, " + rgba(statusColor, 0.25) + ", 6, 0.2, 0, 2);" +
             "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: white;");
 
-        top.getChildren().addAll(who, grow, categoryTag, priorityPill, statusPill);
+        top.getChildren().addAll(iconCircle, info, grow, statusPill);
 
-        Label description = new Label(c.getDescription());
-        description.setWrapText(true);
-        description.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.78);");
+        Label viewDetails = new Label("View Details  \u2192");
+        viewDetails.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 800;" +
+            "-fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
+        viewDetails.setOnMouseClicked(e -> openComplaintDetails(c));
 
-        HBox meta = new HBox(18);
-        meta.setAlignment(Pos.CENTER_LEFT);
-        meta.getChildren().add(metaChip("\uD83D\uDCDE", c.getContactNumber() == null || c.getContactNumber().isBlank() ? "No contact provided" : c.getContactNumber()));
-        if (c.getGpsLocation() != null && !c.getGpsLocation().isBlank()) {
-            meta.getChildren().add(metaChip("\uD83D\uDCCD", "GPS evidence: " + c.getGpsLocation()));
-        }
-        if (c.getOfficerRemark() != null && !c.getOfficerRemark().isBlank()) {
-            meta.getChildren().add(metaChip("\uD83D\uDCDD", "Note: " + c.getOfficerRemark()));
-        }
-
-        TextField remarkField = new TextField();
-        remarkField.setPromptText("Add a note for this complaint (visible to the villager)...");
-        remarkField.setStyle(fieldStyle());
-        HBox.setHgrow(remarkField, Priority.ALWAYS);
-
-        Label feedback = new Label();
-        feedback.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
-
-        HBox actions = new HBox(10);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        if ("Pending".equalsIgnoreCase(c.getStatus())) {
-            actions.getChildren().add(cardActionButton("Mark In Progress", CONTEXT_TEAL, () -> {
-                ComplaintStore.updateStatus(c.getId(), "In Progress", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Resolve", FOREST_DEEP, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Resolved", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Reject", DELAYED_RED, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Rejected", remarkField.getText());
-                refresh();
-            }));
-        } else if ("In Progress".equalsIgnoreCase(c.getStatus())) {
-            actions.getChildren().add(cardActionButton("Resolve", FOREST_DEEP, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Resolved", remarkField.getText());
-                refresh();
-            }));
-            actions.getChildren().add(cardActionButton("Reject", DELAYED_RED, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Rejected", remarkField.getText());
-                refresh();
-            }));
-        } else {
-            actions.getChildren().add(cardActionButton("Reopen", SAFFRON_MAIN, () -> {
-                ComplaintStore.updateStatus(c.getId(), "Pending", remarkField.getText());
-                refresh();
-            }));
-        }
-
-        VBox noteRow = new VBox(8);
-        noteRow.getChildren().addAll(new HBox(10, remarkField), new HBox(12, actions, feedback));
-
-        card.getChildren().addAll(top, description, meta, noteRow);
+        card.getChildren().addAll(top, viewDetails);
         addHoverLift(card, 20);
         return card;
+    }
+
+    /** Opens the Complaint Details screen for a single complaint (description + photo). */
+    private void openComplaintDetails(Complaint c) {
+        SarpanchComplaintDetailPage detailPage = new SarpanchComplaintDetailPage();
+        Runnable backToComplaints = () -> {
+            SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
+            SarpanchDashboard.myStage.setScene(getComplaintsScene(backToDashboardAction));
+        };
+        SarpanchDashboard.myStage.setTitle("GramConnect - Complaint Details");
+        SarpanchDashboard.myStage.setScene(
+            detailPage.getComplaintDetailScene(c, backToComplaints, backToDashboardAction));
     }
 
     private HBox metaChip(String icon, String text) {
@@ -616,15 +597,6 @@ public class SarpanchComplaintsPage {
         };
     }
 
-    private String priorityColor(String priority) {
-        if (priority == null) return CONTEXT_TEAL;
-        return switch (priority) {
-            case "High" -> DELAYED_RED;
-            case "Medium" -> SAFFRON_MAIN;
-            default -> CONTEXT_TEAL;
-        };
-    }
-
     private String statusColor(String status) {
         if (status == null) return CONTEXT_TEAL;
         return switch (status) {
@@ -634,15 +606,6 @@ public class SarpanchComplaintsPage {
             case "Rejected" -> DELAYED_RED;
             default -> CONTEXT_TEAL;
         };
-    }
-
-    private javafx.scene.control.Button cardActionButton(String text, String color, Runnable onClick) {
-        javafx.scene.control.Button button = new javafx.scene.control.Button(text);
-        button.setPadding(new Insets(9, 16, 9, 16));
-        button.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 9; -fx-text-fill: white;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 800; -fx-cursor: hand;");
-        button.setOnAction(e -> onClick.run());
-        return button;
     }
 
     private String fieldStyle() {

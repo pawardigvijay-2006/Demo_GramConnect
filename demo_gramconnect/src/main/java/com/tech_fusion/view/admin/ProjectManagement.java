@@ -1,6 +1,9 @@
 package com.tech_fusion.view.admin;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -9,6 +12,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -35,6 +40,16 @@ import javafx.stage.Stage;
  * Same glass / forest-saffron template as {@link Dashboard} and
  * {@link BudgetManagment}. Navigates through the shared
  * {@code Dashboard.myStage} using Runnable callbacks.
+ *
+ * Every table, KPI card, and count on this page is now driven by
+ * {@code Dashboard.selectedVillage} — the single source of truth for
+ * village scope, shared with the sidebar "Managing Village" switcher.
+ * Selecting a village here (or on any other page) filters everything
+ * below via {@link #getProjectsForSelectedVillage()} and triggers
+ * {@link #refreshVillageData()}, which clears and repopulates the
+ * KPI row, Approved Projects panel, Pending Approval panel, and the
+ * Project Inventory table in place — no UI structure, styling, or
+ * layout changes from the previous version.
  */
 public class ProjectManagement extends Application {
 
@@ -50,9 +65,107 @@ public class ProjectManagement extends Application {
     private static final String SIDEBAR_BOT   = "#A9D8BD";
     private static final String FONT_FAMILY   = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-    private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
+    private static final String BACKGROUND_IMAGE_PATH =
+            "demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
+
+    /* ============================================================
+     *  DATA MODEL
+     * ============================================================ */
+
+    /**
+     * Plain project record. Deliberately flat / framework-agnostic so the
+     * local {@link #ALL_PROJECTS} list below can later be swapped for a
+     * Firebase Firestore query that returns the same shape — the rest of
+     * this class (filtering, KPI math, table rendering) doesn't need to
+     * change at all.
+     */
+    private static class Project {
+        final String projectName;
+        final String projectId;
+        final String village;
+        final String locality;   // sub-address shown under the project name
+        final String department;
+        final String budget;
+        final String status;     // "Pending" | "Approved" | "In Progress" | "Completed" | "Delayed"
+        final String date;
+        final String priority;   // only meaningful for "Pending" projects: "HIGH PRIORITY" | "MEDIUM" | "NORMAL"
+
+        Project(String projectName, String projectId, String village, String locality, String department,
+                String budget, String status, String date, String priority) {
+            this.projectName = projectName;
+            this.projectId = projectId;
+            this.village = village;
+            this.locality = locality;
+            this.department = department;
+            this.budget = budget;
+            this.status = status;
+            this.date = date;
+            this.priority = priority;
+        }
+    }
+
+    /**
+     * Central data source for the whole page. Sample data for now — swap
+     * this for a Firebase-backed loader later; every consumer below reads
+     * through {@link #getProjectsForSelectedVillage()} rather than this
+     * field directly, so that's the only place a future async load would
+     * need to plug in (e.g. re-run {@link #refreshVillageData()} in the
+     * Firestore listener's callback).
+     */
+    private static final List<Project> ALL_PROJECTS = new ArrayList<>(Arrays.asList(
+            // ---- Rampur ----
+            new Project("Village Road Construction", "#PRJ-089", "Rampur", "Main Street",
+                    "Rural Development", "\u20B91,20,000", "Approved", "24 May 2025", null),
+            new Project("Water Tank Renovation", "#PRJ-088", "Rampur", "Near School Area",
+                    "Water Supply", "\u20B985,000", "In Progress", "22 May 2025", null),
+            new Project("Community Hall Construction", "#PRJ-092", "Rampur", "Panchayat Grounds",
+                    "Rural Development", "\u20B95,50,000", "Pending", "18 May 2025", "HIGH PRIORITY"),
+            new Project("Rampur Drainage Upgrade", "#PRJ-101", "Rampur", "East Ward",
+                    "Sanitation", "\u20B92,10,000", "Completed", "02 Mar 2025", null),
+
+            // ---- Sitapur ----
+            new Project("Primary School Repair", "#PRJ-085", "Sitapur", "Gram Panchayat Office",
+                    "Infrastructure", "\u20B92,50,000", "Delayed", "28 Aug 2023", null),
+            new Project("Solar Street Lights", "#PRJ-095", "Sitapur", "Main Road",
+                    "Energy", "\u20B91,20,000", "Pending", "15 May 2025", "MEDIUM"),
+            new Project("Sitapur Health Sub-Center", "#PRJ-076", "Sitapur", "Ward 2",
+                    "Health", "\u20B93,80,000", "In Progress", "10 Apr 2025", null),
+            new Project("Sitapur Bus Shelter", "#PRJ-063", "Sitapur", "Bus Stand Road",
+                    "Rural Development", "\u20B940,000", "Completed", "20 Jan 2025", null),
+
+            // ---- Madhavpur ----
+            new Project("Library Construction", "#PRJ-098", "Madhavpur", "School Campus",
+                    "Education", "\u20B93,00,000", "Pending", "12 May 2025", "NORMAL"),
+            new Project("Madhavpur Check Dam", "#PRJ-071", "Madhavpur", "Riverside",
+                    "Irrigation", "\u20B94,60,000", "In Progress", "05 Apr 2025", null),
+            new Project("Anganwadi Renovation", "#PRJ-058", "Madhavpur", "Ward 1",
+                    "Welfare", "\u20B975,000", "Delayed", "14 Feb 2025", null),
+            new Project("Madhavpur Community Toilet", "#PRJ-052", "Madhavpur", "Market Road",
+                    "Sanitation", "\u20B91,10,000", "Completed", "30 Dec 2024", null),
+
+            // ---- Gopalganj ----
+            new Project("Gopalganj Road Widening", "#PRJ-110", "Gopalganj", "NH Link Road",
+                    "Rural Development", "\u20B96,20,000", "Approved", "20 May 2025", null),
+            new Project("Gopalganj Water Pipeline", "#PRJ-104", "Gopalganj", "Colony Road",
+                    "Water Supply", "\u20B92,90,000", "Pending", "08 May 2025", "HIGH PRIORITY"),
+            new Project("Gopalganj Panchayat Bhavan", "#PRJ-047", "Gopalganj", "Gram Panchayat Office",
+                    "Infrastructure", "\u20B91,45,000", "In Progress", "22 Mar 2025", null),
+            new Project("Gopalganj Playground", "#PRJ-039", "Gopalganj", "Ward 3",
+                    "Welfare", "\u20B960,000", "Completed", "05 Feb 2025", null)
+    ));
 
     private Label selectedNavItem;
+
+    private Label villageNameLabel;
+    private Label villageChevron;
+    private VBox villageListBox;
+    private Label scopeSubtitleStrong;
+    private boolean villageListExpanded = false;
+
+    /** Live containers — cleared and repopulated by refreshVillageData(), never replaced/re-parented. */
+    private HBox statCardsRow;
+    private HBox approvedPendingRow;
+    private VBox inventoryPanel;
 
     @Override
     public void start(Stage stage) {
@@ -135,13 +248,15 @@ public class ProjectManagement extends Application {
 
         header.getChildren().addAll(avatar, nameBox);
 
+        VBox villageSelector = buildVillageSelector();
+
         VBox nav = new VBox(6);
-        nav.setPadding(new Insets(16, 12, 16, 12));
+        nav.setPadding(new Insets(12, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
         Runnable toDashboard = () -> {
             Dashboard page = new Dashboard();
-            Dashboard.myStage.setScene(page.getBDODashboardScene() );
+            Dashboard.myStage.setScene(page.getBDODashboardScene());
         };
         dashboardNav.setOnMouseClicked(e -> toDashboard.run());
 
@@ -161,8 +276,7 @@ public class ProjectManagement extends Application {
         };
         complaintNav.setOnMouseClicked(e -> toComplaintManagement.run());
 
-        
-         HBox reportsNav = navItem("\uD83D\uDCCA", "Reports & Analytics", false);
+        HBox reportsNav = navItem("\uD83D\uDCCA", "Reports & Analytics", false);
         Runnable toReportsAnalytics = () -> {
             ReportsAnalytics page = new ReportsAnalytics();
             Dashboard.myStage.setScene(page.getReportsAnalyticsScene());
@@ -170,11 +284,11 @@ public class ProjectManagement extends Application {
         reportsNav.setOnMouseClicked(e -> toReportsAnalytics.run());
 
         nav.getChildren().addAll(
-            dashboardNav,
-            projectNav,
-            budgetNav,
-            complaintNav,
-            reportsNav
+                dashboardNav,
+                projectNav,
+                budgetNav,
+                complaintNav,
+                reportsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -194,67 +308,153 @@ public class ProjectManagement extends Application {
 
         footer.getChildren().addAll(divider, smallLinks);
 
-        sidebar.getChildren().addAll(header, nav, footer);
+        sidebar.getChildren().addAll(header, villageSelector, nav, footer);
         return sidebar;
     }
 
-    private HBox navItem(String icon, String text, boolean active) {
-        HBox item = new HBox(14);
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(14, 16, 14, 16));
-        item.setMaxWidth(Double.MAX_VALUE);
+    /* ============================================================
+     *  VILLAGE SWITCHER — reads/writes Dashboard.VILLAGES /
+     *  Dashboard.selectedVillage, and is the single trigger for a
+     *  full data refresh across this page.
+     * ============================================================ */
+    private VBox buildVillageSelector() {
+        VBox wrap = new VBox(8);
+        wrap.setPadding(new Insets(0, 20, 16, 20));
 
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 17px; -fx-text-fill: " + (active ? SAFFRON_MAIN : FOREST_DEEP) + ";");
+        Label caption = new Label("MANAGING VILLAGE");
+        caption.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.08em;");
 
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px;" +
-                "-fx-font-weight: " + (active ? "800" : "600") + ";" +
-                "-fx-text-fill: " + (active ? SAFFRON_MAIN : "rgba(11,61,46,0.80)") + ";" +
-                "-fx-letter-spacing: 0.05em;");
+        HBox toggleRow = new HBox(10);
+        toggleRow.setAlignment(Pos.CENTER_LEFT);
+        toggleRow.setPadding(new Insets(11, 14, 11, 14));
+        toggleRow.setMaxWidth(Double.MAX_VALUE);
+        String toggleBase = "-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.12); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        String toggleHover = "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.18); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        toggleRow.setStyle(toggleBase);
 
-        item.getChildren().addAll(ic, lbl);
+        Label pin = new Label("\uD83D\uDCCD");
+        pin.setStyle("-fx-font-size: 13px;");
 
-        if (active) {
-            selectedNavItem = lbl;
-            Region bar = new Region();
-            bar.setPrefWidth(6);
-            bar.setMinWidth(6);
-            bar.setStyle("-fx-background-color: " + SAFFRON_MAIN + "; -fx-background-radius: 8 0 0 8;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(224,122,31,0.6), 8, 0.3, 0, 0);");
-            HBox wrap = new HBox(bar, item);
-            HBox.setHgrow(item, Priority.ALWAYS);
-            wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
-                    "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
-            wrap.setMaxWidth(Double.MAX_VALUE);
-            return wrap;
+        villageNameLabel = new Label(Dashboard.selectedVillage);
+        villageNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        villageChevron = new Label("\u25BE");
+        villageChevron.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.65);");
+
+        toggleRow.getChildren().addAll(pin, villageNameLabel, spacer, villageChevron);
+        toggleRow.setOnMouseEntered(e -> toggleRow.setStyle(toggleHover));
+        toggleRow.setOnMouseExited(e -> toggleRow.setStyle(toggleBase));
+
+        villageListBox = new VBox(2);
+        villageListBox.setPadding(new Insets(6, 0, 0, 0));
+        villageListBox.setVisible(false);
+        villageListBox.setManaged(false);
+
+        ToggleGroup group = new ToggleGroup();
+        for (String village : Dashboard.VILLAGES) {
+            villageListBox.getChildren().add(villageToggle(village, group));
+        }
+
+        toggleRow.setOnMouseClicked(e -> {
+            villageListExpanded = !villageListExpanded;
+            villageListBox.setVisible(villageListExpanded);
+            villageListBox.setManaged(villageListExpanded);
+            villageChevron.setText(villageListExpanded ? "\u25B4" : "\u25BE");
+        });
+
+        wrap.getChildren().addAll(caption, toggleRow, villageListBox);
+        return wrap;
+    }
+
+    private ToggleButton villageToggle(String village, ToggleGroup group) {
+        ToggleButton btn = new ToggleButton(village);
+        btn.setToggleGroup(group);
+        btn.setSelected(village.equals(Dashboard.selectedVillage));
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(9, 14, 9, 14));
+
+        String baseStyle = "-fx-background-color: transparent; -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 600;" +
+                "-fx-text-fill: rgba(11,61,46,0.75); -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + SAFFRON_MAIN + "; -fx-cursor: hand;";
+
+        btn.setStyle(btn.isSelected() ? activeStyle : baseStyle);
+
+        btn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            btn.setStyle(isSelected ? activeStyle : baseStyle);
+            if (isSelected) {
+                Dashboard.selectedVillage = village;
+                villageNameLabel.setText(Dashboard.selectedVillage);
+                refreshVillageData();
+                // Collapse the list once a village has been chosen.
+                villageListExpanded = false;
+                villageListBox.setVisible(false);
+                villageListBox.setManaged(false);
+                villageChevron.setText("\u25BE");
+            }
+        });
+
+        return btn;
+    }
+
+    /** Keeps the page's "Showing data for:" label in sync with the selected village. */
+    private void updateScopeSubtitle() {
+        if (scopeSubtitleStrong == null) return;
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            scopeSubtitleStrong.setText("All Villages (Block)");
         } else {
-            String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
-            item.setStyle(base);
-            item.setOnMouseEntered(e -> item.setStyle("-fx-background-radius: 10; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-            item.setOnMouseExited(e -> item.setStyle(base));
-            return item;
+            scopeSubtitleStrong.setText(Dashboard.selectedVillage);
         }
     }
 
-    private HBox footerLink(String icon, String text) {
-        HBox link = new HBox(10);
-        link.setAlignment(Pos.CENTER_LEFT);
-        link.setPadding(new Insets(8, 16, 8, 16));
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
-        link.getChildren().addAll(ic, lbl);
-        String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
-        link.setStyle(base);
-        link.setOnMouseEntered(e -> link.setStyle("-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-        link.setOnMouseExited(e -> link.setStyle(base));
-        return link;
+    /* ============================================================
+     *  VILLAGE FILTERING — single source of truth for every table
+     *  and KPI on this page.
+     * ============================================================ */
+
+    /**
+     * Returns every project belonging to {@code Dashboard.selectedVillage},
+     * or the full list when "All Villages" (index 0 of Dashboard.VILLAGES)
+     * is selected.
+     */
+    private List<Project> getProjectsForSelectedVillage() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            return new ArrayList<>(ALL_PROJECTS);
+        }
+        List<Project> filtered = new ArrayList<>();
+        for (Project p : ALL_PROJECTS) {
+            if (p.village.equals(Dashboard.selectedVillage)) {
+                filtered.add(p);
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * Central refresh entry point — called once when the page is first
+     * built, and again every time the village toggle changes selection.
+     * Clears and repopulates the KPI row, Approved/Pending panels, and
+     * the inventory table in place (no nodes are re-parented, so hover
+     * effects / layout stay exactly as before).
+     */
+    private void refreshVillageData() {
+        updateScopeSubtitle();
+        refreshStatCards();
+        refreshApprovedPendingSection();
+        refreshInventoryPanel();
     }
 
     /* ============================================================
-     *  TOP NAVIGATION BAR — shared shell
+     *  TOP NAVIGATION BAR — shared shell (unchanged)
      * ============================================================ */
     private HBox buildTopBar() {
         HBox topBar = new HBox(24);
@@ -325,20 +525,82 @@ public class ProjectManagement extends Application {
         return topBar;
     }
 
+    private HBox navItem(String icon, String text, boolean active) {
+        HBox item = new HBox(14);
+        item.setAlignment(Pos.CENTER_LEFT);
+        item.setPadding(new Insets(14, 16, 14, 16));
+        item.setMaxWidth(Double.MAX_VALUE);
+
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 17px; -fx-text-fill: " + (active ? SAFFRON_MAIN : FOREST_DEEP) + ";");
+
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px;" +
+                "-fx-font-weight: " + (active ? "800" : "600") + ";" +
+                "-fx-text-fill: " + (active ? SAFFRON_MAIN : "rgba(11,61,46,0.80)") + ";" +
+                "-fx-letter-spacing: 0.05em;");
+
+        item.getChildren().addAll(ic, lbl);
+
+        if (active) {
+            selectedNavItem = lbl;
+            Region bar = new Region();
+            bar.setPrefWidth(6);
+            bar.setMinWidth(6);
+            bar.setStyle("-fx-background-color: " + SAFFRON_MAIN + "; -fx-background-radius: 8 0 0 8;" +
+                    "-fx-effect: dropshadow(gaussian, rgba(224,122,31,0.6), 8, 0.3, 0, 0);");
+            HBox wrap = new HBox(bar, item);
+            HBox.setHgrow(item, Priority.ALWAYS);
+            wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
+                    "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
+            wrap.setMaxWidth(Double.MAX_VALUE);
+            return wrap;
+        } else {
+            String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
+            item.setStyle(base);
+            item.setOnMouseEntered(e -> item.setStyle("-fx-background-radius: 10; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
+            item.setOnMouseExited(e -> item.setStyle(base));
+            return item;
+        }
+    }
+
+    private HBox footerLink(String icon, String text) {
+        HBox link = new HBox(10);
+        link.setAlignment(Pos.CENTER_LEFT);
+        link.setPadding(new Insets(8, 16, 8, 16));
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
+        link.getChildren().addAll(ic, lbl);
+        String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
+        link.setStyle(base);
+        link.setOnMouseEntered(e -> link.setStyle("-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
+        link.setOnMouseExited(e -> link.setStyle(base));
+        return link;
+    }
+
     /* ============================================================
-     *  MAIN CONTENT
+     *  MAIN CONTENT — dynamic containers are created once here and
+     *  refreshed in place by refreshVillageData().
      * ============================================================ */
     private VBox buildMainContent() {
         VBox main = new VBox(24);
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
-        main.getChildren().addAll(
-                buildTitleRow(),
-                buildStatCardsRow(),
-                buildApprovedPendingSection(),
-                buildInventoryPanel()
-        );
+        statCardsRow = new HBox(20);
+        approvedPendingRow = new HBox(20);
+        inventoryPanel = new VBox(18);
+        inventoryPanel.setPadding(new Insets(28));
+        inventoryPanel.setStyle(cardStyle(24));
+        addHoverLift(inventoryPanel, 24);
+
+        HBox titleRow = buildTitleRow();
+
+        refreshVillageData();
+
+        main.getChildren().addAll(titleRow, statCardsRow, approvedPendingRow, inventoryPanel);
         return main;
     }
 
@@ -349,12 +611,11 @@ public class ProjectManagement extends Application {
         HBox subtitleRow = new HBox(4);
         Label subtitle = new Label("Showing data for:");
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
-        Label subtitleStrong = new Label("All Villages (Block)");
-        subtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        subtitleRow.getChildren().addAll(subtitle, subtitleStrong);
+        scopeSubtitleStrong = new Label("All Villages (Block)");
+        scopeSubtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        subtitleRow.getChildren().addAll(subtitle, scopeSubtitleStrong);
         text.getChildren().addAll(title, subtitleRow);
 
-    
         HBox actions = new HBox(12);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
@@ -366,66 +627,94 @@ public class ProjectManagement extends Application {
         return headerRow;
     }
 
-    private HBox buildStatCardsRow() {
-        HBox row = new HBox(20);
+    /* ---------------- KPI cards (dynamic) ---------------- */
+    private void refreshStatCards() {
+        List<Project> scoped = getProjectsForSelectedVillage();
+        boolean allVillages = Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage);
 
-        VBox totalCard = statCard("TOTAL PROJECTS", "24", "\uD83D\uDCBC", "rgba(11,61,46,0.10)");
-        Label totalFooter = new Label("All village projects");
+        int total = scoped.size();
+        int active = 0, completed = 0, delayed = 0;
+        for (Project p : scoped) {
+            if ("In Progress".equals(p.status)) active++;
+            else if ("Completed".equals(p.status)) completed++;
+            else if ("Delayed".equals(p.status)) delayed++;
+        }
+
+        VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCBC", "TOTAL PROJECTS", String.valueOf(total));
+        Label totalFooter = new Label(allVillages ? "All village projects" : "Projects in " + Dashboard.selectedVillage);
         totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         totalCard.getChildren().add(totalFooter);
 
-        VBox activeCard = statCard("ACTIVE PROJECTS", "18", "\u25B6", "rgba(14,140,140,0.12)");
+        VBox activeCard = kpiCard(SAFFRON_MAIN, "\u25B6", "ACTIVE PROJECTS", String.valueOf(active));
         VBox activeRow = new VBox(6);
-        activeRow.getChildren().add(progressBar(0.75, CONTEXT_TEAL, 8));
-        Label activeFooter = new Label("75% currently in progress");
+        activeRow.getChildren().add(progressBar(safeFraction(active, total), CONTEXT_TEAL, 8));
+        Label activeFooter = new Label(safePct(active, total) + " currently in progress");
         activeFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         activeRow.getChildren().add(activeFooter);
         activeCard.getChildren().add(activeRow);
 
-        VBox completedCard = statCard("COMPLETED", "6", "\u2705", "rgba(124,92,252,0.12)");
-        Label completedFooter = new Label("25% of all projects");
+        VBox completedCard = kpiCard(CONTEXT_TEAL, "\u2705", "COMPLETED", String.valueOf(completed));
+        Label completedFooter = new Label(safePct(completed, total) + " of all projects");
         completedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         completedCard.getChildren().add(completedFooter);
 
-        VBox delayedCard = statCard("DELAYED PROJECTS", "2", "\u26A0", "rgba(224,122,31,0.12)");
-        Label delayedFooter = new Label("Requires action this month");
+        VBox delayedCard = kpiCard(AI_VIOLET, "\u26A0", "DELAYED PROJECTS", String.valueOf(delayed));
+        Label delayedFooter = new Label(delayed > 0 ? "Requires action this month" : "No delayed projects");
         delayedFooter.setPadding(new Insets(6, 10, 6, 10));
         delayedFooter.setMaxWidth(Region.USE_PREF_SIZE);
-        delayedFooter.setStyle("-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 6;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " + SAFFRON_MAIN + ";");
+        delayedFooter.setStyle("-fx-background-color: " + (delayed > 0 ? "rgba(224,122,31,0.14)" : "rgba(14,140,140,0.12)") + "; -fx-background-radius: 6;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " +
+                (delayed > 0 ? SAFFRON_MAIN : CONTEXT_TEAL) + ";");
         delayedCard.getChildren().add(delayedFooter);
 
         HBox.setHgrow(totalCard, Priority.ALWAYS);
         HBox.setHgrow(activeCard, Priority.ALWAYS);
         HBox.setHgrow(completedCard, Priority.ALWAYS);
         HBox.setHgrow(delayedCard, Priority.ALWAYS);
-        row.getChildren().addAll(totalCard, activeCard, completedCard, delayedCard);
-        return row;
+
+        statCardsRow.getChildren().setAll(totalCard, activeCard, completedCard, delayedCard);
     }
 
-    private VBox statCard(String label, String value, String icon, String iconBg) {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setStyle(cardStyle(18));
-        card.setMinHeight(150);
+    private VBox kpiCard(String accent, String icon, String labelText, String statText) {
+        VBox card = new VBox();
+        card.setPrefWidth(320);
+        card.setMinHeight(190);
+        card.setStyle(cardStyle(16));
 
-        HBox top = new HBox();
-        top.setAlignment(Pos.CENTER_LEFT);
-        Label heading = new Label(label);
-        heading.setWrapText(true);
-        heading.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
-                "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 16px; -fx-padding: 8; -fx-background-color: " + iconBg + "; -fx-background-radius: 50%;");
-        top.getChildren().addAll(heading, spacer, iconLabel);
+        Region strip = new Region();
+        strip.setPrefHeight(6);
+        strip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 16 16 0 0;");
 
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        VBox inner = new VBox(20);
+        inner.setPadding(new Insets(20, 24, 24, 24));
+        VBox.setVgrow(inner, Priority.ALWAYS);
 
-        card.getChildren().addAll(top, valueLabel);
-        addHoverLift(card, 18);
+        HBox head = new HBox(12);
+        head.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconChip = new StackPane();
+        iconChip.setPrefSize(48, 48);
+        iconChip.setMinSize(48, 48);
+        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 12;");
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 18px; -fx-text-fill: " + accent + ";");
+        iconChip.getChildren().add(ic);
+        Label lbl = new Label(labelText);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.80); -fx-letter-spacing: 0.08em;");
+        lbl.setWrapText(true);
+        head.getChildren().addAll(iconChip, lbl);
+
+        Region grow = new Region();
+        VBox.setVgrow(grow, Priority.ALWAYS);
+
+        VBox bottom = new VBox(10);
+        Label stat = new Label(statText);
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 40px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        bottom.getChildren().add(stat);
+
+        inner.getChildren().addAll(head, grow, bottom);
+        card.getChildren().addAll(strip, inner);
+        addHoverLift(card, 16);
         return card;
     }
 
@@ -445,27 +734,37 @@ public class ProjectManagement extends Application {
         return track;
     }
 
-    /* ============================================================
-     *  APPROVED PROJECTS  +  PENDING APPROVAL
-     *  (replaces the old Department-wise Progress Overview section)
-     * ============================================================ */
-    private HBox buildApprovedPendingSection() {
-        HBox row = new HBox(20);
+    private double safeFraction(int part, int total) {
+        return total == 0 ? 0 : (double) part / total;
+    }
 
-        VBox approved = buildApprovedProjectsPanel();
-        VBox pending = buildPendingApprovalPanel();
+    private String safePct(int part, int total) {
+        return total == 0 ? "0%" : Math.round(part * 100.0 / total) + "%";
+    }
+
+    /* ---------------- Approved Projects + Pending Approval (dynamic) ---------------- */
+    private void refreshApprovedPendingSection() {
+        List<Project> scoped = getProjectsForSelectedVillage();
+
+        List<Project> approvedList = new ArrayList<>();
+        List<Project> pendingList = new ArrayList<>();
+        for (Project p : scoped) {
+            if ("Pending".equals(p.status)) pendingList.add(p);
+            else approvedList.add(p);
+        }
+
+        VBox approved = buildApprovedProjectsPanel(approvedList);
+        VBox pending = buildPendingApprovalPanel(pendingList);
 
         HBox.setHgrow(approved, Priority.ALWAYS);
         approved.setPrefWidth(900);
         pending.setPrefWidth(420);
         pending.setMinWidth(360);
 
-        row.getChildren().addAll(approved, pending);
-        return row;
+        approvedPendingRow.getChildren().setAll(approved, pending);
     }
 
-    /* ---------------- Approved Projects ---------------- */
-    private VBox buildApprovedProjectsPanel() {
+    private VBox buildApprovedProjectsPanel(List<Project> approvedList) {
         VBox panel = new VBox(18);
         panel.setPadding(new Insets(28));
         panel.setStyle(cardStyle(24));
@@ -482,6 +781,13 @@ public class ProjectManagement extends Application {
         viewAll.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-font-weight: 700; -fx-cursor: hand;");
         header.getChildren().addAll(icon, title, spacer, viewAll);
 
+        if (approvedList.isEmpty()) {
+            panel.getChildren().addAll(header, emptyState("No approved projects found for "
+                    + (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage) ? "any village" : Dashboard.selectedVillage) + "."));
+            addHoverLift(panel, 24);
+            return panel;
+        }
+
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(16);
@@ -494,17 +800,17 @@ public class ProjectManagement extends Application {
         grid.add(headerCell("DATE"), 3, 0);
         grid.add(headerCell("ACTIONS"), 4, 0);
 
-        addApprovedRow(grid, 1, "Village Road Construction", "#PRJ-089", "Main Street", "\u20B91,20,000", "24 May 2025");
-        addApprovedRow(grid, 2, "Water Tank Renovation", "#PRJ-088", "Near School Area", "\u20B985,000", "22 May 2025");
-        addApprovedRow(grid, 3, "Panchayat Bhavan Repair", "#PRJ-085", "Gram Panchayat Office", "\u20B92,50,000", "20 May 2025");
+        int row = 1;
+        for (Project p : approvedList) {
+            addApprovedRow(grid, row++, p);
+        }
 
         panel.getChildren().addAll(header, grid);
         addHoverLift(panel, 24);
         return panel;
     }
 
-    private void addApprovedRow(GridPane grid, int row, String projectName, String projectId, String village,
-                                 String budget, String date) {
+    private void addApprovedRow(GridPane grid, int row, Project p) {
         HBox projectCell = new HBox(10);
         projectCell.setAlignment(Pos.CENTER_LEFT);
         StackPane thumb = new StackPane();
@@ -516,23 +822,28 @@ public class ProjectManagement extends Application {
         thumb.getChildren().add(thumbIcon);
 
         VBox projectText = new VBox(2);
-        Label nameLabel = new Label(projectName);
+        Label nameLabel = new Label(p.projectName);
         nameLabel.setWrapText(true);
         nameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label idLabel = new Label(projectId);
+        Label idLabel = new Label(p.projectId);
         idLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.55);");
         projectText.getChildren().addAll(nameLabel, idLabel);
 
         projectCell.getChildren().addAll(thumb, projectText);
 
-        Label villageLabel = new Label(village);
+        VBox villageCell = new VBox(2);
+        Label villageLabel = new Label(p.village);
         villageLabel.setWrapText(true);
-        villageLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
+        villageLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: rgba(11,61,46,0.85);");
+        Label localityLabel = new Label(p.locality);
+        localityLabel.setWrapText(true);
+        localityLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.55);");
+        villageCell.getChildren().addAll(villageLabel, localityLabel);
 
-        Label budgetLabel = new Label(budget);
+        Label budgetLabel = new Label(p.budget);
         budgetLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
 
-        Label dateLabel = new Label(date);
+        Label dateLabel = new Label(p.date);
         dateLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
 
         HBox actions = new HBox(10);
@@ -544,14 +855,13 @@ public class ProjectManagement extends Application {
         actions.getChildren().addAll(viewIcon, editIcon);
 
         grid.add(projectCell, 0, row);
-        grid.add(villageLabel, 1, row);
+        grid.add(villageCell, 1, row);
         grid.add(budgetLabel, 2, row);
         grid.add(dateLabel, 3, row);
         grid.add(actions, 4, row);
     }
 
-    /* ---------------- Pending Approval ---------------- */
-    private VBox buildPendingApprovalPanel() {
+    private VBox buildPendingApprovalPanel(List<Project> pendingList) {
         VBox panel = new VBox(18);
         panel.setPadding(new Insets(28));
         panel.setStyle(cardStyle(24));
@@ -569,21 +879,25 @@ public class ProjectManagement extends Application {
         countBadge.setPrefSize(24, 24);
         countBadge.setMinSize(24, 24);
         countBadge.setStyle("-fx-background-color: " + rgba(FOREST_DEEP, 0.10) + "; -fx-background-radius: 50%;");
-        Label countLabel = new Label("3");
+        Label countLabel = new Label(String.valueOf(pendingList.size()));
         countLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
         countBadge.getChildren().add(countLabel);
 
         header.getChildren().addAll(icon, title, spacer, countBadge);
 
+        if (pendingList.isEmpty()) {
+            panel.getChildren().addAll(header, emptyState("No pending approvals for "
+                    + (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage) ? "any village" : Dashboard.selectedVillage) + "."));
+            addHoverLift(panel, 24);
+            return panel;
+        }
+
         VBox list = new VBox(14);
-        list.getChildren().addAll(
-                pendingApprovalCard("Community Hall Construction", "HIGH PRIORITY", DELAYED_RED,
-                        "Dept: Rural Development | #PRJ-092", "\u20B95,50,000"),
-                pendingApprovalCard("Solar Street Lights", "MEDIUM", SAFFRON_MAIN,
-                        "Dept: Energy | #PRJ-095", "\u20B91,20,000"),
-                pendingApprovalCard("Library Construction", "NORMAL", CONTEXT_TEAL,
-                        "Dept: Education | #PRJ-098", "\u20B93,00,000")
-        );
+        for (Project p : pendingList) {
+            String priorityColor = "HIGH PRIORITY".equals(p.priority) ? DELAYED_RED
+                    : "MEDIUM".equals(p.priority) ? SAFFRON_MAIN : CONTEXT_TEAL;
+            list.getChildren().add(pendingApprovalCard(p, priorityColor));
+        }
 
         Label bulkReview = new Label("Bulk Review All");
         bulkReview.setMaxWidth(Double.MAX_VALUE);
@@ -599,8 +913,7 @@ public class ProjectManagement extends Application {
         return panel;
     }
 
-    private VBox pendingApprovalCard(String projectName, String priorityText, String priorityColor,
-                                      String deptLine, String budget) {
+    private VBox pendingApprovalCard(Project p, String priorityColor) {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: rgba(240,244,242,0.6); -fx-background-radius: 14;" +
@@ -608,24 +921,25 @@ public class ProjectManagement extends Application {
 
         HBox titleRow = new HBox(8);
         titleRow.setAlignment(Pos.CENTER_LEFT);
-        Label nameLabel = new Label(projectName);
+        Label nameLabel = new Label(p.projectName);
         nameLabel.setWrapText(true);
         nameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label priorityBadge = new Label(priorityText);
+        Label priorityBadge = new Label(p.priority);
         priorityBadge.setPadding(new Insets(3, 8, 3, 8));
         priorityBadge.setMaxWidth(Region.USE_PREF_SIZE);
         priorityBadge.setStyle("-fx-background-color: " + rgba(priorityColor, 0.14) + "; -fx-background-radius: 999;" +
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-text-fill: " + priorityColor + ";");
         titleRow.getChildren().addAll(nameLabel, spacer, priorityBadge);
 
-        Label deptLabel = new Label(deptLine);
+        Label deptLabel = new Label("Dept: " + p.department + " | " + p.projectId + " | " + p.village);
+        deptLabel.setWrapText(true);
         deptLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
 
         HBox bottomRow = new HBox(10);
         bottomRow.setAlignment(Pos.CENTER_LEFT);
-        Label budgetLabel = new Label(budget);
+        Label budgetLabel = new Label(p.budget);
         budgetLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         Region bottomSpacer = new Region();
         HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
@@ -644,6 +958,13 @@ public class ProjectManagement extends Application {
                 "-fx-text-fill: white; -fx-background-radius: 8; -fx-font-family: " + FONT_FAMILY + ";" +
                 "-fx-font-size: 12.5px; -fx-font-weight: 800; -fx-cursor: hand;" +
                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.30), 8, 0.1, 0, 3);");
+        // Demo-only in-memory approval: flips this project to "Approved" and refreshes the page.
+        approveBtn.setOnMouseClicked(e -> {
+            ALL_PROJECTS.remove(p);
+            ALL_PROJECTS.add(new Project(p.projectName, p.projectId, p.village, p.locality, p.department,
+                    p.budget, "Approved", p.date, null));
+            refreshVillageData();
+        });
 
         bottomRow.getChildren().addAll(budgetLabel, bottomSpacer, editBtn, approveBtn);
 
@@ -651,13 +972,11 @@ public class ProjectManagement extends Application {
         return card;
     }
 
-    /* ============================================================
-     *  PROJECT INVENTORY TABLE
-     * ============================================================ */
-    private VBox buildInventoryPanel() {
-        VBox panel = new VBox(18);
-        panel.setPadding(new Insets(28));
-        panel.setStyle(cardStyle(24));
+    /* ---------------- Project Inventory (dynamic) ---------------- */
+    private void refreshInventoryPanel() {
+        inventoryPanel.getChildren().clear();
+
+        List<Project> scoped = getProjectsForSelectedVillage();
 
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
@@ -672,6 +991,12 @@ public class ProjectManagement extends Application {
                 "-fx-border-color: rgba(11,61,46,0.10); -fx-padding: 10 14; -fx-font-size: 13px;");
         header.getChildren().addAll(title, spacer, filter);
 
+        if (scoped.isEmpty()) {
+            inventoryPanel.getChildren().addAll(header,
+                    emptyState("No projects found for " + Dashboard.selectedVillage + "."));
+            return;
+        }
+
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(16);
@@ -679,13 +1004,24 @@ public class ProjectManagement extends Application {
         grid.getColumnConstraints().addAll(pct(28), pct(16), pct(18), pct(14), pct(14), pct(10));
 
         addInventoryHeader(grid);
-        addInventoryRow(grid, 1, "Ward 4 Road Metaling", "\u0930\u093E\u092E\u092A\u0941\u0930 (Rampur)", "Rural Development", "\u20B91,20,000", "Approved", FOREST_DEEP, "12 Oct 2023");
-        addInventoryRow(grid, 2, "Water Tank Renovation", "\u0938\u0940\u0924\u093E\u092A\u0941\u0930 (Sitapur)", "Water Supply", "\u20B985,000", "In Progress", SAFFRON_MAIN, "05 Sep 2023");
-        addInventoryRow(grid, 3, "Primary School Repair", "\u092E\u093E\u0927\u0935\u092A\u0941\u0930 (Madhavpur)", "Infrastructure", "\u20B92,50,000", "Delayed", DELAYED_RED, "28 Aug 2023");
 
-        panel.getChildren().addAll(header, grid);
-        addHoverLift(panel, 24);
-        return panel;
+        int row = 1;
+        for (Project p : scoped) {
+            String statusColor = statusColor(p.status);
+            addInventoryRow(grid, row++, p.projectName, p.village, p.department, p.budget, p.status, statusColor, p.date);
+        }
+
+        inventoryPanel.getChildren().addAll(header, grid);
+    }
+
+    private String statusColor(String status) {
+        switch (status) {
+            case "Delayed": return DELAYED_RED;
+            case "In Progress": return SAFFRON_MAIN;
+            case "Pending": return AI_VIOLET;
+            case "Completed": return CONTEXT_TEAL;
+            default: return FOREST_DEEP; // Approved
+        }
     }
 
     private void addInventoryHeader(GridPane grid) {
@@ -727,6 +1063,15 @@ public class ProjectManagement extends Application {
         Label label = new Label(text);
         label.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
                 "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
+        return label;
+    }
+
+    private Label emptyState(String message) {
+        Label label = new Label(message);
+        label.setWrapText(true);
+        label.setPadding(new Insets(24, 0, 8, 0));
+        label.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 600;" +
+                "-fx-text-fill: rgba(11,61,46,0.55);");
         return label;
     }
 

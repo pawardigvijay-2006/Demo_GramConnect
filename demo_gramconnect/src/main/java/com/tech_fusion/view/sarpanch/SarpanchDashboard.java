@@ -1,10 +1,9 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -33,12 +32,15 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
  * GramConnect - Sarpanch Login Home (Dashboard) Page
  */
 public class SarpanchDashboard extends Application {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     /* ---------- Color palette (from the HTML template) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -55,7 +57,7 @@ public class SarpanchDashboard extends Application {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-    "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+    "/assets/images/BackgroundImage.png";
 
     /** Shared Stage reference, following the same static-myStage pattern as HomePage.myStage. */
     public static Stage myStage;
@@ -81,7 +83,7 @@ public class SarpanchDashboard extends Application {
      */
     public Scene getDashboardScene() {
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -106,7 +108,7 @@ public class SarpanchDashboard extends Application {
 
         root.setCenter(contentArea);
 
-        Scene scene = new Scene(root, 1300, 800);
+        Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
         dashboardScene = scene;
         return scene;
     }
@@ -236,6 +238,18 @@ public class SarpanchDashboard extends Application {
         createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase +
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.55), 15, 0.2, 0, 5); -fx-translate-y: -1;"));
         createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+        createBtn.setOnMouseClicked(e -> {
+            System.out.println("Create Project clicked");
+            CreateProjectPage createProjectPage = new CreateProjectPage();
+            Runnable backToDashboardAction = () -> back();
+            Runnable backToProjectTrackerAction = () -> {
+                ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
+                myStage.setTitle("GramConnect - Project Tracker");
+                myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
+            };
+            myStage.setTitle("GramConnect - Create Project");
+            myStage.setScene(createProjectPage.getCreateProjectScene(backToProjectTrackerAction, backToDashboardAction));
+        });
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
