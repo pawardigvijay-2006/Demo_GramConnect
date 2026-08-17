@@ -1,8 +1,12 @@
 package com.tech_fusion.view.admin;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import com.tech_fusion.model.admin.VillageDataStore;
+import com.tech_fusion.model.admin.GeneratedReport;
+import com.tech_fusion.model.admin.Project;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -46,10 +50,31 @@ import javafx.stage.Stage;
  * the shared {@code Dashboard.myStage} so every page can reach every
  * other page from the sidebar.
  *
- * The "Managing Village" switcher in the sidebar is now identical in
- * look/behaviour to the one on {@link Dashboard}: a single collapsed
- * row showing the active village that expands into a selectable list
- * on click.
+ * ------------------------------------------------------------------
+ * VILLAGE-WISE DYNAMIC DATA (this revision)
+ * ------------------------------------------------------------------
+ * This page keeps no local copy of the village list and no local
+ * "currently selected village" field, and it does NOT depend on
+ * {@link Dashboard} (or any other page) to get that data. Both the
+ * village list and the current selection live directly on the data
+ * layer, {@link VillageDataStore}:
+ *
+ *   VillageDataStore.VILLAGES          -> the fixed list of villages under this block
+ *   VillageDataStore.selectedVillage   -> the block-wide "currently active" village
+ *
+ * That keeps this page fully self-contained for data purposes - it
+ * only reaches into {@code Dashboard} for shared navigation plumbing
+ * ({@code Dashboard.myStage}), the same as every other page in the app,
+ * never for data.
+ *
+ * Every number on this page (KPI cards, the budget bar chart, the
+ * project-distribution donut, and the recent-reports table) is
+ * computed on demand from {@link VillageDataStore}, filtered by
+ * {@code VillageDataStore.selectedVillage}. No numeric/percentage value
+ * is hard-coded in this class. Selecting a different village in the
+ * sidebar calls {@link #refreshReportAnalysis()}, which updates every
+ * one of those components in place - the scene is never rebuilt, so
+ * there is no flicker and no layout change.
  */
 public class ReportsAnalytics extends Application {
 
@@ -67,22 +92,41 @@ public class ReportsAnalytics extends Application {
 
     private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
-    /** Villages under this BDO's block. First entry is the "all villages" aggregate view. */
-    private static final List<String> VILLAGES = Arrays.asList(
-            "All Villages", "Sitapur", "Rampur", "Kondli", "Main St.", "North Vill.", "East Ward"
-    );
+    /** "%.1f" formatted crore currency helper shared by every dynamic label below. */
+    private static final double ONE_CRORE = 10_000_000.0;
 
     private Label selectedNavItem;
 
-    /** Currently selected village (defaults to the block-wide aggregate view). */
-    private String selectedVillage = VILLAGES.get(0);
-
-    /** Live references so selecting a village can refresh the page without a full rebuild. */
+    /* ---------- Live references so village selection can refresh in place ---------- */
     private Label subtitleLabel;
     private Label villageNameLabel;
     private Label villageChevron;
     private VBox villageListBox;
     private boolean villageListExpanded = false;
+
+    // KPI cards
+    private Label budgetValueLabel;
+    private DynamicProgressBar budgetProgressBar;
+    private Label budgetFootnoteLabel;
+    private Label successValueLabel;
+    private Label successFootnoteLabel;
+    private Label approvalValueLabel;
+    private Label approvalFootnoteLabel;
+    private Label grievanceValueLabel;
+    private Label grievancePendingLabel;
+    private Label grievanceResolutionLabel;
+
+    // Budget bar chart
+    private HBox budgetBars;
+    private HBox budgetXAxis;
+
+    // Project distribution donut
+    private StackPane donutArcsHolder;
+    private Label donutTotalLabel;
+    private VBox donutLegend;
+
+    // Recent reports table
+    private GridPane reportsGrid;
 
     @Override
     public void start(Stage primaryStage) {
@@ -109,6 +153,10 @@ public class ReportsAnalytics extends Application {
 
         root.setCenter(contentArea);
 
+        // Populate every dynamic component for whichever village is
+        // currently active on Dashboard before the scene is first shown.
+        refreshReportAnalysis();
+
         return new Scene(root, 1500, 820);
     }
 
@@ -122,6 +170,45 @@ public class ReportsAnalytics extends Application {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /* ============================================================
+     *  VILLAGE FILTER HELPERS
+     *  Reusable, page-level abstractions over VillageDataStore.selectedVillage
+     *  and VillageDataStore's aggregate methods, per the "no filtering logic
+     *  in UI methods" requirement.
+     * ============================================================ */
+
+    /** Currently selected village, defaulting safely if it hasn't been set yet. */
+    private String currentVillage() {
+        String v = VillageDataStore.selectedVillage;
+        return (v == null) ? VillageDataStore.VILLAGES.get(0) : v;
+    }
+
+    private boolean isAllVillages() {
+        return VillageDataStore.VILLAGES.get(0).equals(currentVillage());
+    }
+
+    private List<Project> getSelectedVillageProjects() {
+        return VillageDataStore.getProjects(currentVillage());
+    }
+
+    private List<GeneratedReport> getSelectedVillageReports() {
+        return VillageDataStore.getReports(currentVillage());
+    }
+
+    /**
+     * Called whenever the selected village changes (from this page's own
+     * sidebar switcher, or in principle from anywhere else that mutates
+     * VillageDataStore.selectedVillage). Updates every dynamic component on
+     * the page in place - no scene rebuild, no UI redesign.
+     */
+    private void refreshReportAnalysis() {
+        updateScopeSubtitle();
+        updateStatCards();
+        updateBudgetChart();
+        updateDistributionPanel();
+        updateReportsTable();
     }
 
     /* ============================================================
@@ -230,6 +317,8 @@ public class ReportsAnalytics extends Application {
      *  VILLAGE SWITCHER — identical in look/behaviour to the one on
      *  Dashboard: a collapsed "Managing Village" row that expands
      *  into a selectable list of villages under this BDO's block.
+     *  Reads/writes the shared VillageDataStore.VILLAGES / VillageDataStore.selectedVillage
+     *  state instead of a page-local copy.
      * ============================================================ */
     private VBox buildVillageSelector() {
         VBox wrap = new VBox(8);
@@ -252,7 +341,7 @@ public class ReportsAnalytics extends Application {
         Label pin = new Label("\uD83D\uDCCD");
         pin.setStyle("-fx-font-size: 13px;");
 
-        villageNameLabel = new Label(displayName(selectedVillage));
+        villageNameLabel = new Label(displayName(currentVillage()));
         villageNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
 
         Region spacer = new Region();
@@ -271,7 +360,7 @@ public class ReportsAnalytics extends Application {
         villageListBox.setManaged(false);
 
         ToggleGroup group = new ToggleGroup();
-        for (String village : VILLAGES) {
+        for (String village : VillageDataStore.VILLAGES) {
             villageListBox.getChildren().add(villageToggle(village, group));
         }
 
@@ -289,7 +378,7 @@ public class ReportsAnalytics extends Application {
     private ToggleButton villageToggle(String village, ToggleGroup group) {
         ToggleButton btn = new ToggleButton(displayName(village));
         btn.setToggleGroup(group);
-        btn.setSelected(village.equals(selectedVillage));
+        btn.setSelected(village.equals(currentVillage()));
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
         btn.setPadding(new Insets(9, 14, 9, 14));
@@ -306,17 +395,18 @@ public class ReportsAnalytics extends Application {
         btn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             btn.setStyle(isSelected ? activeStyle : baseStyle);
             if (isSelected) {
-                selectedVillage = village;
-                villageNameLabel.setText(displayName(selectedVillage));
-                updateScopeSubtitle();
+                // Write through to the shared, page-independent selection state.
+                VillageDataStore.selectedVillage = village;
+                villageNameLabel.setText(displayName(currentVillage()));
+
                 // Collapse the list once a village has been chosen.
                 villageListExpanded = false;
                 villageListBox.setVisible(false);
                 villageListBox.setManaged(false);
                 villageChevron.setText("\u25BE");
-                // NOTE: the KPI/chart values on this demo page are static placeholders.
-                // Wire this hook up to your data layer to pull per-village figures
-                // (e.g. reload buildStatCardsRow()/buildAnalyticsMidSection() here).
+
+                // Immediate, in-place refresh of every dynamic component.
+                refreshReportAnalysis();
             }
         });
 
@@ -324,15 +414,13 @@ public class ReportsAnalytics extends Application {
     }
 
     private String displayName(String village) {
-        return village.equals("All Villages") ? "All Villages (Block)" : village;
+        return village.equals(VillageDataStore.VILLAGES.get(0)) ? "All Villages (Block)" : village;
     }
 
     /** Keeps the page subtitle in sync with whichever village is currently selected. */
     private void updateScopeSubtitle() {
         if (subtitleLabel == null) return;
-        subtitleLabel.setText(VILLAGES.get(0).equals(selectedVillage)
-                ? "Showing data for: All Villages (Block)"
-                : "Showing data for: " + selectedVillage);
+        subtitleLabel.setText("Showing reports for: " + (isAllVillages() ? "All Villages" : currentVillage()));
     }
 
     private HBox navItem(String icon, String text, boolean active) {
@@ -486,7 +574,6 @@ public class ReportsAnalytics extends Application {
 
         subtitleLabel = new Label();
         subtitleLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
-        updateScopeSubtitle();
         text.getChildren().addAll(title, subtitleLabel);
 
         Label dateRange = new Label("\uD83D\uDCC5  Q3 (Oct-Dec 2023)  \u25BE");
@@ -519,39 +606,43 @@ public class ReportsAnalytics extends Application {
 
     /* ============================================================
      *  STAT CARDS ROW
+     *  Card shells/visuals unchanged; the value/footnote Labels are
+     *  kept as instance fields and populated by updateStatCards().
      * ============================================================ */
    private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
-        VBox budgetCard = kpiCard( FOREST_LIGHT,"\uD83D\uDCB0","TOTAL BLOCK BUDGET" ,"16.8cr");
+
+        VBox budgetCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCB0", "TOTAL BLOCK BUDGET");
+        budgetValueLabel = statValueLabel(budgetCard);
         VBox budgetExtra = new VBox(8);
-        budgetExtra.getChildren().add(progressBar(0.74, CONTEXT_TEAL, 8));
-        Label budgetFootnote = new Label("74% Utilized     \u20B912.4Cr");
-        budgetFootnote.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        budgetExtra.getChildren().add(budgetFootnote);
+        budgetProgressBar = dynamicProgressBar(CONTEXT_TEAL, 8);
+        budgetFootnoteLabel = new Label();
+        budgetFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
+        budgetExtra.getChildren().addAll(budgetProgressBar.track, budgetFootnoteLabel);
         budgetCard.getChildren().add(budgetExtra);
 
-        VBox successCard = kpiCard(SAFFRON_MAIN , "\u2705","PROJECT SUCCESS RATE","88%");
-        Label successFooter = new Label("\u2197  5% from last quarter");
-        successFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
-        successCard.getChildren().add(successFooter);
+        VBox successCard = kpiCard(SAFFRON_MAIN, "\u2705", "PROJECT SUCCESS RATE");
+        successValueLabel = statValueLabel(successCard);
+        successFootnoteLabel = new Label();
+        successFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
+        successCard.getChildren().add(successFootnoteLabel);
 
-        VBox approvalCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCB","AVG. APPROVAL TIME","4.2day");
-        Label approvalFooter = new Label("Target: <5 Days");
-        approvalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        approvalCard.getChildren().add(approvalFooter);
+        VBox approvalCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCB", "AVG. APPROVAL TIME");
+        approvalValueLabel = statValueLabel(approvalCard);
+        approvalFootnoteLabel = new Label("Target: <5 Days");
+        approvalFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
+        approvalCard.getChildren().add(approvalFootnoteLabel);
 
-        VBox grievanceCard = kpiCard(AI_VIOLET,"\u26A0","ACTIVE GRIEVANCES","12" );
-        VBox grievanceValueWrap = (VBox) grievanceCard.getChildren().get(1);
-        VBox bottom = (VBox) grievanceValueWrap.getChildren().get(2);
-        Label grievanceValue = (Label) bottom.getChildren().get(0);
-        grievanceValue.setStyle(
+        VBox grievanceCard = kpiCard(AI_VIOLET, "\u26A0", "ACTIVE GRIEVANCES");
+        grievanceValueLabel = statValueLabel(grievanceCard);
+        grievanceValueLabel.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + DELAYED_RED + ";");
         VBox grievanceExtra = new VBox(4);
-        Label pendingLbl = new Label("Pending");
-        pendingLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + DELAYED_RED + ";");
-        Label resolutionLbl = new Label("92% Resolution Rate");
-        resolutionLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        grievanceExtra.getChildren().addAll(pendingLbl, resolutionLbl);
+        grievancePendingLabel = new Label();
+        grievancePendingLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + DELAYED_RED + ";");
+        grievanceResolutionLabel = new Label();
+        grievanceResolutionLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
+        grievanceExtra.getChildren().addAll(grievancePendingLabel, grievanceResolutionLabel);
         grievanceCard.getChildren().add(grievanceExtra);
 
         HBox.setHgrow(budgetCard, Priority.ALWAYS);
@@ -562,10 +653,41 @@ public class ReportsAnalytics extends Application {
         return row;
     }
 
+    /** Pulls the stat-value Label back out of a card built by kpiCard(), so it can be kept live. */
+    private Label statValueLabel(VBox card) {
+        VBox inner = (VBox) card.getChildren().get(1);
+        VBox bottom = (VBox) inner.getChildren().get(2);
+        return (Label) bottom.getChildren().get(0);
+    }
 
+    /** Recomputes and writes every KPI card value for the currently selected village. */
+    private void updateStatCards() {
+        String village = currentVillage();
 
+        double totalBudget = VillageDataStore.getTotalBudget(village);
+        double utilizedBudget = VillageDataStore.getUtilizedBudget(village);
+        double utilizationFraction = VillageDataStore.getBudgetUtilizationFraction(village);
+        budgetValueLabel.setText(String.format("%.1fCr", totalBudget / ONE_CRORE));
+        budgetProgressBar.update(utilizationFraction);
+        budgetFootnoteLabel.setText(String.format("%.0f%% Utilized     \u20B9%.1fCr",
+                utilizationFraction * 100, utilizedBudget / ONE_CRORE));
 
-    private VBox kpiCard(String accent, String icon, String labelText, String statText) {
+        double successRate = VillageDataStore.getProjectSuccessRate(village);
+        int totalProjects = VillageDataStore.getTotalProjectCount(village);
+        successValueLabel.setText(String.format("%.0f%%", successRate));
+        successFootnoteLabel.setText(String.format("Based on %d project%s", totalProjects, totalProjects == 1 ? "" : "s"));
+
+        double avgApproval = VillageDataStore.getAvgApprovalTimeDays(village);
+        approvalValueLabel.setText(String.format("%.1fday", avgApproval));
+
+        int activeGrievances = VillageDataStore.getActiveGrievances(village);
+        double resolutionRate = VillageDataStore.getGrievanceResolutionRate(village);
+        grievanceValueLabel.setText(String.valueOf(activeGrievances));
+        grievancePendingLabel.setText("Pending");
+        grievanceResolutionLabel.setText(String.format("%.0f%% Resolution Rate", resolutionRate));
+    }
+
+    private VBox kpiCard(String accent, String icon, String labelText) {
         VBox card = new VBox();
         card.setPrefWidth(320);
         card.setMinHeight(190);
@@ -598,7 +720,7 @@ public class ReportsAnalytics extends Application {
         VBox.setVgrow(grow, Priority.ALWAYS);
 
         VBox bottom = new VBox(10);
-        Label stat = new Label(statText);
+        Label stat = new Label();
         stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 40px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         bottom.getChildren().add(stat);
 
@@ -608,7 +730,25 @@ public class ReportsAnalytics extends Application {
         return card;
     }
 
-    private StackPane progressBar(double fraction, String color, double height) {
+    /** Small holder so a progress-bar fill can be recomputed after the card is already on screen. */
+    private static final class DynamicProgressBar {
+        final StackPane track;
+        final Region fill;
+        double fraction;
+
+        DynamicProgressBar(StackPane track, Region fill) {
+            this.track = track;
+            this.fill = fill;
+        }
+
+        void update(double newFraction) {
+            this.fraction = newFraction;
+            double width = track.getWidth();
+            fill.setMaxWidth(width > 0 ? width * newFraction : 0);
+        }
+    }
+
+    private DynamicProgressBar dynamicProgressBar(String color, double height) {
         StackPane track = new StackPane();
         track.setPrefHeight(height);
         track.setMinHeight(height);
@@ -618,10 +758,12 @@ public class ReportsAnalytics extends Application {
         fill.setPrefHeight(height);
         fill.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 999;");
         StackPane.setAlignment(fill, Pos.CENTER_LEFT);
-        track.widthProperty().addListener((obs, o, w) -> fill.setMaxWidth(w.doubleValue() * fraction));
-        fill.setMaxWidth(0);
         track.getChildren().add(fill);
-        return track;
+
+        DynamicProgressBar bar = new DynamicProgressBar(track, fill);
+        track.widthProperty().addListener((obs, o, w) -> bar.update(bar.fraction));
+        fill.setMaxWidth(0);
+        return bar;
     }
 
     /* ============================================================
@@ -660,9 +802,6 @@ public class ReportsAnalytics extends Application {
         viewDetails.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-font-weight: 700; -fx-cursor: hand;");
         header.getChildren().addAll(title, spacer, viewDetails);
 
-        String[] villages = {"Sitapur", "Rampur", "Kondli", "Main St.", "North Vill.", "East Ward"};
-        double[] utilization = {0.62, 0.81, 0.45, 0.90, 0.58, 0.70};
-
         HBox chartArea = new HBox(18);
         chartArea.setAlignment(Pos.BOTTOM_CENTER);
         chartArea.setPrefHeight(220);
@@ -691,42 +830,61 @@ public class ReportsAnalytics extends Application {
             gridLines.getChildren().add(line);
         }
 
-        HBox bars = new HBox(24);
-        bars.setAlignment(Pos.BOTTOM_CENTER);
-        bars.setPadding(new Insets(0, 8, 0, 8));
-        for (int i = 0; i < villages.length; i++) {
+        budgetBars = new HBox(24);
+        budgetBars.setAlignment(Pos.BOTTOM_CENTER);
+        budgetBars.setPadding(new Insets(0, 8, 0, 8));
+
+        gridWrap.getChildren().addAll(gridLines, budgetBars);
+        chartArea.getChildren().addAll(yAxis, gridWrap);
+
+        budgetXAxis = new HBox();
+        budgetXAxis.setPadding(new Insets(4, 4, 0, 40));
+
+        panel.getChildren().addAll(header, chartArea, budgetXAxis);
+        addHoverLift(panel, 24);
+        return panel;
+    }
+
+    /**
+     * Rebuilds the bars/x-axis labels for the currently selected village.
+     * "All Villages" shows one bar per village (block-wide comparison);
+     * a single village shows just that village's own utilization bar.
+     * Same chart component either way - never a separate chart per village.
+     */
+    private void updateBudgetChart() {
+        budgetBars.getChildren().clear();
+        budgetXAxis.getChildren().clear();
+
+        Map<String, Double> series;
+        if (isAllVillages()) {
+            series = VillageDataStore.getBudgetUtilizationByVillage(VillageDataStore.VILLAGES);
+        } else {
+            series = new java.util.LinkedHashMap<>();
+            series.put(currentVillage(), VillageDataStore.getBudgetUtilizationFraction(currentVillage()));
+        }
+
+        for (Map.Entry<String, Double> entry : series.entrySet()) {
             VBox barWrap = new VBox();
             barWrap.setAlignment(Pos.BOTTOM_CENTER);
             Region bar = new Region();
             bar.setPrefWidth(34);
             bar.setStyle("-fx-background-color: linear-gradient(to top, " + FOREST_DEEP + ", " + CONTEXT_TEAL + ");" +
                     "-fx-background-radius: 6 6 0 0;");
-            double h = utilization[i] * 200;
+            double h = Math.max(0, Math.min(1, entry.getValue())) * 200;
             bar.setPrefHeight(h);
             bar.setMinHeight(h);
             barWrap.getChildren().add(bar);
             barWrap.setPrefHeight(220);
             HBox.setHgrow(barWrap, Priority.ALWAYS);
-            bars.getChildren().add(barWrap);
-        }
+            budgetBars.getChildren().add(barWrap);
 
-        gridWrap.getChildren().addAll(gridLines, bars);
-        chartArea.getChildren().addAll(yAxis, gridWrap);
-
-        HBox xAxis = new HBox();
-        xAxis.setPadding(new Insets(4, 4, 0, 40));
-        for (String v : villages) {
-            Label l = new Label(v);
+            Label l = new Label(entry.getKey());
             l.setMaxWidth(Double.MAX_VALUE);
             l.setAlignment(Pos.CENTER);
             l.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: rgba(11,61,46,0.60);");
             HBox.setHgrow(l, Priority.ALWAYS);
-            xAxis.getChildren().add(l);
+            budgetXAxis.getChildren().add(l);
         }
-
-        panel.getChildren().addAll(header, chartArea, xAxis);
-        addHoverLift(panel, 24);
-        return panel;
     }
 
     private VBox buildProjectDistributionPanel() {
@@ -737,60 +895,80 @@ public class ReportsAnalytics extends Application {
         Label title = new Label("Project Distribution");
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
-        StackPane donut = buildDonutChart();
-        StackPane donutWrap = new StackPane(donut);
+        donutArcsHolder = new StackPane();
+        StackPane donutWrap = new StackPane(donutArcsHolder);
         donutWrap.setAlignment(Pos.CENTER);
         donutWrap.setPadding(new Insets(8, 0, 8, 0));
 
-        VBox legend = new VBox(10);
-        legend.getChildren().addAll(
-                legendRow(FOREST_DEEP, "Infrastructure", "45%"),
-                legendRow(CONTEXT_TEAL, "Water Supply", "30%"),
-                legendRow("#8FCB9E", "Education", "15%"),
-                legendRow("#CDEBD8", "Other", "10%")
-        );
+        donutLegend = new VBox(10);
 
-        panel.getChildren().addAll(title, donutWrap, legend);
+        panel.getChildren().addAll(title, donutWrap, donutLegend);
         addHoverLift(panel, 24);
         return panel;
     }
 
-    private StackPane buildDonutChart() {
-        StackPane stack = new StackPane();
+    /** Rebuilds the donut arcs, center total, and legend from the current village's project categories. */
+    private void updateDistributionPanel() {
+        Map<String, Integer> distribution = VillageDataStore.getProjectCategoryDistribution(currentVillage());
+        int total = 0;
+        for (int count : distribution.values()) total += count;
+
+        String[] palette = {FOREST_DEEP, CONTEXT_TEAL, "#8FCB9E", "#CDEBD8", AI_VIOLET};
+
+        donutArcsHolder.getChildren().clear();
         double size = 190;
         double radius = size / 2;
-
-        String[] colors = {FOREST_DEEP, CONTEXT_TEAL, "#8FCB9E", "#CDEBD8"};
-        double[] fractions = {0.45, 0.30, 0.15, 0.10};
-
         double startAngle = 90;
-        for (int i = 0; i < fractions.length; i++) {
-            double length = fractions[i] * 360;
-            Arc arc = new Arc(radius, radius, radius, radius, startAngle, -length);
-            arc.setType(ArcType.ROUND);
-            arc.setFill(Color.web(colors[i]));
-            StackPane arcHolder = new StackPane(arc);
-            arcHolder.setPrefSize(size, size);
-            arcHolder.setMaxSize(size, size);
-            stack.getChildren().add(arcHolder);
-            startAngle -= length;
+        int colorIndex = 0;
+
+        if (total == 0) {
+            Circle empty = new Circle(radius * 0.8);
+            empty.setFill(Color.web("#EFEFEF"));
+            donutArcsHolder.getChildren().add(empty);
+        } else {
+            for (Map.Entry<String, Integer> entry : distribution.entrySet()) {
+                double fraction = entry.getValue() / (double) total;
+                double length = fraction * 360;
+                String color = palette[colorIndex % palette.length];
+                Arc arc = new Arc(radius, radius, radius, radius, startAngle, -length);
+                arc.setType(ArcType.ROUND);
+                arc.setFill(Color.web(color));
+                StackPane arcHolder = new StackPane(arc);
+                arcHolder.setPrefSize(size, size);
+                arcHolder.setMaxSize(size, size);
+                donutArcsHolder.getChildren().add(arcHolder);
+                startAngle -= length;
+                colorIndex++;
+            }
         }
 
         Circle hole = new Circle(radius * 0.58);
         hole.setFill(Color.web("#FFFFFF", 0.92));
-        stack.getChildren().add(hole);
+        donutArcsHolder.getChildren().add(hole);
 
         VBox centerText = new VBox(2);
         centerText.setAlignment(Pos.CENTER);
-        Label totalValue = new Label("142");
-        totalValue.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        donutTotalLabel = new Label(String.valueOf(total));
+        donutTotalLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         Label totalLabel = new Label("Total Projects");
         totalLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: rgba(11,61,46,0.60);");
-        centerText.getChildren().addAll(totalValue, totalLabel);
-        stack.getChildren().add(centerText);
+        centerText.getChildren().addAll(donutTotalLabel, totalLabel);
+        donutArcsHolder.getChildren().add(centerText);
+        donutArcsHolder.setPrefSize(size, size);
 
-        stack.setPrefSize(size, size);
-        return stack;
+        donutLegend.getChildren().clear();
+        colorIndex = 0;
+        for (Map.Entry<String, Integer> entry : distribution.entrySet()) {
+            double pct = total == 0 ? 0 : (entry.getValue() * 100.0) / total;
+            String color = palette[colorIndex % palette.length];
+            donutLegend.getChildren().add(legendRow(color, entry.getKey(), String.format("%.0f%%", pct)));
+            colorIndex++;
+        }
+        if (distribution.isEmpty()) {
+            Label none = new Label("No projects recorded for this village.");
+            none.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.55);");
+            donutLegend.getChildren().add(none);
+        }
     }
 
     private HBox legendRow(String color, String label, String pct) {
@@ -825,28 +1003,44 @@ public class ReportsAnalytics extends Application {
         viewAll.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-font-weight: 700; -fx-cursor: hand;");
         header.getChildren().addAll(title, spacer, viewAll);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(6);
-        grid.setPadding(new Insets(6, 0, 0, 0));
-        grid.getColumnConstraints().addAll(pct(40), pct(15), pct(25), pct(20));
+        reportsGrid = new GridPane();
+        reportsGrid.setHgap(12);
+        reportsGrid.setVgap(6);
+        reportsGrid.setPadding(new Insets(6, 0, 0, 0));
+        reportsGrid.getColumnConstraints().addAll(pct(40), pct(15), pct(25), pct(20));
 
-        grid.add(headerCell("REPORT NAME"), 0, 0);
-        grid.add(headerCell("TYPE"), 1, 0);
-        grid.add(headerCell("GENERATED ON"), 2, 0);
-        grid.add(headerCell("ACTIONS"), 3, 0);
+        reportsGrid.add(headerCell("REPORT NAME"), 0, 0);
+        reportsGrid.add(headerCell("TYPE"), 1, 0);
+        reportsGrid.add(headerCell("GENERATED ON"), 2, 0);
+        reportsGrid.add(headerCell("ACTIONS"), 3, 0);
 
-        addReportRow(grid, 1, "Q3 Block Progress Report", "PDF", "Oct 24, 2023");
-        grid.add(rowDivider(), 0, 2, 4, 1);
-
-        addReportRow(grid, 3, "Village Budget Summary", "XLSX", "Oct 20, 2023");
-        grid.add(rowDivider(), 0, 4, 4, 1);
-
-        addReportRow(grid, 5, "Grievance Redressal Log", "PDF", "Oct 15, 2023");
-
-        panel.getChildren().addAll(header, grid);
+        panel.getChildren().addAll(header, reportsGrid);
         addHoverLift(panel, 24);
         return panel;
+    }
+
+    /** Rebuilds the table body (keeping row 0's headers) from the current village's report list. */
+    private void updateReportsTable() {
+        reportsGrid.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) != 0);
+
+        List<GeneratedReport> reports = getSelectedVillageReports();
+        int row = 1;
+        for (int i = 0; i < reports.size(); i++) {
+            GeneratedReport r = reports.get(i);
+            addReportRow(reportsGrid, row, r.getName(), r.getType(), r.getDateGenerated());
+            row++;
+            if (i < reports.size() - 1) {
+                reportsGrid.add(rowDivider(), 0, row, 4, 1);
+                row++;
+            }
+        }
+
+        if (reports.isEmpty()) {
+            Label none = new Label("No reports generated for this village yet.");
+            none.setPadding(new Insets(16, 8, 16, 8));
+            none.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+            reportsGrid.add(none, 0, row, 4, 1);
+        }
     }
 
     private void addReportRow(GridPane grid, int row, String name, String type, String date) {
