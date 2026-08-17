@@ -222,14 +222,26 @@ public class Loginpage  {
         Hyperlink createAccount =
                 new Hyperlink("Create Account");
          
-         createAccount.setOnAction(e->{
-            CreateAccountPage createAccountPage = new CreateAccountPage();
-          try {
-                SplashScreen.HomepageStage.setScene(createAccountPage.getCreateAccountScene());
-            } catch (Exception e1) {
-                e1.printStackTrace();
-            }
-        });
+         createAccount.setOnAction(e -> {
+
+    CreateAccountPage createAccountPage =
+            new CreateAccountPage();
+
+    Runnable callbackAction = new Runnable() {
+        @Override
+        public void run() {
+            backToLogin();
+        }
+    };
+
+    try {
+        SplashScreen.HomepageStage.setScene(
+            createAccountPage.getCreateAccountScene(callbackAction)
+        );
+    } catch (Exception e1) {
+        e1.printStackTrace();
+    }
+});
               
         createAccount.setStyle(
                 "-fx-text-fill: #1768B3;" +
@@ -335,9 +347,13 @@ public class Loginpage  {
 
         //  SCENE 
 
-        Scene scene =
-                new Scene(root, 1200, 750);
-        return scene;
+        LoginPageScene =new Scene(root, 1200, 750);
+
+return LoginPageScene;
+}
+
+public void backToLogin(){
+       SplashScreen.HomepageStage.setScene(LoginPageScene);
 }
     }
    
