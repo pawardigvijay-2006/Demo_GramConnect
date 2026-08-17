@@ -2,6 +2,7 @@ package com.tech_fusion.view.login;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -10,124 +11,242 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 
-public class Loginpage  {
+public class Loginpage {
 
-        public static Scene LoginPageScene;
-   public Scene getLoginPageScene(){
+    public static Scene LoginPageScene;
 
-        //BACKGROUND IMAGE 
+    public Scene getLoginPageScene() {
+
+        // =========================================================
+        // SCREEN SIZE
+        // =========================================================
+
+        Rectangle2D screenSize =
+                Screen.getPrimary().getVisualBounds();
+
+        double screenWidth = screenSize.getWidth();
+        double screenHeight = screenSize.getHeight();
+
+
+        // =========================================================
+        // BACKGROUND IMAGE
+        // =========================================================
+
         Image backgroundImage = new Image(
-                getClass().getResource("/assets/images/login page .jpeg").toExternalForm()
+                getClass().getResource(
+                        "/assets/images/login page .jpeg"
+                ).toExternalForm()
         );
 
-        ImageView background = new ImageView(backgroundImage);
+        ImageView background =
+                new ImageView(backgroundImage);
 
         background.setPreserveRatio(false);
-        background.setFitWidth(1200);
-        background.setFitHeight(750);
 
-        
-        // Slight white transparent layer
+
+        // =========================================================
+        // SLIGHT WHITE TRANSPARENT LAYER
+        // =========================================================
+
         Region overlay = new Region();
+
         overlay.setStyle(
                 "-fx-background-color: rgba(255,255,255,0.18);"
         );
 
-        // LOGIN CARD 
-        VBox loginCard = new VBox(20);
-        loginCard.setPadding(new Insets(30));
-        loginCard.setPrefWidth(600);
-        loginCard.setMaxWidth(400);
-        loginCard.setMaxHeight(700);
-        loginCard.setTranslateX(35);
+
+        // =========================================================
+        // LOGIN CARD
+        // =========================================================
+
+        VBox loginCard = new VBox(15);
+
+        loginCard.setPadding(
+                new Insets(
+                        screenHeight * 0.035
+                )
+        );
+
+        // Card width = approximately 33% of screen width
+        loginCard.setPrefWidth(
+                screenWidth * 0.33
+        );
+
+        loginCard.setMaxWidth(
+                screenWidth * 0.33
+        );
+
+        // Card height = approximately 88% of screen height
+        loginCard.setPrefHeight(
+                screenHeight * 0.88
+        );
+
+        loginCard.setMaxHeight(
+                screenHeight * 0.88
+        );
+
+        loginCard.setTranslateX(
+                screenWidth * 0.022
+        );
 
         loginCard.setStyle(
-                "-fx-background-color: #fdfefe(255,255,255,0.96);" +
+                "-fx-background-color: rgba(255,255,255,0.96);" +
                 "-fx-background-radius: 25;"
         );
 
+
+        // =========================================================
         // TITLE
-        Label welcome = new Label("Welcome Back!");
+        // =========================================================
+
+        Label welcome =
+                new Label("Welcome Back!");
 
         welcome.setFont(
-                Font.font("Arial", FontWeight.BOLD, 34)
+                Font.font(
+                        "Arial",
+                        FontWeight.BOLD,
+                        screenWidth * 0.022
+                )
         );
+
         welcome.setTextFill(
                 Color.web("#123B59")
         );
 
-        welcome.setMaxWidth(Double.MAX_VALUE);
-        welcome.setAlignment(Pos.CENTER);
+        welcome.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        // Green line
-        Label greenLine = new Label("━━━━━━");
+        welcome.setAlignment(
+                Pos.CENTER
+        );
+
+
+        // =========================================================
+        // GREEN LINE
+        // =========================================================
+
+        Label greenLine =
+                new Label("━━━━━━");
 
         greenLine.setTextFill(
                 Color.web("#185905")
         );
 
         greenLine.setFont(
-                Font.font(18)
+                Font.font(
+                        screenWidth * 0.012
+                )
         );
 
-        greenLine.setMaxWidth(Double.MAX_VALUE);
-        greenLine.setAlignment(Pos.CENTER);
-
-        // Subtitle
-        Label subtitle = new Label(
-                "Login to continue to GramConnect"
+        greenLine.setMaxWidth(
+                Double.MAX_VALUE
         );
+
+        greenLine.setAlignment(
+                Pos.CENTER
+        );
+
+
+        // =========================================================
+        // SUBTITLE
+        // =========================================================
+
+        Label subtitle =
+                new Label(
+                        "Login to continue to GramConnect"
+                );
 
         subtitle.setFont(
-                Font.font("Arial", 16)
+                Font.font(
+                        "Arial",
+                        screenWidth * 0.010
+                )
         );
 
-        subtitle.setTextFill(Color.GRAY);
+        subtitle.setTextFill(
+                Color.GRAY
+        );
 
-        subtitle.setMaxWidth(Double.MAX_VALUE);
-        subtitle.setAlignment(Pos.CENTER);
+        subtitle.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        subtitle.setAlignment(
+                Pos.CENTER
+        );
 
 
-        //  USERNAME 
+        // =========================================================
+        // USERNAME
+        // =========================================================
+
         Label usernameLabel =
-                new Label("Username / Mobile Number *");
+                new Label(
+                        "Username / Mobile Number *"
+                );
 
         usernameLabel.setFont(
-                Font.font("Arial", 16)
+                Font.font(
+                        "Arial",
+                        screenWidth * 0.0105
+                )
         );
 
-        TextField username = new TextField();
+        TextField username =
+                new TextField();
 
         username.setPromptText(
                 "Enter mobile number or username"
         );
 
-        username.setPrefHeight(50);
+        username.setPrefHeight(
+                screenHeight * 0.06
+        );
 
-        username.setMaxWidth(Double.MAX_VALUE);
+        username.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        // PASSWORD 
+
+        // =========================================================
+        // PASSWORD
+        // =========================================================
 
         Label passwordLabel =
                 new Label("Password *");
 
         passwordLabel.setFont(
-                Font.font("Arial", 16)
+                Font.font(
+                        "Arial",
+                        screenWidth * 0.0105
+                )
         );
 
-        PasswordField password = new PasswordField();
+        PasswordField password =
+                new PasswordField();
 
         password.setPromptText(
                 "Enter your password"
         );
 
-        password.setPrefHeight(50);
+        password.setPrefHeight(
+                screenHeight * 0.06
+        );
 
-        password.setMaxWidth(Double.MAX_VALUE);
+        password.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-        //  FORGOT PASSWORD 
+
+        // =========================================================
+        // FORGOT PASSWORD
+        // =========================================================
+
         Hyperlink forgotPassword =
                 new Hyperlink("Forgot Password?");
 
@@ -136,7 +255,8 @@ public class Loginpage  {
                 "-fx-font-size: 14px;"
         );
 
-        HBox forgotBox = new HBox();
+        HBox forgotBox =
+                new HBox();
 
         forgotBox.setAlignment(
                 Pos.CENTER_RIGHT
@@ -146,16 +266,22 @@ public class Loginpage  {
                 forgotPassword
         );
 
-        // LOGIN BUTTON 
+
+        // =========================================================
+        // LOGIN BUTTON
+        // =========================================================
+
         Button loginButton =
                 new Button("↪   LOGIN");
 
-        loginButton.setPrefHeight(55);
+        loginButton.setPrefHeight(
+                screenHeight * 0.065
+        );
 
         loginButton.setMaxWidth(
                 Double.MAX_VALUE
         );
-        
+
         loginButton.setStyle(
                 "-fx-background-color: #247c0c;" +
                 "-fx-text-fill: white;" +
@@ -165,13 +291,23 @@ public class Loginpage  {
                 "-fx-cursor: hand;"
         );
 
-        //divider
-        HBox divider = new HBox(10);
 
-        divider.setAlignment(Pos.CENTER);
+        // =========================================================
+        // DIVIDER
+        // =========================================================
 
-        Region line1 = new Region();
-        Region line2 = new Region();
+        HBox divider =
+                new HBox(10);
+
+        divider.setAlignment(
+                Pos.CENTER
+        );
+
+        Region line1 =
+                new Region();
+
+        Region line2 =
+                new Region();
 
         line1.setPrefHeight(1);
         line2.setPrefHeight(1);
@@ -197,10 +333,14 @@ public class Loginpage  {
         Label orText =
                 new Label("or continue with");
 
-        orText.setTextFill(Color.GRAY);
+        orText.setTextFill(
+                Color.GRAY
+        );
 
         orText.setFont(
-                Font.font(15)
+                Font.font(
+                        screenWidth * 0.0095
+                )
         );
 
         divider.getChildren().addAll(
@@ -209,44 +349,70 @@ public class Loginpage  {
                 line2
         );
 
-        //  CREATE ACCOUNT 
+
+        // =========================================================
+        // CREATE ACCOUNT
+        // =========================================================
+
         Label accountText =
-                new Label("Don't have an account?");
+                new Label(
+                        "Don't have an account?"
+                );
 
         accountText.setFont(
-                Font.font(15)
+                Font.font(
+                        screenWidth * 0.0095
+                )
         );
 
-        accountText.setTextFill(Color.GRAY);
+        accountText.setTextFill(
+                Color.GRAY
+        );
 
         Hyperlink createAccount =
                 new Hyperlink("Create Account");
-         
-         createAccount.setOnAction(e -> {
 
-    CreateAccountPage createAccountPage =
-            new CreateAccountPage();
 
-    Runnable callbackAction = new Runnable() {
-        @Override
-        public void run() {
-            backToLogin();
-        }
-    };
+        // =========================================================
+        // LOGIN → CREATE ACCOUNT
+        // =========================================================
 
-    try {
-        SplashScreen.HomepageStage.setScene(
-            createAccountPage.getCreateAccountScene(callbackAction)
-        );
-    } catch (Exception e1) {
-        e1.printStackTrace();
-    }
-});
-              
+        createAccount.setOnAction(e -> {
+
+            CreateAccountPage createAccountPage =
+                    new CreateAccountPage();
+
+            Runnable callbackAction =
+                    new Runnable() {
+
+                @Override
+                public void run() {
+
+                    backToLogin();
+                }
+            };
+
+            try {
+
+                SplashScreen.HomepageStage.setScene(
+                        createAccountPage
+                                .getCreateAccountScene(
+                                        callbackAction
+                                )
+                );
+
+            } catch (Exception e1) {
+
+                e1.printStackTrace();
+            }
+        });
+
+
         createAccount.setStyle(
                 "-fx-text-fill: #1768B3;" +
                 "-fx-font-size: 15px;"
         );
+
 
         HBox createBox =
                 new HBox(5);
@@ -260,23 +426,38 @@ public class Loginpage  {
                 createAccount
         );
 
-        //  BUTTON ACTION 
+
+        //
+        // LOGIN BUTTON ACTION
+        // 
+
         loginButton.setOnAction(event -> {
 
-            
-            String user = username.getText();
-            String pass = password.getText();
+            String user =
+                    username.getText();
+
+            String pass =
+                    password.getText();
+
 
             if (
                     user.isEmpty() ||
-                    pass.isEmpty()) {
+                    pass.isEmpty()
+            ) {
 
-                Alert alert = new Alert(
-                        Alert.AlertType.WARNING
+                Alert alert =
+                        new Alert(
+                                Alert.AlertType.WARNING
+                        );
+
+                alert.setTitle(
+                        "GramConnect"
                 );
 
-                alert.setTitle("GramConnect");
-                alert.setHeaderText(null);
+                alert.setHeaderText(
+                        null
+                );
+
                 alert.setContentText(
                         "Please fill all required fields."
                 );
@@ -285,12 +466,19 @@ public class Loginpage  {
 
             } else {
 
-                Alert alert = new Alert(
-                        Alert.AlertType.INFORMATION
+                Alert alert =
+                        new Alert(
+                                Alert.AlertType.INFORMATION
+                        );
+
+                alert.setTitle(
+                        "GramConnect"
                 );
 
-                alert.setTitle("GramConnect");
-                alert.setHeaderText("Login Successful");
+                alert.setHeaderText(
+                        "Login Successful"
+                );
+
                 alert.setContentText(
                         "Welcome to GramConnect!"
                 );
@@ -299,7 +487,10 @@ public class Loginpage  {
             }
         });
 
-        //  ADD EVERYTHING 
+
+        // =========================================================
+        // ADD EVERYTHING
+        // =========================================================
 
         loginCard.getChildren().addAll(
 
@@ -324,9 +515,13 @@ public class Loginpage  {
                 createBox
         );
 
-        //  ROOT 
 
-        StackPane root = new StackPane();
+        // =========================================================
+        // ROOT
+        // =========================================================
+
+        StackPane root =
+                new StackPane();
 
         root.getChildren().addAll(
                 background,
@@ -334,7 +529,11 @@ public class Loginpage  {
                 loginCard
         );
 
-        //
+
+        // =========================================================
+        // ALIGN LOGIN CARD
+        // =========================================================
+
         StackPane.setAlignment(
                 loginCard,
                 Pos.CENTER_RIGHT
@@ -342,21 +541,64 @@ public class Loginpage  {
 
         StackPane.setMargin(
                 loginCard,
-                new Insets(40, 60, 40, 40)
+                new Insets(
+                        screenHeight * 0.05,
+                        screenWidth * 0.04,
+                        screenHeight * 0.05,
+                        screenWidth * 0.03
+                )
         );
 
-        //  SCENE 
 
-        LoginPageScene =new Scene(root, 1200, 750);
+        // =========================================================
+        // RESPONSIVE BACKGROUND
+        // =========================================================
 
-return LoginPageScene;
-}
+        background.fitWidthProperty().bind(
+                root.widthProperty()
+        );
 
-public void backToLogin(){
-       SplashScreen.HomepageStage.setScene(LoginPageScene);
-}
+        background.fitHeightProperty().bind(
+                root.heightProperty()
+        );
+
+
+        // =========================================================
+        // RESPONSIVE OVERLAY
+        // =========================================================
+
+        overlay.prefWidthProperty().bind(
+                root.widthProperty()
+        );
+
+        overlay.prefHeightProperty().bind(
+                root.heightProperty()
+        );
+
+
+        // =========================================================
+        // SCENE
+        // =========================================================
+
+        LoginPageScene =
+                new Scene(
+                        root,
+                        screenWidth,
+                        screenHeight
+                );
+
+        return LoginPageScene;
     }
-   
 
-    
 
+    // =============================================================
+    // BACK TO LOGIN
+    // =============================================================
+
+    public void backToLogin() {
+
+        SplashScreen.HomepageStage.setScene(
+                LoginPageScene
+        );
+    }
+}
