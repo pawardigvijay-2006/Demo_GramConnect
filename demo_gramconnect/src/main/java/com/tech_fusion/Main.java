@@ -1,4 +1,4 @@
-package com.tech_fusion.view.login;
+package com.tech_fusion;
 
 import com.tech_fusion.view.admin.Dashboard;
 import com.tech_fusion.view.login.SplashScreen;
