@@ -1,7 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
