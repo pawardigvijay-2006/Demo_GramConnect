@@ -11,10 +11,12 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 
 public class CreateAccountPage {
  public static Scene CreateSccountPageScene;
-    public Scene getCreateAccountScene() {
+    public Scene getCreateAccountScene(Runnable callbackAction) {
+
 
         //  BACKGROUND IMAGE 
         Image backgroundImage = new Image(
@@ -307,6 +309,28 @@ public class CreateAccountPage {
         loginLink.setFont(
                 Font.font("Arial", FontWeight.BOLD, 15)
         );
+       loginLink.setOnAction(e -> {
+    Loginpage loginPage = new Loginpage();
+    try {
+        callbackAction.run();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+});
+
+
+
+
+       /*  //  LOGIN NAVIGATION 
+        loginLink.setOnAction(event -> {
+
+            Loginpage loginpage =
+                    new Loginpage();
+
+            loginLink.getScene().setRoot(
+                    loginpage.getLoginPageScene(callbackAction).getRoot()
+            );
+        });*/
 
         loginLink.setStyle(
                 "-fx-text-fill: #287A20;"
@@ -384,18 +408,6 @@ public class CreateAccountPage {
                 alert.showAndWait();
             }
         });
-
-        //  LOGIN NAVIGATION 
-        loginLink.setOnAction(event -> {
-
-            Loginpage loginpage =
-                    new Loginpage();
-
-            loginLink.getScene().setRoot(
-                    loginpage.getLoginPageScene().getRoot()
-            );
-        });
-
         //  ADD EVERYTHING 
 
         card.getChildren().addAll(
