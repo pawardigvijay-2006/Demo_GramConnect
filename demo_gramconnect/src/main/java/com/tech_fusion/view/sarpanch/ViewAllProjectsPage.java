@@ -33,7 +33,7 @@ public class ViewAllProjectsPage extends ProjectTrackerActionPage {
     private static final String SAFFRON      = "#E07A1F";
     private static final String TEAL         = "#0E8C8C";
     private static final String RED          = "#D94C38";
-    private static final String VIOLET       = "#7C5CFC";
+    //private static final String VIOLET       = "#7C5CFC";
     private static final String FONT         = "'Inter', 'Segoe UI', 'Arial', sans-serif";
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
 

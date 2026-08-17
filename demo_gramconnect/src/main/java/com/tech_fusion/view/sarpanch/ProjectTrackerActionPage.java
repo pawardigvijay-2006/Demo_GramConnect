@@ -1,7 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -47,8 +45,7 @@ public abstract class ProjectTrackerActionPage {
     private static final String SIDEBAR_MID = "#BCE3CC";
     private static final String SIDEBAR_BOT = "#A9D8BD";
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     private Runnable backToProjectTrackerAction;
     private Runnable backToDashboardAction;
 
@@ -59,7 +56,7 @@ public abstract class ProjectTrackerActionPage {
 
         BorderPane root = new BorderPane();
         root.setBackground(new Background(new BackgroundImage(
-            new javafx.scene.image.Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString()),
+            new javafx.scene.image.Image(BACKGROUND_IMAGE_PATH),
             BackgroundRepeat.NO_REPEAT,
             BackgroundRepeat.NO_REPEAT,
             BackgroundPosition.CENTER,
