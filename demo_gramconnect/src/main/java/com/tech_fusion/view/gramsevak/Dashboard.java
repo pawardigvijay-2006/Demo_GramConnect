@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -32,314 +32,375 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextAlignment;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-public class NewDashboard extends Application {
-        /* ---------- Color palette (from the HTML template) ---------- */
+public class Dashboard extends Application{
+    
+        /** Shared Stage reference - every page that needs to change screens gets this. */
+        public static Stage homeStage;
+
+        /** The built Dashboard scene, cached so back() can return to it without rebuilding. */
+        private Scene dashboardScene;
+
+        private BorderPane root;
+        private BorderPane mainArea;
+
+        // ================= COLORS (borrowed from SarpanchDashboard.java) =================
         private static final String FOREST_DEEP = "#0B3D2E";
         private static final String FOREST_LIGHT = "#0F4736";
         private static final String SAFFRON_MAIN = "#E07A1F";
         private static final String CONTEXT_TEAL = "#0E8C8C";
         private static final String AI_VIOLET = "#7C5CFC";
         private static final String DELAYED_RED = "#D94C38";
-        // Light green sidebar colors (requested change)
+
+        // Light green sidebar gradient (same as Sarpanch's "requested change" palette)
         private static final String SIDEBAR_TOP = "#CDEBD8";
-        private static final String SIDEBAR_MID = "#Bce3cc";
+        private static final String SIDEBAR_MID = "#BCE3CC";
         private static final String SIDEBAR_BOT = "#A9D8BD";
 
         private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
-        private static final String BACKGROUND_IMAGE_PATH = "D:/Downloads/backgroundfinalimage.png/";
-        BorderPane contentArea;
-        private HBox activeNavItem;
+        private static final String BACKGROUND = "#f8f8f8";
 
-        @Override
-        public void start(Stage stage) throws Exception {
-                BorderPane root = new BorderPane();
-                Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
-                root.setBackground(new Background(new BackgroundImage(backgroundImage,
-                                BackgroundRepeat.NO_REPEAT,
-                                BackgroundRepeat.NO_REPEAT,
-                                BackgroundPosition.CENTER,
-                                new BackgroundSize(100, 100, true, true, false, true))));
-                root.setLeft(buildSidebar());
+        private static final String TEXT_PRIMARY = FOREST_DEEP;
+        private static final String TEXT_SECONDARY = "rgba(11,61,46,0.65)";
+        private static final String BACKGROUND_IMAGE_PATH = "assets\\images\\backgroundfinalimage.png";
 
-                contentArea = new BorderPane();
-                contentArea.setTop(buildTopBar());
+        Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
-                ScrollPane scroller = createPage(buildMainContent());
+    @Override
+    public void start(Stage stage) throws Exception {
+        homeStage = stage;
+        homeStage.setScene(getDashboardScene());
+        homeStage.setTitle("GramConnect -Gram Sevak Dashboard");
+        homeStage.show();
+       
+    }
+     public Scene getDashboardScene() {
 
-                scroller.setStyle(
-                                "-fx-background: transparent; " +
-                                                "-fx-background-color: transparent; " +
-                                                "-fx-border-color: transparent;");
-                contentArea.setCenter(scroller);
-                root.setCenter(contentArea);
+        root = new BorderPane();
+        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        root.setBackground(new Background(new BackgroundImage(backgroundImage,
+                                                            BackgroundRepeat.NO_REPEAT,
+                                                            BackgroundRepeat.NO_REPEAT,
+                                                            BackgroundPosition.CENTER,
+                                                            new BackgroundSize(100, 100, true, true, false, true)
+    )));
+                
+        root.setLeft(buildSidebar());
 
-                Scene scene = new Scene(root, 1300, 800);
-                stage.setTitle("GramConnect - Gram Sevak");
-                stage.setScene(scene);
-                stage.show();
+        // Main area
+        mainArea = new BorderPane();
+        mainArea.setTop(buildHeader());
+
+        ScrollPane scroller = new ScrollPane(buildMainContent());
+        scroller.setFitToWidth(true);
+        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroller.setStyle(
+                "-fx-background: transparent; " +
+                "-fx-background-color: transparent; " +
+                "-fx-border-color: transparent;"
+        );
+        mainArea.setCenter(scroller);
+
+        root.setCenter(mainArea);
+
+        Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
+        dashboardScene = scene;
+        return scene;
         }
-
-        private ScrollPane createPage(Node page) {
-
-                ScrollPane scrollPane = new ScrollPane(page);
-
-                scrollPane.setFitToWidth(true);
-                scrollPane.setFitToHeight(false);
-
-                scrollPane.setHbarPolicy(
-                                ScrollPane.ScrollBarPolicy.NEVER);
-
-                scrollPane.setVbarPolicy(
-                                ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
-                scrollPane.setStyle(
-                                "-fx-background-color: transparent;" +
-                                                "-fx-background: transparent;" +
-                                                "-fx-border-color: transparent;");
-
-                return scrollPane;
+        /** Returns to the cached Dashboard scene without rebuilding it. */
+    public void back() {
+         homeStage.setTitle("GramConnect - Gram Sevak Dashboard");
+         homeStage.setScene(dashboardScene);
         }
-
-        /*
-         * ============================================================
-         * SIDEBAR (Light Green version + Announcements section)
-         * ============================================================
-         */
+    // =================================================================
         private VBox buildSidebar() {
+                // Step 1: create the empty container.
                 VBox sidebar = new VBox();
                 sidebar.setPrefWidth(288);
-                sidebar.setMinWidth(250);
-                sidebar.setMaxWidth(288);
+                sidebar.setMinWidth(288);
                 sidebar.setStyle(
                                 "-fx-background-color: linear-gradient(to bottom, " + SIDEBAR_TOP + ", " + SIDEBAR_MID
-                                                + ", "
-                                                + SIDEBAR_BOT + ");" +
-                                                "-fx-border-color: transparent rgba(11,61,46,0.10) transparent transparent;"
-                                                +
-                                                "-fx-border-width: 0 1 0 0;" +
-                                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
-                /* ----- Header: avatar + name ----- */
-                HBox header = new HBox(14);
-                header.setPadding(new Insets(24));
-                header.setAlignment(Pos.CENTER_LEFT);
+                                                + ", " + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent rgba(11,61,46,0.10) transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
 
-                StackPane avatar = new StackPane();
-                Circle avatarCircle = new Circle(24);
-                avatarCircle.setFill(Color.web(FOREST_DEEP));
-                avatarCircle.setStroke(Color.web(SAFFRON_MAIN, 0.85));
-                avatarCircle.setStrokeWidth(2.5);
-                Label avatarInitials = new Label("AJ");
-                avatarInitials.setFont(Font.font("Inter", FontWeight.BOLD, 16));
-                avatarInitials.setTextFill(Color.WHITE);
-                avatar.getChildren().addAll(avatarCircle, avatarInitials);
+                // ---------------- Logo ----------------
+                Image logoImage = new Image("assets\\images\\gc logo.jpeg");
 
-                VBox nameBox = new VBox(2);
-                Label name = new Label("Gram Sevak");
-                name.setStyle("-fx-font-family: " + FONT_FAMILY
-                                + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: "
-                                + FOREST_DEEP + ";");
-                Label role = new Label("Gram Panchayat");
-                role.setStyle("-fx-font-family: " + FONT_FAMILY
-                                + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65); -fx-letter-spacing: 0.05em;");
-                nameBox.getChildren().addAll(name, role);
+                ImageView logoIcon = new ImageView(logoImage);
+                logoIcon.setFitWidth(60);
+                logoIcon.setFitHeight(60);
+                logoIcon.setPreserveRatio(true);
+                logoIcon.setSmooth(true);
 
-                header.getChildren().addAll(avatar, nameBox);
+                Label logoText = new Label("GramConnect");
+                logoText.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
 
-                /* ----- Navigation items ----- */
-                VBox nav = new VBox(6);
-                nav.setPadding(new Insets(16, 12, 16, 12));
-                nav.getChildren().addAll(
-                                navItem("\u25A6", "Dashboard", true, () -> {
-                                        contentArea.setCenter(createPage(buildMainContent()));
-                                }),
-                                navItem("\uD83D\uDDC2", "Bill Management", false, () -> {
-                                        contentArea.setCenter(createPage(BillManagement.getBillManageContent()));
-                                }),
-                                navItem("\uD83D\uDCB0", "Document Management", false, () -> {
-                                        contentArea.setCenter(createPage(DocumentsManage.getDocumentManageContent()));
-                                }),
-                                navItem("\u26A0", "Complaints", false, () -> {
-                                        contentArea.setCenter(createPage(Complaints.getComplaintManagement()));
-                                }),
-                                navItem("📄", "Government Schemes", false, () -> {
-                                        contentArea.setCenter(createPage( GovSchemes.getSchemeContent(() -> {
-                                         contentArea.setCenter(new ScrollPane(NewScheme.getNewSchemeContent()));
-                                                                        })));
-                                })
-                // navItem("\uD83D\uDCE2", "Announcements", false) // NEW SECTION
-                );
-                VBox.setVgrow(nav, Priority.ALWAYS);
+                Label subtitle = new Label("Village Governance");
+                subtitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;"
+                                                + "-fx-letter-spacing: 0.05em;");
 
-                /* ----- CTA + footer links ----- */
-                VBox footer = new VBox(10);
-                footer.setPadding(new Insets(20, 24, 24, 24));
+                VBox logoTextBox = new VBox(0, logoText, subtitle);
+                HBox logo = new HBox(8, logoIcon, logoTextBox);
+                logo.setAlignment(Pos.CENTER_LEFT);
+                VBox logoBox = new VBox(logo);
+                logoBox.setPadding(new Insets(24));
 
-                Region divider = new Region();
-                divider.setPrefHeight(1);
-                divider.setStyle(
-                                "-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
+                // ---------------- Nav items ----------------
+                // Each item is a local variable so we can attach its own click
+                // handler right below, instead of routing every click through
+                // one shared handleNavigation(String) switch statement.
 
-                VBox smallLinks = new VBox(4);
-                smallLinks.setPadding(new Insets(8, 0, 0, 0));
-                smallLinks.getChildren().addAll(
-                                footerLink("\u2699", "Settings"),
-                                footerLink("\u2753", "Support"));
+                Label dashboardNav = navItem("\uD83C\uDFE0  Dashboard", true);
+                dashboardNav.setOnMouseClicked(e -> back());
 
-                footer.getChildren().addAll(divider, smallLinks);
-
-                sidebar.getChildren().addAll(header, nav, footer);
-                return sidebar;
-        }
-
-        private HBox navItem(String icon, String text, boolean active, Runnable action) {
-                HBox item = new HBox(14);
-                item.setAlignment(Pos.CENTER_LEFT);
-                item.setPadding(new Insets(14, 16, 14, 16));
-                item.setMaxWidth(Double.MAX_VALUE);
-
-                Label ic = new Label(icon);
-                ic.setStyle("-fx-font-size: 17px; -fx-text-fill: " + (active ? SAFFRON_MAIN : FOREST_DEEP) + ";");
-
-                Label lbl = new Label(text);
-                lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px;" +
-                                "-fx-font-weight: " + (active ? "800" : "600") + ";" +
-                                "-fx-text-fill: " + (active ? SAFFRON_MAIN : "rgba(11,61,46,0.80)") + ";" +
-                                "-fx-letter-spacing: 0.05em;");
-
-                item.getChildren().addAll(ic, lbl);
-                // Navigation across pages
-                item.setOnMouseClicked(e -> {
-                        action.run();
+                Label billNav = navItem("\uD83C\uDFD7  Bill Management", false);
+                billNav.setOnMouseClicked(e -> {
+                        BillManagement billManagement = new BillManagement();
+                        // This is the Runnable being asked for: it captures "how to get
+                        // back to the dashboard" without ProjectTransparency needing to
+                        // know anything about VillagerDashboard's fields or methods.
+                        Runnable backToDashboardAction = () -> back();
+                        homeStage.setScene(billManagement.getBillManagementPage(backToDashboardAction));
+                        homeStage.setTitle("GramConnect - Bill Management");
                 });
 
-                if (active) {
-                        // active pill with saffron indicator bar on the left
-                        Region bar = new Region();
-                        bar.setPrefWidth(6);
-                        bar.setMinWidth(6);
-                        bar.setStyle("-fx-background-color: " + SAFFRON_MAIN + "; -fx-background-radius: 8 0 0 8;" +
-                                        "-fx-effect: dropshadow(gaussian, rgba(224,122,31,0.6), 8, 0.3, 0, 0);");
-                        HBox wrap = new HBox(bar, item);
-                        HBox.setHgrow(item, Priority.ALWAYS);
-                        wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
-                                        "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
-                        wrap.setMaxWidth(Double.MAX_VALUE);
-                        return wrap;
-                } else {
-                        String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
-                        item.setStyle(base);
-                        item.setOnMouseEntered(e -> item.setStyle(
-                                        "-fx-background-radius: 10; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-                        item.setOnMouseExited(e -> item.setStyle(base));
-                        return item;
-                }
-        }
+                Label documentNav = navItem("\uD83D\uDCAC  Documents Managemnet", false);
+                documentNav.setOnMouseClicked(e -> {
+                        Runnable backToDashboardAction = () -> back();
+                        homeStage.setScene(new DocumentsManage().getDocumentPage(backToDashboardAction));
+                        homeStage.setTitle("GramConnect - Documents");
+                });
 
-        private HBox footerLink(String icon, String text) {
-                HBox link = new HBox(10);
-                link.setAlignment(Pos.CENTER_LEFT);
-                link.setPadding(new Insets(8, 16, 8, 16));
-                Label ic = new Label(icon);
-                ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
-                Label lbl = new Label(text);
-                lbl.setStyle("-fx-font-family: " + FONT_FAMILY
-                                + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
-                link.getChildren().addAll(ic, lbl);
-                String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
-                link.setStyle(base);
-                link.setOnMouseEntered(e -> link
-                                .setStyle("-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-                link.setOnMouseExited(e -> link.setStyle(base));
-                return link;
-        }
+                Label complaintNav = navItem("\u26A0 Complaints", false);
+                complaintNav.setOnMouseClicked(e -> {
+                        Runnable backToDashboardAction = () -> back();
+                        homeStage.setScene(new Complaints().getComplaintScene(backToDashboardAction));
+                        homeStage.setTitle("GramConnect - Complaints");
+                });
 
-        /*
-         * ============================================================
-         * TOP NAVIGATION BAR
-         * ============================================================
+                Label schemesNav = navItem("\uD83C\uDF81  Government schemes", false);
+                schemesNav.setOnMouseClicked(e -> {
+                        Runnable backToDashboardAction = () -> back();
+                        homeStage.setScene(new GovScheme().getSchemeScene(backToDashboardAction));
+                        homeStage.setTitle("GramConnect - Government Schemes");
+                });
+                
+                
+                VBox navItems = new VBox(6,
+                                dashboardNav,
+                                billNav,
+                                documentNav,
+                                complaintNav,
+                                schemesNav
+                                );
+                navItems.setPadding(new Insets(16, 12, 16, 12));
+                VBox.setVgrow(navItems, Priority.ALWAYS); // let this section stretch to fill leftover space
+
+                /* ----- CTA + footer links ----- */
+        VBox footer = new VBox(10);
+        footer.setPadding(new Insets(20, 24, 24, 24));
+
+        Region divider = new Region();
+        divider.setPrefHeight(1);
+        divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
+
+
+        VBox smallLinks = new VBox(4);
+        smallLinks.setPadding(new Insets(8, 0, 0, 0));
+        smallLinks.getChildren().addAll(
+            footerLink("\u2699", "Settings"),
+            footerLink("\u2753", "Support")
+        );
+
+        footer.getChildren().addAll(divider, smallLinks);
+                sidebar.getChildren().addAll(logoBox, navItems, footer);
+                return sidebar;
+        
+}
+private HBox footerLink(String icon, String text) {
+        HBox link = new HBox(10);
+        link.setAlignment(Pos.CENTER_LEFT);
+        link.setPadding(new Insets(8, 16, 8, 16));
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
+        link.getChildren().addAll(ic, lbl);
+        String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
+        link.setStyle(base);
+        link.setOnMouseEntered(e -> link.setStyle("-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
+        link.setOnMouseExited(e -> link.setStyle(base));
+        return link;
+    }
+/**
+         * Builds one clickable-looking sidebar row. Returns a single Label node
+         * with NO click handler attached - the caller (buildSidebar() above)
+         * attaches .setOnMouseClicked(...) itself right after construction, so
+         * every nav item's destination is defined right next to the item
+         * instead of in one faraway switch statement.
          */
-        private HBox buildTopBar() {
-                HBox topBar = new HBox(24);
-                topBar.setAlignment(Pos.CENTER_LEFT);
-                topBar.setPrefHeight(72);
-                topBar.setPadding(new Insets(0, 32, 0, 32));
-                topBar.setStyle(
-                                "-fx-background-color: rgba(255,255,255,0.92);" +
-                                                "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
-                                                +
-                                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
-                Image projectLogo = new Image("assets\\icon\\gc logo.jpeg");
-                ImageView imgView = new ImageView(projectLogo);
-                imgView.setFitHeight(50);
-                imgView.setFitWidth(60);
+        private Label navItem(String text, boolean active) {
 
-                /* Search box */
+                Label item = new Label(text);
+                item.setMaxWidth(Double.MAX_VALUE);
+                item.setPadding(new Insets(14, 16, 14, 16));
+
+                if (active) {
+                        item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;"
+                                                        + "-fx-cursor: hand;");
+                } else {
+                        String base = "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-cursor: hand;";
+                        item.setStyle(base);
+
+                        item.setOnMouseEntered(e -> item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                        + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                        + "-fx-font-weight: 700;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-cursor: hand;"));
+
+                        item.setOnMouseExited(e -> item.setStyle(base));
+                }
+
+                return item;
+        }
+        
+        // =================================================================
+        // MAIN AREA (header on top, scrollable content below it)
+        // =================================================================
+        private BorderPane buildMainArea() {
+                BorderPane main = new BorderPane();
+                main.setTop(buildHeader());
+                main.setCenter(buildMainContent());
+                return main;
+        }
+        /** Header restyled as a translucent glass bar with a rounded pill search box. */
+        private HBox buildHeader() {
+                // HBox lays its children left-to-right. Spacing "16" = 16px gap between them.
+                HBox header = new HBox(16);
+                header.setAlignment(Pos.CENTER_LEFT);
+                header.setPadding(new Insets(14, 28, 14, 28));
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
+
                 HBox searchBox = new HBox(8);
                 searchBox.setAlignment(Pos.CENTER_LEFT);
                 searchBox.setPadding(new Insets(0, 16, 0, 16));
-                searchBox.setPrefWidth(480);
-                searchBox.setPrefHeight(42);
-                searchBox.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12;" +
-                                "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
+                searchBox.setPrefWidth(300);
+                searchBox.setPrefHeight(38);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
                 Label searchIcon = new Label("\uD83D\uDD0D");
-                searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
-                TextField searchField = new TextField();
-                searchField.setPromptText("Search anything...");
-                searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
-                                "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP
-                                + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
-                HBox.setHgrow(searchField, Priority.ALWAYS);
-                searchBox.getChildren().addAll(searchIcon, searchField);
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
+                TextField search = new TextField();
+                search.setPromptText("Search projects, schemes, services");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
 
+                // An empty Region set to grow fills up leftover space - this is how
+                // we "push" the bell + profile to the right edge of the header.
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                /* Notification bell with saffron dot */
-                StackPane bell = new StackPane();
+                // Bell with a small red badge showing unread notification count.
                 Label bellIcon = new Label("\uD83D\uDD14");
-                bellIcon.setStyle("-fx-font-size: 16px;");
-                StackPane bellBtn = new StackPane(bellIcon);
-                bellBtn.setPrefSize(42, 42);
-                bellBtn.setStyle("-fx-background-color: rgba(255,255,255,0.6); -fx-background-radius: 50;" +
-                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1); -fx-cursor: hand;");
-                Circle dot = new Circle(5, Color.web(SAFFRON_MAIN));
-                dot.setStroke(Color.WHITE);
-                dot.setStrokeWidth(2);
-                StackPane.setAlignment(dot, Pos.TOP_RIGHT);
-                StackPane.setMargin(dot, new Insets(7, 7, 0, 0));
-                bell.getChildren().addAll(bellBtn, dot);
-                Region vDivider = new Region();
-                vDivider.setPrefSize(1, 32);
-                vDivider.setStyle("-fx-background-color: rgba(11,61,46,0.10);");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
-                /* Profile / language chip */
-                HBox profile = new HBox(10);
-                profile.setAlignment(Pos.CENTER_LEFT);
-                profile.setPadding(new Insets(6, 12, 6, 6));
-                profile.setStyle("-fx-background-color: rgba(255,255,255,0.6); -fx-background-radius: 12;" +
-                                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1); -fx-cursor: hand;");
-                Circle pAvatar = new Circle(16, Color.web(CONTEXT_TEAL));
-                pAvatar.setStroke(Color.WHITE);
-                pAvatar.setStrokeWidth(2);
-                Label lang = new Label("\u092E\u0930\u093E\u0920\u0940");
-                lang.setStyle("-fx-font-family: " + FONT_FAMILY
-                                + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: "
-                                + FOREST_DEEP + ";");
+                // StackPane layers its children on top of each other (centered by
+                // default) - here it's used for the "RP" avatar bubble, matching
+                // Sarpanch's forest-green circle + saffron ring look.
+                StackPane avatar = new StackPane(new Label("AJ"));
+                avatar.setPrefSize(34, 34);
+                avatar.setMaxSize(34, 34);
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
+                ((Label) avatar.getChildren().get(0))
+                                .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
+
+                Label name = new Label("Amit Jadhav");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label role = new Label("Gram Sevak");
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
+                VBox nameBox = new VBox(name, role); // stack name above role
+
                 Label chevron = new Label("\u25BE");
-                chevron.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.7);");
-                profile.getChildren().addAll(pAvatar, lang, chevron);
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                topBar.getChildren().addAll(imgView, searchBox, spacer, bell, vDivider, profile);
-                return topBar;
+                HBox profile = new HBox(8, avatar, nameBox, chevron); // avatar + name side by side
+                profile.setAlignment(Pos.CENTER_LEFT);
+
+                // Finally: put all pieces into the header, left to right.
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
+                return header;
         }
-
-        /*
+       /*
          * ============================================================
          * MAIN CONTENT
          * ============================================================
@@ -828,16 +889,13 @@ public class NewDashboard extends Application {
                 VBox textBox = new VBox(3);
 
                 Label title = new Label(titleText);
-
                 title.setStyle(
                                 "-fx-font-size: 13px;" +
                                                 "-fx-font-weight: bold;" +
                                                 "-fx-text-fill: #285B5B;");
 
                 Label detail = new Label(detailText);
-
                 detail.setWrapText(true);
-
                 detail.setStyle(
                                 "-fx-font-size: 11px;" +
                                                 "-fx-text-fill: #7A8A87;");
@@ -868,13 +926,12 @@ public class NewDashboard extends Application {
 
                 return notice;
         }
-        /*
-         * ============================================================
+  
+        /* ============================================================
          * HELPERS
-         * ============================================================
-         */
+        ============================================================*/
 
-        /** Glass-panel style shared by all cards. */
+      /** Glass-panel style shared by all cards. */
         private String cardStyle(int radius) {
                 return "-fx-background-color: rgba(255,255,255,0.88);" +
                                 "-fx-background-radius: " + radius + ";" +
@@ -883,7 +940,6 @@ public class NewDashboard extends Application {
                                 "-fx-border-width: 1;" +
                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
         }
-
         /** Hover lift effect matching the HTML .stat-card-shadow:hover. */
         private void addHoverLift(Region card, int radius) {
                 String base = cardStyle(radius);
@@ -897,7 +953,6 @@ public class NewDashboard extends Application {
                 card.setOnMouseEntered(e -> card.setStyle(hover));
                 card.setOnMouseExited(e -> card.setStyle(base));
         }
-
         /** Convert #RRGGBB hex to rgba(r,g,b,a) CSS string. */
         private String rgba(String hex, double alpha) {
                 int r = Integer.parseInt(hex.substring(1, 3), 16);
@@ -906,3 +961,4 @@ public class NewDashboard extends Application {
                 return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
         }
 }
+

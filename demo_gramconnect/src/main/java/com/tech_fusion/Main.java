@@ -1,7 +1,6 @@
 package com.tech_fusion;
 
 import com.tech_fusion.view.admin.Dashboard;
-import com.tech_fusion.view.gramsevak.NewDashboard;
 import com.tech_fusion.view.login.SplashScreen;
 // import com.tech_fusion.view.sarpanch.SarpanchDashboard;
 // import com.tech_fusion.view.villager.GovernmentSchemes;

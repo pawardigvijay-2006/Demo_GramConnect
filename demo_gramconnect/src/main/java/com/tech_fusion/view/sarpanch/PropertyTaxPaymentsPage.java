@@ -1,11 +1,22 @@
 package com.tech_fusion.view.sarpanch;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
@@ -14,8 +25,6 @@ import javafx.scene.layout.BackgroundPosition;
 import javafx.scene.layout.BackgroundRepeat;
 import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -27,17 +36,16 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 /**
- * GramConnect - Announcements Page.
+ * GramConnect - Property Tax Payments Page.
  *
- * Lets the Sarpanch create, edit and delete announcements, and publish Gram
- * Sabha notices (e.g. Gram Sabha Meeting Announcements, Gram Sabha Meeting
- * Summary). Visual language, sidebar and top bar are kept identical to
- * SarpanchDashboard, ProjectTrackerPage, SarpanchComplaintsPage and
- * CitizenServicesPage; navigation follows the same Runnable-based pattern
- * used across those pages, so this page can be opened from (and returned to)
- * every other page in the sidebar.
+ * Opened from the "Property Tax Payments" action card on CitizenServicesPage.
+ * Shows all property tax revenue collected from villagers, broken down
+ * individually per property owner, along with summary stats, a status
+ * filter and a search box. Visual language, sidebar and top bar match
+ * CitizenServicesPage exactly, and navigation follows the same
+ * Runnable-based pattern used across the app.
  */
-public class AnnouncementsPage {
+public class PropertyTaxPaymentsPage {
 
     /* ---------- Color palette (kept identical to the other pages) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -45,7 +53,7 @@ public class AnnouncementsPage {
     private static final String SAFFRON_MAIN  = "#E07A1F";
     private static final String CONTEXT_TEAL  = "#0E8C8C";
     private static final String AI_VIOLET     = "#7C5CFC";
-    //private static final String DELAYED_RED   = "#D94C38";
+    private static final String DELAYED_RED   = "#D94C38";
     private static final String SIDEBAR_TOP   = "#CDEBD8";
     private static final String SIDEBAR_MID   = "#Bce3cc";
     private static final String SIDEBAR_BOT   = "#A9D8BD";
@@ -55,15 +63,76 @@ public class AnnouncementsPage {
     private static final String BACKGROUND_IMAGE_PATH =
         "/assets/images/BackgroundImage.png";
 
-    /** The action to run to navigate back to the Dashboard (passed in from SarpanchDashboard). */
+    private Runnable backToCitizenServicesAction;
     private Runnable backToDashboardAction;
 
+    /* ============================================================
+     *  DATA MODEL
+     * ============================================================ */
+    public static class PropertyTaxRecord {
+        private final SimpleStringProperty ownerName;
+        private final SimpleStringProperty propertyId;
+        private final SimpleStringProperty ward;
+        private final SimpleStringProperty propertyType;
+        private final SimpleStringProperty assessedValue;
+        private final SimpleStringProperty taxAmount;
+        private final SimpleStringProperty status;
+        private final SimpleStringProperty paymentDate;
+
+        public PropertyTaxRecord(String ownerName, String propertyId, String ward, String propertyType,
+                                  String assessedValue, String taxAmount, String status, String paymentDate) {
+            this.ownerName = new SimpleStringProperty(ownerName);
+            this.propertyId = new SimpleStringProperty(propertyId);
+            this.ward = new SimpleStringProperty(ward);
+            this.propertyType = new SimpleStringProperty(propertyType);
+            this.assessedValue = new SimpleStringProperty(assessedValue);
+            this.taxAmount = new SimpleStringProperty(taxAmount);
+            this.status = new SimpleStringProperty(status);
+            this.paymentDate = new SimpleStringProperty(paymentDate);
+        }
+
+        public String getOwnerName() { return ownerName.get(); }
+        public String getPropertyId() { return propertyId.get(); }
+        public String getWard() { return ward.get(); }
+        public String getPropertyType() { return propertyType.get(); }
+        public String getAssessedValue() { return assessedValue.get(); }
+        public String getTaxAmount() { return taxAmount.get(); }
+        public String getStatus() { return status.get(); }
+        public String getPaymentDate() { return paymentDate.get(); }
+
+        /** Numeric tax amount, stripped of currency symbol/commas, used for summary totals. */
+        public double getTaxAmountValue() {
+            try {
+                return Double.parseDouble(taxAmount.get().replace("\u20B9", "").replace(",", "").trim());
+            } catch (NumberFormatException e) {
+                return 0.0;
+            }
+        }
+    }
+
+    /** Sample property tax revenue records, one row per villager/property owner. */
+    private List<PropertyTaxRecord> loadRecords() {
+        List<PropertyTaxRecord> records = new ArrayList<>();
+        records.add(new PropertyTaxRecord("Ramesh Kadam", "PR-2101", "Ward 1", "Residential", "\u20B98,50,000", "\u20B92,550", "Paid", "12 Jul 2026"));
+        records.add(new PropertyTaxRecord("Sunita Jadhav", "PR-2102", "Ward 1", "Residential", "\u20B96,20,000", "\u20B91,860", "Paid", "10 Jul 2026"));
+        records.add(new PropertyTaxRecord("Vitthal More", "PR-2103", "Ward 2", "Agricultural", "\u20B94,80,000", "\u20B91,200", "Pending", "\u2014"));
+        records.add(new PropertyTaxRecord("Anita Pawar", "PR-2104", "Ward 2", "Residential", "\u20B97,10,000", "\u20B92,130", "Paid", "15 Jul 2026"));
+        records.add(new PropertyTaxRecord("Ganesh Shinde", "PR-2105", "Ward 3", "Commercial", "\u20B912,40,000", "\u20B94,960", "Overdue", "\u2014"));
+        records.add(new PropertyTaxRecord("Kavita Deshmukh", "PR-2106", "Ward 3", "Residential", "\u20B95,90,000", "\u20B91,770", "Paid", "09 Jul 2026"));
+        records.add(new PropertyTaxRecord("Prakash Bhosale", "PR-2107", "Ward 1", "Residential", "\u20B99,30,000", "\u20B92,790", "Paid", "11 Jul 2026"));
+        records.add(new PropertyTaxRecord("Meera Kale", "PR-2108", "Ward 4", "Agricultural", "\u20B93,60,000", "\u20B9900", "Pending", "\u2014"));
+        records.add(new PropertyTaxRecord("Suresh Gaikwad", "PR-2109", "Ward 4", "Commercial", "\u20B914,80,000", "\u20B95,920", "Paid", "14 Jul 2026"));
+        records.add(new PropertyTaxRecord("Lata Patil", "PR-2110", "Ward 2", "Residential", "\u20B96,70,000", "\u20B92,010", "Paid", "08 Jul 2026"));
+        records.add(new PropertyTaxRecord("Dinesh Wagh", "PR-2111", "Ward 5", "Residential", "\u20B98,10,000", "\u20B92,430", "Overdue", "\u2014"));
+        records.add(new PropertyTaxRecord("Sarika Chavan", "PR-2112", "Ward 5", "Residential", "\u20B95,40,000", "\u20B91,620", "Paid", "13 Jul 2026"));
+        return records;
+    }
+
     /**
-     * Builds the Announcements scene and returns it.
-     * backToDashboardAction is stored and invoked when the user clicks "Dashboard"
-     * in the sidebar, matching the Runnable navigation pattern used by every other page.
+     * Builds the Property Tax Payments scene and returns it.
      */
-    public Scene getAnnouncementsScene(Runnable backToDashboardAction) {
+    public Scene getPropertyTaxPaymentsScene(Runnable backToCitizenServicesAction, Runnable backToDashboardAction) {
+        this.backToCitizenServicesAction = backToCitizenServicesAction;
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
@@ -96,7 +165,7 @@ public class AnnouncementsPage {
     }
 
     /* ============================================================
-     *  SIDEBAR  (identical to the other pages, "Announcements" active)
+     *  SIDEBAR  (identical to CitizenServicesPage, "Citizen Services" active)
      * ============================================================ */
     private VBox buildSidebar() {
         VBox sidebar = new VBox();
@@ -124,7 +193,7 @@ public class AnnouncementsPage {
         avatar.getChildren().addAll(avatarCircle, avatarInitials);
 
         VBox nameBox = new VBox(2);
-        Label name = new Label("Sarpanch");
+        Label name = new Label("Sarpanch Patil");
         name.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         Label role = new Label("Gram Panchayat");
         role.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65); -fx-letter-spacing: 0.05em;");
@@ -136,32 +205,29 @@ public class AnnouncementsPage {
         nav.setPadding(new Insets(16, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
-        dashboardNav.setOnMouseClicked(e -> {
-            System.out.println("Back to Dashboard clicked");
-            backToDashboardAction.run();
-        });
+        dashboardNav.setOnMouseClicked(e -> backToDashboardAction.run());
 
         HBox projectTrackerNav = navItem("\uD83D\uDDC2", "Project Tracker", false);
         projectTrackerNav.setOnMouseClicked(e -> {
-            System.out.println("Project Tracker clicked");
             ProjectTrackerPage projectTrackerPage = new ProjectTrackerPage();
             SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
         });
 
         HBox complaintsNav = navItem("\u26A0", "Complaints", false);
         complaintsNav.setOnMouseClicked(e -> {
-            System.out.println("Complaints clicked");
             SarpanchComplaintsPage complaintsPage = new SarpanchComplaintsPage();
             SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
-        citizenServicesNav.setOnMouseClicked(e -> {
-            System.out.println("Citizen Services clicked");
-            CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
-            SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", true);
+        citizenServicesNav.setOnMouseClicked(e -> backToCitizenServicesAction.run());
+
+        HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
+        announcementsNav.setOnMouseClicked(e -> {
+            AnnouncementsPage announcementsPage = new AnnouncementsPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
+            SarpanchDashboard.myStage.setScene(announcementsPage.getAnnouncementsScene(backToDashboardAction));
         });
 
         nav.getChildren().addAll(
@@ -169,7 +235,7 @@ public class AnnouncementsPage {
             projectTrackerNav,
             complaintsNav,
             citizenServicesNav,
-            navItem("\uD83D\uDCE2", "Announcements", true)
+            announcementsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -247,6 +313,7 @@ createBtn.setOnMouseClicked(e -> {
             wrap.setStyle("-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
                 "-fx-effect: innershadow(gaussian, rgba(11,61,46,0.10), 6, 0.2, 0, 1);");
             wrap.setMaxWidth(Double.MAX_VALUE);
+            wrap.setCursor(javafx.scene.Cursor.HAND);
             return wrap;
         } else {
             String base = "-fx-background-radius: 10; -fx-background-color: transparent; -fx-cursor: hand;";
@@ -287,7 +354,7 @@ createBtn.setOnMouseClicked(e -> {
             "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);"
         );
 
-        Image projectLogo = new Image("assets/images/ProjectLogo.png");
+        Image projectLogo = new Image("/assets/images/ProjectLogo.png");
         ImageView imgView = new ImageView(projectLogo);
         imgView.setFitHeight(50);
         imgView.setFitWidth(60);
@@ -302,7 +369,7 @@ createBtn.setOnMouseClicked(e -> {
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
         TextField searchField = new TextField();
-        searchField.setPromptText("Search announcements...");
+        searchField.setPromptText("Search citizen requests...");
         searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
             "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
         HBox.setHgrow(searchField, Priority.ALWAYS);
@@ -350,50 +417,179 @@ createBtn.setOnMouseClicked(e -> {
     /* ============================================================
      *  MAIN CONTENT
      * ============================================================ */
+    private ObservableList<PropertyTaxRecord> allRecords;
+    private FilteredList<PropertyTaxRecord> filteredRecords;
+
     private VBox buildMainContent() {
-        VBox main = new VBox(32);
+        VBox main = new VBox(28);
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
+        HBox breadcrumb = new HBox(8);
+        breadcrumb.setAlignment(Pos.CENTER_LEFT);
+        Label backArrow = new Label("\u2190 Citizen Services");
+        backArrow.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700;" +
+            "-fx-text-fill: " + AI_VIOLET + "; -fx-cursor: hand;");
+        backArrow.setOnMouseClicked(e -> backToCitizenServicesAction.run());
+        breadcrumb.getChildren().add(backArrow);
+
         VBox welcome = new VBox(6);
-        Label welcomeTitle = new Label("Announcements");
+        Label welcomeTitle = new Label("Property Tax Payments");
         welcomeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label welcomeSub = new Label("Create, edit and publish notices for the village, including Gram Sabha meeting announcements and summaries.");
+        Label welcomeSub = new Label("All property tax revenue collected from villagers, broken down by owner and property.");
         welcomeSub.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.70);");
         welcomeSub.setWrapText(true);
         welcome.getChildren().addAll(welcomeTitle, welcomeSub);
 
-        main.getChildren().addAll(
-            welcome,
-            buildQuickStatsRow(),
-            buildFeatureGrid()
-        );
+        List<PropertyTaxRecord> records = loadRecords();
+        allRecords = FXCollections.observableArrayList(records);
+        filteredRecords = new FilteredList<>(allRecords, r -> true);
+
+        double totalCollected = 0;
+        int paidCount = 0, pendingCount = 0, overdueCount = 0;
+        for (PropertyTaxRecord r : records) {
+            if (null != r.getStatus()) switch (r.getStatus()) {
+                case "Paid" -> {
+                    totalCollected += r.getTaxAmountValue();
+                    paidCount++;
+                }
+                case "Pending" -> pendingCount++;
+                case "Overdue" -> overdueCount++;
+                default -> {
+                }
+            }
+        }
+
+        HBox statsRow = new HBox(24);
+        statsRow.setAlignment(Pos.TOP_LEFT);
+        VBox s1 = kpiCard(AI_VIOLET, "\u20B9", "TOTAL REVENUE COLLECTED", "\u20B9" + String.format("%,.0f", totalCollected));
+        VBox s2 = kpiCard(FOREST_DEEP, "\uD83D\uDCC4", "TOTAL RECORDS", String.valueOf(records.size()));
+        VBox s3 = kpiCard(SAFFRON_MAIN, "\u2713", "PAID", String.valueOf(paidCount));
+        VBox s4 = kpiCard(DELAYED_RED, "!", "PENDING / OVERDUE", String.valueOf(pendingCount + overdueCount));
+        HBox.setHgrow(s1, Priority.ALWAYS);
+        HBox.setHgrow(s2, Priority.ALWAYS);
+        HBox.setHgrow(s3, Priority.ALWAYS);
+        HBox.setHgrow(s4, Priority.ALWAYS);
+        statsRow.getChildren().addAll(s1, s2, s3, s4);
+
+        HBox toolsRow = buildToolsRow();
+        TableView<PropertyTaxRecord> table = buildTable();
+
+        main.getChildren().addAll(breadcrumb, welcome, statsRow, toolsRow, table);
         return main;
     }
 
-    /* ============================================================
-     *  QUICK STATS ROW (same KPI-card visual language as the other pages)
-     * ============================================================ */
-    private HBox buildQuickStatsRow() {
-        HBox row = new HBox(24);
-        row.setAlignment(Pos.TOP_LEFT);
+    private HBox buildToolsRow() {
+        HBox row = new HBox(16);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(4, 0, 4, 0));
 
-        VBox kpi1 = kpiCard(FOREST_DEEP, "\uD83D\uDCE2", "TOTAL ANNOUNCEMENTS", "18");
-        VBox kpi2 = kpiCard(SAFFRON_MAIN, "\uD83D\uDCC5", "UPCOMING GRAM SABHA", "1");
-        VBox kpi3 = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCC", "PUBLISHED THIS MONTH", "6");
-        VBox kpi4 = kpiCard(AI_VIOLET, "\uD83D\uDCDD", "DRAFT NOTICES", "3");
+        HBox searchBox = new HBox(8);
+        searchBox.setAlignment(Pos.CENTER_LEFT);
+        searchBox.setPadding(new Insets(0, 16, 0, 16));
+        searchBox.setPrefWidth(340);
+        searchBox.setPrefHeight(42);
+        searchBox.setStyle(cardStyle(12));
+        Label searchIcon = new Label("\uD83D\uDD0D");
+        searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search by owner or property ID...");
+        searchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
+            "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+        searchBox.getChildren().addAll(searchIcon, searchField);
 
-        HBox.setHgrow(kpi1, Priority.ALWAYS);
-        HBox.setHgrow(kpi2, Priority.ALWAYS);
-        HBox.setHgrow(kpi3, Priority.ALWAYS);
-        HBox.setHgrow(kpi4, Priority.ALWAYS);
-        row.getChildren().addAll(kpi1, kpi2, kpi3, kpi4);
+        Label filterLbl = new Label("Status:");
+        filterLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        ComboBox<String> statusFilter = new ComboBox<>(FXCollections.observableArrayList("All", "Paid", "Pending", "Overdue"));
+        statusFilter.setValue("All");
+        statusFilter.setPrefHeight(42);
+        statusFilter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-background-radius: 10;");
+
+        Label typeFilterLbl = new Label("Type:");
+        typeFilterLbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        ComboBox<String> typeFilter = new ComboBox<>(FXCollections.observableArrayList("All", "Residential", "Commercial", "Agricultural"));
+        typeFilter.setValue("All");
+        typeFilter.setPrefHeight(42);
+        typeFilter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-background-radius: 10;");
+
+        Runnable[] refresh = new Runnable[1];
+        refresh[0] = () -> applyFilter(searchField.getText(), statusFilter.getValue(), typeFilter.getValue());
+        searchField.textProperty().addListener((obs, oldV, newV) -> refresh[0].run());
+        statusFilter.valueProperty().addListener((obs, oldV, newV) -> refresh[0].run());
+        typeFilter.valueProperty().addListener((obs, oldV, newV) -> refresh[0].run());
+
+        row.getChildren().addAll(searchBox, filterLbl, statusFilter, typeFilterLbl, typeFilter);
         return row;
     }
 
+    private void applyFilter(String query, String status, String type) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        filteredRecords.setPredicate(r -> {
+            boolean matchesQuery = q.isEmpty()
+                || r.getOwnerName().toLowerCase().contains(q)
+                || r.getPropertyId().toLowerCase().contains(q)
+                || r.getWard().toLowerCase().contains(q);
+            boolean matchesStatus = "All".equals(status) || r.getStatus().equals(status);
+            boolean matchesType = "All".equals(type) || r.getPropertyType().equals(type);
+            return matchesQuery && matchesStatus && matchesType;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private TableView<PropertyTaxRecord> buildTable() {
+        TableView<PropertyTaxRecord> table = new TableView<>();
+        table.setItems(filteredRecords);
+        table.setStyle(cardStyle(16) + " -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px;");
+        table.setPrefHeight(480);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        TableColumn<PropertyTaxRecord, String> ownerCol = new TableColumn<>("Owner");
+        ownerCol.setCellValueFactory(new PropertyValueFactory<>("ownerName"));
+
+        TableColumn<PropertyTaxRecord, String> idCol = new TableColumn<>("Property ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("propertyId"));
+
+        TableColumn<PropertyTaxRecord, String> wardCol = new TableColumn<>("Ward");
+        wardCol.setCellValueFactory(new PropertyValueFactory<>("ward"));
+
+        TableColumn<PropertyTaxRecord, String> typeCol = new TableColumn<>("Property Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("propertyType"));
+
+        TableColumn<PropertyTaxRecord, String> valueCol = new TableColumn<>("Assessed Value");
+        valueCol.setCellValueFactory(new PropertyValueFactory<>("assessedValue"));
+
+        TableColumn<PropertyTaxRecord, String> taxCol = new TableColumn<>("Tax Amount");
+        taxCol.setCellValueFactory(new PropertyValueFactory<>("taxAmount"));
+
+        TableColumn<PropertyTaxRecord, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusCol.setCellFactory(col -> new javafx.scene.control.TableCell<PropertyTaxRecord, String>() {
+            @Override
+            protected void updateItem(String value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) { setText(null); setStyle(""); return; }
+                setText(value);
+                String color = "Paid".equals(value) ? CONTEXT_TEAL : "Pending".equals(value) ? SAFFRON_MAIN : DELAYED_RED;
+                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: 800;");
+            }
+        });
+
+        TableColumn<PropertyTaxRecord, String> dateCol = new TableColumn<>("Payment Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("paymentDate"));
+
+        table.getColumns().addAll(ownerCol, idCol, wardCol, typeCol, valueCol, taxCol, statusCol, dateCol);
+        return table;
+    }
+
+    /* ============================================================
+     *  KPI CARD (same visual language as CitizenServicesPage)
+     * ============================================================ */
     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
         VBox card = new VBox();
-        card.setPrefWidth(320);
+        card.setPrefWidth(300);
         card.setMinHeight(140);
         card.setStyle(cardStyle(16));
 
@@ -420,144 +616,15 @@ createBtn.setOnMouseClicked(e -> {
         head.getChildren().addAll(iconChip, lbl);
 
         Label stat = new Label(statText);
-        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 28px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
 
         inner.getChildren().addAll(head, stat);
         card.getChildren().addAll(strip, inner);
-        addHoverLift(card, 16);
         return card;
     }
 
     /* ============================================================
-     *  FEATURE GRID
-     * ============================================================ */
-    private VBox buildFeatureGrid() {
-        VBox wrap = new VBox(20);
-
-        HBox head = new HBox(12);
-        head.setAlignment(Pos.CENTER_LEFT);
-        StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(40, 40);
-        iconChip.setMinSize(40, 40);
-        iconChip.setStyle("-fx-background-color: rgba(11,61,46,0.10); -fx-background-radius: 999;");
-        Label hIcon = new Label("\uD83D\uDCE2");
-        hIcon.setStyle("-fx-font-size: 16px; -fx-text-fill: " + FOREST_DEEP + ";");
-        iconChip.getChildren().add(hIcon);
-        Label title = new Label("Announcements Actions");
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        head.getChildren().addAll(iconChip, title);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(24);
-        grid.setVgap(24);
-        for (int i = 0; i < 4; i++) {
-            ColumnConstraints cc = new ColumnConstraints();
-            cc.setPercentWidth(25);
-            grid.getColumnConstraints().add(cc);
-        }
-
-        String[][] features = {
-            {"\u270D", "Create Announcements", "Draft a new announcement for the village with a title, message and category.", CONTEXT_TEAL},
-            {"\uD83D\uDD8A", "Edit Announcements", "Update the text, date or attachments of an announcement that's already posted.", SAFFRON_MAIN},
-            {"\uD83D\uDCE3", "Publish Gram Sabha Notices", "Publish Gram Sabha Meeting Announcements and Gram Sabha Meeting Summaries.", AI_VIOLET}
-        };
-
-        Runnable[] openActions = {
-            () -> openCreateAnnouncementsPage(),
-            () -> openEditAnnouncementsPage(),
-            () -> openPublishGramSabhaNoticesPage()
-        };
-
-        for (int i = 0; i < features.length; i++) {
-            VBox card = featureCard(features[i][0], features[i][1], features[i][2], features[i][3], openActions[i]);
-            grid.add(card, i % 4, i / 4);
-        }
-
-        wrap.getChildren().addAll(head, grid);
-        return wrap;
-    }
-
-    /** A single clickable action tile for one Announcements feature. */
-    private VBox featureCard(String icon, String titleText, String description, String accent,
-                             Runnable openAction) {
-        VBox card = new VBox(16);
-        card.setPadding(new Insets(24));
-        card.setPrefHeight(190);
-        card.setStyle(cardStyle(20));
-        card.setCursor(javafx.scene.Cursor.HAND);
-
-        StackPane iconChip = new StackPane();
-        iconChip.setPrefSize(48, 48);
-        iconChip.setMinSize(48, 48);
-        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 14;");
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 20px; -fx-text-fill: " + accent + ";");
-        iconChip.getChildren().add(ic);
-
-        Label title = new Label(titleText);
-        title.setWrapText(true);
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-
-        Label desc = new Label(description);
-        desc.setWrapText(true);
-        desc.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.65);");
-
-        Region grow = new Region();
-        VBox.setVgrow(grow, Priority.ALWAYS);
-
-        Label openPill = new Label("Open \u2192");
-        openPill.setPadding(new Insets(6, 14, 6, 14));
-        openPill.setMaxWidth(Region.USE_PREF_SIZE);
-        openPill.setStyle("-fx-background-color: " + rgba(accent, 0.10) + "; -fx-background-radius: 999;" +
-            "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + accent + ";");
-
-        card.getChildren().addAll(iconChip, title, desc, grow, openPill);
-        addHoverLift(card, 20);
-
-        // Placeholder handler — wire this up to the actual feature screen when it's built.
-        card.setOnMouseClicked(e -> openAction.run());
-
-        return card;
-    }
-
-    /** Runnable to hand to a sub-screen so it can return to this Announcements page. */
-    private Runnable createBackToAnnouncementsAction() {
-        return () -> {
-            System.out.println("Back to Announcements clicked");
-            SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
-            SarpanchDashboard.myStage.setScene(getAnnouncementsScene(backToDashboardAction));
-        };
-    }
-
-    private void openCreateAnnouncementsPage() {
-        System.out.println("[Announcements] Opened: Create Announcements");
-        CreateAnnouncementsPage createAnnouncementsPage = new CreateAnnouncementsPage();
-        SarpanchDashboard.myStage.setTitle("GramConnect - Create Announcement");
-        SarpanchDashboard.myStage.setScene(
-            createAnnouncementsPage.getCreateAnnouncementsScene(createBackToAnnouncementsAction(), backToDashboardAction)
-        );
-    }
-
-    private void openEditAnnouncementsPage() {
-        System.out.println("[Announcements] Opened: Edit Announcements");
-        EditAnnouncementsPage editAnnouncementsPage = new EditAnnouncementsPage();
-        SarpanchDashboard.myStage.setTitle("GramConnect - Edit Announcements");
-        SarpanchDashboard.myStage.setScene(
-            editAnnouncementsPage.getEditAnnouncementsScene(createBackToAnnouncementsAction(), backToDashboardAction)
-        );
-    }
-
-    private void openPublishGramSabhaNoticesPage() {
-        System.out.println("[Announcements] Opened: Publish Gram Sabha Notices");
-        PublishGramSabhaNoticesPage publishGramSabhaNoticesPage = new PublishGramSabhaNoticesPage();
-        SarpanchDashboard.myStage.setTitle("GramConnect - Publish Gram Sabha Notices");
-        SarpanchDashboard.myStage.setScene(
-            publishGramSabhaNoticesPage.getPublishGramSabhaNoticesScene(createBackToAnnouncementsAction(),backToDashboardAction)
-        );
-    }
-
-    /* ============================================================
-     *  HELPERS (kept identical to the other pages)
+     *  HELPERS
      * ============================================================ */
     private String cardStyle(int radius) {
         return "-fx-background-color: rgba(255,255,255,0.88);" +
@@ -566,19 +633,6 @@ createBtn.setOnMouseClicked(e -> {
                "-fx-border-radius: " + radius + ";" +
                "-fx-border-width: 1;" +
                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
-    }
-
-    private void addHoverLift(Region card, int radius) {
-        String base = cardStyle(radius);
-        String hover = "-fx-background-color: rgba(255,255,255,0.92);" +
-               "-fx-background-radius: " + radius + ";" +
-               "-fx-border-color: rgba(255,255,255,0.6);" +
-               "-fx-border-radius: " + radius + ";" +
-               "-fx-border-width: 1;" +
-               "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.12), 24, 0.15, 0, 8);" +
-               "-fx-translate-y: -2;";
-        card.setOnMouseEntered(e -> card.setStyle(hover));
-        card.setOnMouseExited(e -> card.setStyle(base));
     }
 
     private String rgba(String hex, double alpha) {

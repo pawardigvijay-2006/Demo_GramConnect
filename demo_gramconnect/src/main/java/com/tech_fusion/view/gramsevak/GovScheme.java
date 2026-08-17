@@ -2,11 +2,16 @@ package com.tech_fusion.view.gramsevak;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -14,49 +19,438 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Screen;
 
-/**
- * GramConnect - Government Schemes page.
- * Redesigned to visually match the Sarpanch Dashboard (SarpanchDashboard.java):
- * same color palette, card style, typography and spacing.
- *
- * The old Scheme Directory TableView has been replaced with a scrollable
- * list of HBox/VBox scheme cards, as requested.
- */
-public class GovSchemes {
+public class GovScheme {
 
-        // ============================================================
-        // Sarpanch Dashboard color palette (copied so this page matches it)
-        // ============================================================
-        private static final String FOREST_DEEP = "#0B3D2E";
-        private static final String FOREST_LIGHT = "#0F4736";
-        private static final String SAFFRON_MAIN = "#E07A1F";
-        private static final String CONTEXT_TEAL = "#0E8C8C";
-        private static final String AI_VIOLET = "#7C5CFC";
-        private static final String DELAYED_RED = "#D94C38";
+        // ================= COLORS =================
+
+        private static final String PRIMARY = "#005B1B";
+        private static final String PRIMARY_DARK = "#004D16";
+
+        private static final String ACCENT_GREEN = "#68D66F";
+        private static final String LIGHT_GREEN = "#E8F7EA";
+
+        private static final String BLUE = "#2196F3";
+        private static final String LIGHT_BLUE = "#EAF5FC";
+
+        private static final String WARNING = "#F4A62A";
+        private static final String LIGHT_YELLOW = "#FFF7E5";
+
+        private static final String ERROR = "#D93025";
+        private static final String LIGHT_RED = "#FDECEC";
+
+        private static final String BACKGROUND = "#F4F8FB";
+
+        private static final String TEXT_PRIMARY = "#10251A";
+        private static final String TEXT_SECONDARY = "#66756C";
+
+        private static final String BORDER = "#D8E2DC";
 
         private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
+        private static final String SAFFRON_MAIN = "#E07A1F";
+        private static final String FOREST_DEEP = "#0B3D2E";
+        private static final String FOREST_LIGHT = "#0F4736";
+
+        private static final String SIDEBAR_TOP = "#CDEBD8";
+        private static final String SIDEBAR_MID = "#BCE3CC";
+        private static final String SIDEBAR_BOT = "#A9D8BD";
+
+        private static final String DELAYED_RED = "#D94C38";
+        private static final String CONTEXT_TEAL = "#2E8B57";
+        private static final String AI_VIOLET = "#7E57C2";
+
+        private Runnable backAction;
+        Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
         // ============================================================
-        // MAIN ENTRY POINT
+        // MAIN PAGE
         // ============================================================
-        public static VBox getSchemeContent(Runnable newSchemeAction) {
 
-                VBox content = new VBox(24);
-                content.setPadding(new Insets(32, 40, 48, 40));
+        public Scene getSchemeScene(Runnable backAction) {
 
-                content.getChildren().addAll(
-                                buildTitleRow(),
-                                buildSummaryCards(),
-                                buildMainArea());
+                this.backAction = backAction;
 
-                return content;
+                BorderPane root = new BorderPane();
+
+                root.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";");
+
+                root.setLeft(buildSidebar(backAction));
+                root.setCenter(buildMainArea());
+
+                return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
         }
 
         // ============================================================
+        // SIDEBAR
+        // ============================================================
+
+        public VBox buildSidebar(Runnable backAction) {
+
+                VBox sidebar = new VBox();
+
+                sidebar.setPrefWidth(288);
+                sidebar.setMinWidth(288);
+                sidebar.setMaxWidth(288);
+
+                sidebar.setStyle(
+                                "-fx-background-color: linear-gradient(to bottom, "
+                                                + SIDEBAR_TOP + ", "
+                                                + SIDEBAR_MID + ", "
+                                                + SIDEBAR_BOT + ");"
+                                                + "-fx-border-color: transparent "
+                                                + "rgba(11,61,46,0.10) "
+                                                + "transparent transparent;"
+                                                + "-fx-border-width: 0 1 0 0;"
+                                                + "-fx-effect: dropshadow(gaussian, "
+                                                + "rgba(11,61,46,0.20), 24, 0.2, 4, 0);");
+
+                // ========================================================
+                // LOGO
+                // ========================================================
+
+                Image logoImage = new Image("assets\\images\\gc logo.jpeg");
+
+                ImageView logoIcon = new ImageView(logoImage);
+
+                logoIcon.setFitWidth(60);
+                logoIcon.setFitHeight(60);
+                logoIcon.setPreserveRatio(true);
+                logoIcon.setSmooth(true);
+
+                Label logoText = new Label("GramConnect");
+
+                logoText.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-font-size: 18px;"
+                                                + "-fx-font-weight: 900;");
+
+                Label subtitle = new Label("Village Governance");
+
+                subtitle.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-text-fill: rgba(11,61,46,0.65);"
+                                                + "-fx-font-size: 9px;"
+                                                + "-fx-font-weight: 700;");
+
+                VBox logoTextBox = new VBox(0, logoText, subtitle);
+
+                HBox logo = new HBox(8, logoIcon, logoTextBox);
+
+                logo.setAlignment(Pos.CENTER_LEFT);
+
+                VBox logoBox = new VBox(logo);
+
+                logoBox.setPadding(
+                                new Insets(24));
+
+                // ========================================================
+                // NAVIGATION
+                // ========================================================
+
+                Label dashboardNav = navItem("🏠  Dashboard", false);
+
+                dashboardNav.setOnMouseClicked(
+                                e -> backAction.run());
+
+                Label billNav = navItem("🏗  Bill Management", false);
+
+                billNav.setOnMouseClicked(
+                                e -> Dashboard.homeStage.setScene(
+                                                new BillManagement()
+                                                                .getBillManagementPage(backAction)));
+
+                Label documentNav = navItem("💬  Documents Management", false);
+
+                documentNav.setOnMouseClicked(
+                                e -> Dashboard.homeStage.setScene(
+                                                new DocumentsManage()
+                                                                .getDocumentPage(backAction)));
+
+                Label complaintNav = navItem("⚠  Complaints", false);
+
+                complaintNav.setOnMouseClicked(
+                                e -> Dashboard.homeStage.setScene(
+                                                new Complaints()
+                                                                .getComplaintScene(backAction)));
+
+                // CURRENT PAGE = ACTIVE
+                Label schemesNav = navItem("📄  Government Schemes", true);
+
+                VBox navItems = new VBox(
+                                6,
+                                dashboardNav,
+                                billNav,
+                                documentNav,
+                                complaintNav,
+                                schemesNav);
+
+                navItems.setPadding(
+                                new Insets(16, 12, 16, 12));
+
+                VBox.setVgrow(
+                                navItems,
+                                Priority.ALWAYS);
+                /* ----- CTA + footer links ----- */
+                VBox footer = new VBox(10);
+                footer.setPadding(new Insets(20, 24, 24, 24));
+
+                Region divider = new Region();
+                divider.setPrefHeight(1);
+                divider.setStyle(
+                                "-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
+
+                VBox smallLinks = new VBox(4);
+                smallLinks.setPadding(new Insets(8, 0, 0, 0));
+                smallLinks.getChildren().addAll(
+                                footerLink("\u2699", "Settings"),
+                                footerLink("\u2753", "Support"));
+
+                footer.getChildren().addAll(divider, smallLinks);
+                sidebar.getChildren().addAll(logoBox, navItems, footer);
+                return sidebar;
+
+        }
+
+        private HBox footerLink(String icon, String text) {
+                HBox link = new HBox(10);
+                link.setAlignment(Pos.CENTER_LEFT);
+                link.setPadding(new Insets(8, 16, 8, 16));
+                Label ic = new Label(icon);
+                ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
+                Label lbl = new Label(text);
+                lbl.setStyle("-fx-font-family: " + FONT_FAMILY
+                                + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
+                link.getChildren().addAll(ic, lbl);
+                String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
+                link.setStyle(base);
+                link.setOnMouseEntered(e -> link.setStyle(
+                                "-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
+                link.setOnMouseExited(e -> link.setStyle(base));
+                return link;
+        }
+        // ============================================================
+        // NAV ITEM
+        // ============================================================
+
+        private Label navItem(
+                        String text,
+                        boolean active) {
+
+                Label item = new Label(text);
+
+                item.setMaxWidth(Double.MAX_VALUE);
+
+                item.setPadding(
+                                new Insets(14, 16, 14, 16));
+
+                if (active) {
+
+                        item.setStyle(
+                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                        + "-fx-background-color: rgba(255,255,255,0.65);"
+                                                        + "-fx-text-fill: " + SAFFRON_MAIN + ";"
+                                                        + "-fx-font-weight: 800;"
+                                                        + "-fx-font-size: 13px;"
+                                                        + "-fx-background-radius: 8;"
+                                                        + "-fx-border-color: " + SAFFRON_MAIN
+                                                        + " transparent transparent transparent;"
+                                                        + "-fx-border-width: 0 0 0 4;"
+                                                        + "-fx-border-radius: 8;"
+                                                        + "-fx-cursor: hand;");
+
+                } else {
+
+                        String baseStyle = "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-text-fill: rgba(11,61,46,0.80);"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-cursor: hand;";
+
+                        item.setStyle(baseStyle);
+
+                        item.setOnMouseEntered(
+                                        e -> item.setStyle(
+                                                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                                                        + "-fx-background-color: rgba(255,255,255,0.45);"
+                                                                        + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                                        + "-fx-font-weight: 700;"
+                                                                        + "-fx-font-size: 13px;"
+                                                                        + "-fx-background-radius: 8;"
+                                                                        + "-fx-cursor: hand;"));
+
+                        item.setOnMouseExited(
+                                        e -> item.setStyle(baseStyle));
+                }
+
+                return item;
+        }
+
+        // ============================================================
+        // MAIN AREA
+        // ============================================================
+
+        private BorderPane buildMainArea() {
+
+                BorderPane main = new BorderPane();
+
+                main.setTop(buildHeader());
+
+                main.setCenter(
+                                buildScrollableContent());
+
+                return main;
+        }
+
+        // ============================================================
+        // HEADER
+        // ============================================================
+
+        public HBox buildHeader() {
+                HBox header = new HBox(16);
+                header.setAlignment(Pos.CENTER_LEFT);
+                header.setPadding(new Insets(14, 28, 14, 28));
+                header.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.92);"
+                                                + "-fx-border-color: transparent transparent rgba(255,255,255,0.6) transparent;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);");
+
+                HBox searchBox = new HBox(8);
+                searchBox.setAlignment(Pos.CENTER_LEFT);
+                searchBox.setPadding(new Insets(0, 16, 0, 16));
+                searchBox.setPrefHeight(38);
+                searchBox.setPrefWidth(320);
+                searchBox.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 20;"
+                                                + "-fx-border-color: rgba(11,61,46,0.10);"
+                                                + "-fx-border-radius: 20;"
+                                                + "-fx-border-width: 1;");
+                Label searchIcon = new Label("\uD83D\uDD0D");
+                searchIcon.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.5);");
+                TextField search = new TextField();
+                search.setPromptText("Search certificates...");
+                search.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-font-size: 12px;"
+                                                + "-fx-text-fill: " + FOREST_DEEP + ";"
+                                                + "-fx-prompt-text-fill: rgba(11,61,46,0.40);");
+                HBox.setHgrow(search, Priority.ALWAYS);
+                searchBox.getChildren().addAll(searchIcon, search);
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                Label bellIcon = new Label("\uD83D\uDD14");
+                bellIcon.setStyle("-fx-font-size: 15px;");
+                StackPane bell = new StackPane(bellIcon);
+                bell.setPrefSize(38, 38);
+                bell.setMaxSize(38, 38);
+                bell.setStyle(
+                                "-fx-background-color: " + BACKGROUND + ";"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 4, 0.1, 0, 1);");
+                Label badge = new Label("3");
+                badge.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";"
+                                                + "-fx-background-color: #D94C38;"
+                                                + "-fx-text-fill: white;"
+                                                + "-fx-font-size: 9px; -fx-font-weight: 800;"
+                                                + "-fx-background-radius: 999;"
+                                                + "-fx-padding: 1 5 1 5;");
+                StackPane bellWithBadge = new StackPane(bell, badge);
+                StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+
+                StackPane avatar = new StackPane(new Label("AJ"));
+                avatar.setPrefSize(34, 34);
+                avatar.setMaxSize(34, 34);
+                avatar.setStyle(
+                                "-fx-background-color: " + FOREST_DEEP + ";"
+                                                + "-fx-background-radius: 18;"
+                                                + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                                + "-fx-border-width: 2;"
+                                                + "-fx-border-radius: 18;");
+                ((Label) avatar.getChildren().get(0))
+                                .setStyle("-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;");
+
+                Label name = new Label("Amit Jadhav");
+                name.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY
+                                                + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: "
+                                                + TEXT_PRIMARY + ";");
+                Label role = new Label("Gram Sevak");
+                role.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-text-fill: "
+                                                + TEXT_SECONDARY + ";");
+                VBox nameBox = new VBox(name, role);
+
+                Label chevron = new Label("\u25BE");
+                chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
+                profile.setAlignment(Pos.CENTER_LEFT);
+
+                header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
+                return header;
+
+        }
+
+        // ============================================================
+        // CONTENT
+        // ============================================================
+
+        private ScrollPane buildScrollableContent() {
+
+                VBox content = new VBox(24);
+
+                content.setPadding(
+                                new Insets(32, 40, 48, 40));
+
+                content.getChildren().addAll(
+                                buildTitleRow(() -> {
+
+                                        Dashboard.homeStage.setScene(
+                                                        new NewScheme().getNewSchemeScene(() -> {
+
+                                                                Dashboard.homeStage.setScene(
+                                                                                new GovScheme().getSchemeScene(
+                                                                                                backAction));
+
+                                                        }));
+
+                                }),
+
+                                buildSummaryCards(),
+                                buildMainContentArea());
+
+                ScrollPane scrollPane = new ScrollPane(content);
+
+                scrollPane.setFitToWidth(true);
+
+                scrollPane.setStyle(
+                                "-fx-background-color: transparent;");
+
+                return scrollPane;
+        }
+
+        // Here we put the GovSchemes UI that you already gave me:
+        //
+        // 1. Scheme Management title
+        // 2. New Scheme button
+        // 3. Summary cards
+        // 4. Scheme Directory
+        // 5. Check Eligibility
+        // 6. Recent Approvals
+
+        // ...
+        // ============================================================
         // TITLE ROW — "Scheme Management" + New Scheme button
         // ============================================================
-        private static HBox buildTitleRow() {
+        private static HBox buildTitleRow(Runnable newSchemeAction) {
 
                 HBox titleRow = new HBox();
                 titleRow.setAlignment(Pos.CENTER_LEFT);
@@ -99,7 +493,7 @@ public class GovSchemes {
                 newSchemeBtn.setOnMouseExited(e -> newSchemeBtn.setStyle(base));
 
                 newSchemeBtn.setOnAction(e -> {
-                               // newSchemeAction.run();
+                        newSchemeAction.run();
                 });
 
                 // Future purpose: open a form to add a new scheme (name, category,
@@ -182,7 +576,7 @@ public class GovSchemes {
         // MAIN AREA — Scheme Directory (left, wide) + Check Eligibility /
         // Recent Approvals (right, narrower)
         // ============================================================
-        private static HBox buildMainArea() {
+        private static HBox buildMainContentArea() {
 
                 HBox mainArea = new HBox(24);
 

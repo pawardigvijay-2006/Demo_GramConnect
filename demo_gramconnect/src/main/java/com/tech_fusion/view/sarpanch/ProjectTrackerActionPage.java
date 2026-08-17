@@ -1,7 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -47,8 +45,7 @@ public abstract class ProjectTrackerActionPage {
     private static final String SIDEBAR_MID = "#BCE3CC";
     private static final String SIDEBAR_BOT = "#A9D8BD";
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     private Runnable backToProjectTrackerAction;
     private Runnable backToDashboardAction;
 
@@ -59,7 +56,7 @@ public abstract class ProjectTrackerActionPage {
 
         BorderPane root = new BorderPane();
         root.setBackground(new Background(new BackgroundImage(
-            new javafx.scene.image.Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString()),
+            new javafx.scene.image.Image(BACKGROUND_IMAGE_PATH),
             BackgroundRepeat.NO_REPEAT,
             BackgroundRepeat.NO_REPEAT,
             BackgroundPosition.CENTER,
@@ -122,12 +119,26 @@ public abstract class ProjectTrackerActionPage {
             SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        citizenServicesNav.setOnMouseClicked(e -> {
+            System.out.println("Citizen Services clicked");
+            CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
+        });
+        HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
+        announcementsNav.setOnMouseClicked(e -> {
+            System.out.println("Announcements clicked");
+            AnnouncementsPage announcementsPage = new AnnouncementsPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Announcements");
+            SarpanchDashboard.myStage.setScene(announcementsPage.getAnnouncementsScene(backToDashboardAction));
+        });
         nav.getChildren().addAll(
             dashboardNav,
             projectTrackerNav,
             complaintsNav,
-            navItem("\uD83D\uDCC4", "Citizen Services", false),
-            navItem("\uD83D\uDCE2", "Announcements", false)
+            citizenServicesNav,
+            announcementsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
 
@@ -146,6 +157,11 @@ public abstract class ProjectTrackerActionPage {
         createBtn.setStyle(createBase);
         createBtn.setOnMouseEntered(e -> createBtn.setStyle(createBase + "-fx-translate-y: -1;"));
         createBtn.setOnMouseExited(e -> createBtn.setStyle(createBase));
+        createBtn.setOnMouseClicked(e -> {
+            CreateProjectPage createProjectPage = new CreateProjectPage();
+            SarpanchDashboard.myStage.setTitle("GramConnect - Create Project");
+            SarpanchDashboard.myStage.setScene(createProjectPage.getCreateProjectScene(backToProjectTrackerAction, backToDashboardAction));
+        });
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
         smallLinks.getChildren().addAll(footerLink("\u2699", "Settings"), footerLink("\u2753", "Support"));
