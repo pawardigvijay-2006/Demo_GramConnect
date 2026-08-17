@@ -706,28 +706,27 @@ public class ComplaintManagement extends Application {
         long highPriority = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.HIGH).count();
         long critical = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.CRITICAL).count();
 
-        double avgResolutionDays = complaints.stream()
-                .filter(c -> c.getStatus() == Complaint.Status.RESOLVED && c.getResolutionDays() != null)
-                .mapToDouble(Complaint::getResolutionDays)
-                .average()
-                .orElse(-1);
+        // double avgResolutionDays = complaints.stream()
+                // .filter(c -> c.getStatus() == Complaint.Status.RESOLVED && c.getResolutionDays() != null)
+                // .mapToDouble(Complaint::getResolutionDays)
+                // .average()
+                // .orElse(-1);
 
-        totalValueLabel.setText(String.valueOf(total));
-        totalFooterLabel.setText((isAllVillages() ? "Across all villages" : "In " + currentVillage())
-                + "  \u00B7  " + rejected + " rejected");
+         totalValueLabel.setText(String.valueOf(total));
+         totalFooterLabel.setText((isAllVillages() + currentVillage()));
 
-        double resolutionRate = total == 0 ? 0 : (resolved * 100.0) / total;
+        // double resolutionRate = total == 0 ? 0 : (resolved * 100.0) / total;
         resolvedValueLabel.setText(String.valueOf(resolved));
-        resolvedFooterLabel.setText(avgResolutionDays < 0
-                ? String.format("%.0f%% resolution rate", resolutionRate)
-                : String.format("%.0f%% resolution rate \u00B7 avg %.1fd to resolve", resolutionRate, avgResolutionDays));
+        // resolvedFooterLabel.setText(avgResolutionDays < 0
+                // ? String.format("%.0f%% resolution rate", resolutionRate)
+                // : String.format("%.0f%% resolution rate \u00B7 avg %.1fd to resolve", resolutionRate, avgResolutionDays));
 
         progressValueLabel.setText(String.valueOf(inProgress));
-        progressFooterLabel.setText("Being actively worked on");
+        // progressFooterLabel.setText("Being actively worked on");
 
         pendingValueLabel.setText(String.valueOf(pending));
-        pendingFooterLabel.setText(pending == 0 ? "No action required" : "Requires action this week");
-        prioritySecondaryLabel.setText(highPriority + " High \u00B7 " + critical + " Critical priority");
+          pendingFooterLabel.setText(pending == 0 ? "No action required" : "Requires action this week");
+         prioritySecondaryLabel.setText(highPriority + " High \u00B7 " + critical + " Critical priority");
     }
 
     private VBox kpiCard(String accent, String icon, String labelText) {
