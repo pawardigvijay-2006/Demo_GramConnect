@@ -1,5 +1,10 @@
 package com.tech_fusion.view.admin;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import java.io.File;
 
 import javafx.application.Application;
@@ -9,6 +14,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundImage;
@@ -37,6 +44,34 @@ import javafx.stage.Stage;
  * (Filename/class name keep the original "BudgetManagment" spelling so
  * this drops straight into the existing project without breaking any
  * other references to it.)
+ *
+ * The "Managing Village" switcher lives in the sidebar (same as
+ * {@link Dashboard}) so the BDO can toggle which village under their
+ * block this budget view is currently scoped to ("All Villages" or
+ * any single village).
+ *
+ * ------------------------------------------------------------------
+ * VILLAGE-WISE DYNAMIC DATA
+ * ------------------------------------------------------------------
+ * This page now reads/writes {@link Dashboard#selectedVillage} and
+ * {@link Dashboard#VILLAGES} directly (previously it kept its own
+ * separate, instance-level copy of both — meaning the village picked
+ * on the Dashboard page did NOT carry over here, and vice versa).
+ * That's fixed: every page in the app now shares one authoritative
+ * selection, per the original "single source of truth" requirement.
+ *
+ * Every KPI card, the Village-wise Utilization Overview, and the
+ * Village Budget Inventory table are all computed from
+ * {@link #allBudgets} via {@link #getSelectedVillageBudgets()} — never
+ * hard-coded. Selecting a village in the sidebar calls
+ * {@link #refreshBudgetView()} immediately (from
+ * {@link #villageToggle(String, ToggleGroup)}), which rebuilds those
+ * three sections in place — no page reload required.
+ *
+ * FIREBASE READINESS: {@link #loadSampleData()} is the single seam
+ * where the local sample list is populated. Swap its body for a
+ * Firestore fetch that populates {@code allBudgets} with the same
+ * shape and nothing else in this class needs to change.
  */
 public class BudgetManagment extends Application {
 
@@ -56,8 +91,45 @@ public class BudgetManagment extends Application {
 
     private Label selectedNavItem;
 
+    private Label villageNameLabel;
+    private Label villageChevron;
+    private VBox villageListBox;
+    private Label scopeSubtitleStrong;
+    private boolean villageListExpanded = false;
+
+    /* ============================================================
+     *  DATA MODEL — village-wise, Firebase-ready
+     * ============================================================ */
+
+    /** One village's budget record. {@code village} must match a Dashboard.VILLAGES entry. */
+    private static class BudgetRecord {
+        String village;
+        double totalAllocatedCr;   // total block-budget share earmarked for this village
+        double sanctionedCr;       // portion of the allocation formally sanctioned
+        double releasedCr;         // portion of the sanctioned amount actually disbursed
+        String lastDisbursedDate;
+
+        BudgetRecord(String village, double totalAllocatedCr, double sanctionedCr, double releasedCr, String lastDisbursedDate) {
+            this.village = village;
+            this.totalAllocatedCr = totalAllocatedCr;
+            this.sanctionedCr = sanctionedCr;
+            this.releasedCr = releasedCr;
+            this.lastDisbursedDate = lastDisbursedDate;
+        }
+    }
+
+    /** Central, Firebase-ready budget list. Populated once by {@link #loadSampleData()}. */
+    private List<BudgetRecord> allBudgets;
+
+    /* ---- References kept so refreshBudgetView() can rebuild sections in place ---- */
+    private VBox mainContentBox;
+    private HBox statCardsRowRef;
+    private VBox utilizationSectionRef;
+    private VBox inventoryPanelRef;
+
     @Override
     public void start(Stage stage) {
+        loadSampleData();
         Dashboard.myStage = stage;
         stage.setTitle("GramConnect - Budget Management");
         stage.setScene(getBudgetManagmentScene());
@@ -68,6 +140,12 @@ public class BudgetManagment extends Application {
 
     /** Builds the Budget Management scene. Public so other pages can navigate here. */
     public Scene getBudgetManagmentScene() {
+        if (allBudgets == null) {
+            // Guard for callers that construct this page directly (sidebar navigation)
+            // without going through start(), so sample data is always available.
+            loadSampleData();
+        }
+
         BorderPane root = new BorderPane();
         root.setBackground(buildBackground());
 
@@ -97,6 +175,79 @@ public class BudgetManagment extends Application {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /* ============================================================
+     *  SAMPLE DATA — swap this method for a Firebase fetch later.
+     *  Every other method reads through allBudgets, so nothing else
+     *  needs to change.
+     * ============================================================ */
+    private void loadSampleData() {
+        allBudgets = new ArrayList<>(Arrays.asList(
+                new BudgetRecord("Rampur",         5.0, 3.6, 2.5, "12 Oct 2023"),
+                new BudgetRecord("Sitapur",        4.0, 3.0, 2.0, "05 Sep 2023"),
+                new BudgetRecord("Madhavpur",      3.8, 2.9, 2.4, "28 Aug 2023"),
+                new BudgetRecord("Ward 4 Cluster", 4.0, 3.0, 1.5, "15 Jul 2023")
+        ));
+    }
+
+    /* ============================================================
+     *  VILLAGE FILTERING — single source of truth for all sections
+     * ============================================================ */
+
+    /** Budget records for the currently selected village, or all of them if "All Villages" is selected. */
+    private List<BudgetRecord> getSelectedVillageBudgets() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            return allBudgets;
+        }
+        return allBudgets.stream()
+                .filter(b -> b.village.equals(Dashboard.selectedVillage))
+                .collect(Collectors.toList());
+    }
+
+    private double sumTotalAllocated(List<BudgetRecord> records) {
+        return records.stream().mapToDouble(b -> b.totalAllocatedCr).sum();
+    }
+
+    private double sumSanctioned(List<BudgetRecord> records) {
+        return records.stream().mapToDouble(b -> b.sanctionedCr).sum();
+    }
+
+    private double sumReleased(List<BudgetRecord> records) {
+        return records.stream().mapToDouble(b -> b.releasedCr).sum();
+    }
+
+    /** Color-codes a utilization row by how much of the sanctioned amount has actually been released. */
+    private String colorForUtilization(double releasedFraction) {
+        if (releasedFraction >= 0.90) return DELAYED_RED;
+        if (releasedFraction >= 0.70) return SAFFRON_MAIN;
+        if (releasedFraction >= 0.50) return CONTEXT_TEAL;
+        return FOREST_DEEP;
+    }
+
+    /* ============================================================
+     *  REFRESH — called immediately after Dashboard.selectedVillage
+     *  changes, so the whole page updates without a reload.
+     * ============================================================ */
+    private void refreshBudgetView() {
+        updateScopeSubtitle();
+
+        if (mainContentBox == null) return;
+
+        HBox newStatRow = buildStatCardsRow();
+        int statIdx = mainContentBox.getChildren().indexOf(statCardsRowRef);
+        if (statIdx >= 0) mainContentBox.getChildren().set(statIdx, newStatRow);
+        statCardsRowRef = newStatRow;
+
+        VBox newUtilization = buildUtilizationSection();
+        int utilIdx = mainContentBox.getChildren().indexOf(utilizationSectionRef);
+        if (utilIdx >= 0) mainContentBox.getChildren().set(utilIdx, newUtilization);
+        utilizationSectionRef = newUtilization;
+
+        VBox newInventory = buildInventoryPanel();
+        int invIdx = mainContentBox.getChildren().indexOf(inventoryPanelRef);
+        if (invIdx >= 0) mainContentBox.getChildren().set(invIdx, newInventory);
+        inventoryPanelRef = newInventory;
     }
 
     /* ============================================================
@@ -137,8 +288,10 @@ public class BudgetManagment extends Application {
 
         header.getChildren().addAll(avatar, nameBox);
 
+        VBox villageSelector = buildVillageSelector();
+
         VBox nav = new VBox(6);
-        nav.setPadding(new Insets(16, 12, 16, 12));
+        nav.setPadding(new Insets(12, 12, 16, 12));
 
         HBox dashboardNav = navItem("\u25A6", "Dashboard", false);
         Runnable toDashboard = () -> {
@@ -195,8 +348,116 @@ public class BudgetManagment extends Application {
 
         footer.getChildren().addAll(divider, smallLinks);
 
-        sidebar.getChildren().addAll(header, nav, footer);
+        sidebar.getChildren().addAll(header, villageSelector, nav, footer);
         return sidebar;
+    }
+
+    /* ============================================================
+     *  VILLAGE SWITCHER — lets the BDO toggle scope between
+     *  "All Villages" and any single village under their block.
+     *  Reads/writes the static Dashboard.selectedVillage so the
+     *  choice is shared with every other page (Dashboard,
+     *  ProjectManagement, etc), not just kept locally here.
+     * ============================================================ */
+    private VBox buildVillageSelector() {
+        VBox wrap = new VBox(8);
+        wrap.setPadding(new Insets(0, 20, 16, 20));
+
+        Label caption = new Label("MANAGING VILLAGE");
+        caption.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.08em;");
+
+        HBox toggleRow = new HBox(10);
+        toggleRow.setAlignment(Pos.CENTER_LEFT);
+        toggleRow.setPadding(new Insets(11, 14, 11, 14));
+        toggleRow.setMaxWidth(Double.MAX_VALUE);
+        String toggleBase = "-fx-background-color: rgba(255,255,255,0.65); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.12); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        String toggleHover = "-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10;" +
+                "-fx-border-color: rgba(11,61,46,0.18); -fx-border-radius: 10; -fx-border-width: 1; -fx-cursor: hand;";
+        toggleRow.setStyle(toggleBase);
+
+        Label pin = new Label("\uD83D\uDCCD");
+        pin.setStyle("-fx-font-size: 13px;");
+
+        villageNameLabel = new Label(Dashboard.selectedVillage);
+        villageNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        villageChevron = new Label("\u25BE");
+        villageChevron.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.65);");
+
+        toggleRow.getChildren().addAll(pin, villageNameLabel, spacer, villageChevron);
+        toggleRow.setOnMouseEntered(e -> toggleRow.setStyle(toggleHover));
+        toggleRow.setOnMouseExited(e -> toggleRow.setStyle(toggleBase));
+
+        villageListBox = new VBox(2);
+        villageListBox.setPadding(new Insets(6, 0, 0, 0));
+        villageListBox.setVisible(false);
+        villageListBox.setManaged(false);
+
+        ToggleGroup group = new ToggleGroup();
+        for (String village : Dashboard.VILLAGES) {
+            villageListBox.getChildren().add(villageToggle(village, group));
+        }
+
+        toggleRow.setOnMouseClicked(e -> {
+            villageListExpanded = !villageListExpanded;
+            villageListBox.setVisible(villageListExpanded);
+            villageListBox.setManaged(villageListExpanded);
+            villageChevron.setText(villageListExpanded ? "\u25B4" : "\u25BE");
+        });
+
+        wrap.getChildren().addAll(caption, toggleRow, villageListBox);
+        return wrap;
+    }
+
+    private ToggleButton villageToggle(String village, ToggleGroup group) {
+        ToggleButton btn = new ToggleButton(village);
+        btn.setToggleGroup(group);
+        btn.setSelected(village.equals(Dashboard.selectedVillage));
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(9, 14, 9, 14));
+
+        String baseStyle = "-fx-background-color: transparent; -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 600;" +
+                "-fx-text-fill: rgba(11,61,46,0.75); -fx-cursor: hand;";
+        String activeStyle = "-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 8;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + SAFFRON_MAIN + "; -fx-cursor: hand;";
+
+        btn.setStyle(btn.isSelected() ? activeStyle : baseStyle);
+
+        btn.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            btn.setStyle(isSelected ? activeStyle : baseStyle);
+            if (isSelected) {
+                Dashboard.selectedVillage = village;
+                villageNameLabel.setText(Dashboard.selectedVillage);
+                updateScopeSubtitle();
+                // Immediately refresh every dynamic section on this page — no reload required.
+                refreshBudgetView();
+                // Collapse the list once a village has been chosen.
+                villageListExpanded = false;
+                villageListBox.setVisible(false);
+                villageListBox.setManaged(false);
+                villageChevron.setText("\u25BE");
+            }
+        });
+
+        return btn;
+    }
+
+    /** Keeps the page's "Showing data for:" label in sync with the selected village. */
+    private void updateScopeSubtitle() {
+        if (scopeSubtitleStrong == null) return;
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            scopeSubtitleStrong.setText("All Villages (Block)");
+        } else {
+            scopeSubtitleStrong.setText(Dashboard.selectedVillage);
+        }
     }
 
     private HBox navItem(String icon, String text, boolean active) {
@@ -334,12 +595,18 @@ public class BudgetManagment extends Application {
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
+        statCardsRowRef = buildStatCardsRow();
+        utilizationSectionRef = buildUtilizationSection();
+        inventoryPanelRef = buildInventoryPanel();
+
         main.getChildren().addAll(
                 buildTitleRow(),
-                buildStatCardsRow(),
-                buildUtilizationSection(),
-                buildInventoryPanel()
+                statCardsRowRef,
+                utilizationSectionRef,
+                inventoryPanelRef
         );
+
+        mainContentBox = main;
         return main;
     }
 
@@ -350,12 +617,13 @@ public class BudgetManagment extends Application {
         HBox subtitleRow = new HBox(4);
         Label subtitle = new Label("Showing data for:");
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
-        Label subtitleStrong = new Label("All Villages (Block)");
-        subtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        subtitleRow.getChildren().addAll(subtitle, subtitleStrong);
+        scopeSubtitleStrong = new Label("All Villages (Block)");
+        scopeSubtitleStrong.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        updateScopeSubtitle();
+        subtitleRow.getChildren().addAll(subtitle, scopeSubtitleStrong);
         text.getChildren().addAll(title, subtitleRow);
 
-    
+
         Label allocate = new Label("+  Allocate Funds");
         allocate.setPadding(new Insets(12, 18, 12, 18));
         allocate.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
@@ -374,35 +642,49 @@ public class BudgetManagment extends Application {
         return headerRow;
     }
 
+    /* ============================================================
+     *  STAT CARDS ROW — every value now computed from the
+     *  village-filtered budget records, never hard-coded.
+     * ============================================================ */
     private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
 
-        VBox totalCard = statCard("TOTAL BLOCK BUDGET", "\u20B916.8 Cr", "\uD83C\uDFDB", "rgba(11,61,46,0.10)");
+        List<BudgetRecord> scope = getSelectedVillageBudgets();
+        double totalAllocated = sumTotalAllocated(scope);
+        double sanctioned = sumSanctioned(scope);
+        double released = sumReleased(scope);
+        double pending = totalAllocated - sanctioned;
+
+        int sanctionedOfTotalPct = totalAllocated > 0 ? (int) Math.round((sanctioned / totalAllocated) * 100) : 0;
+        int releasedOfSanctionedPct = sanctioned > 0 ? (int) Math.round((released / sanctioned) * 100) : 0;
+        int sanctionedShareOfTotalPct = totalAllocated > 0 ? (int) Math.round((sanctioned / totalAllocated) * 100) : 0;
+
+        VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83C\uDFDB", "TOTAL BLOCK BUDGET", String.format("\u20B9%.1f Cr", totalAllocated));
         VBox utilRow = new VBox(6);
         HBox utilLabels = new HBox();
         utilLabels.setAlignment(Pos.CENTER_LEFT);
-        Label utilLeft = new Label("74% Utilized");
+        Label utilLeft = new Label(sanctionedOfTotalPct + "% Sanctioned");
         utilLeft.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
         Region utilSpacer = new Region();
         HBox.setHgrow(utilSpacer, Priority.ALWAYS);
-        Label utilRight = new Label("\u20B912.4 Cr");
+        Label utilRight = new Label(String.format("\u20B9%.1f Cr", sanctioned));
         utilRight.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
         utilLabels.getChildren().addAll(utilLeft, utilSpacer, utilRight);
-        utilRow.getChildren().addAll(utilLabels, progressBar(0.74, FOREST_DEEP, 8));
+        utilRow.getChildren().addAll(utilLabels, progressBar(sanctionedOfTotalPct / 100.0, FOREST_DEEP, 8));
         totalCard.getChildren().add(utilRow);
 
-        VBox sanctionedCard = statCard("SANCTIONED AMOUNT", "\u20B912.5 Cr", "\u2705", "rgba(14,140,140,0.12)");
-        Label sanctionedFooter = new Label("\u2197 +5% vs last quarter");
+        VBox sanctionedCard = kpiCard(SAFFRON_MAIN, "\u2705", "SANCTIONED AMOUNT", String.format("\u20B9%.1f Cr", sanctioned));
+        Label sanctionedFooter = new Label(sanctionedShareOfTotalPct + "% of total block budget");
         sanctionedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
         sanctionedCard.getChildren().add(sanctionedFooter);
 
-        VBox releasedCard = statCard("RELEASED FUNDS", "\u20B98.4 Cr", "\u20B9", "rgba(124,92,252,0.12)");
-        Label releasedFooter = new Label("67% of sanctioned amount");
+        VBox releasedCard = kpiCard(CONTEXT_TEAL, "\u20B9", "RELEASED FUNDS", String.format("\u20B9%.1f Cr", released));
+        Label releasedFooter = new Label(releasedOfSanctionedPct + "% of sanctioned amount");
         releasedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         releasedCard.getChildren().add(releasedFooter);
 
-        VBox pendingCard = statCard("PENDING ALLOCATIONS", "\u20B94.1 Cr", "\uD83D\uDCCB", "rgba(224,122,31,0.12)");
-        Label pendingFooter = new Label("Requires action this month");
+        VBox pendingCard = kpiCard(AI_VIOLET, "\uD83D\uDCCB", "PENDING ALLOCATIONS", String.format("\u20B9%.1f Cr", pending));
+        Label pendingFooter = new Label(pending > 0 ? "Requires action this month" : "Fully allocated");
         pendingFooter.setPadding(new Insets(6, 10, 6, 10));
         pendingFooter.setMaxWidth(Region.USE_PREF_SIZE);
         pendingFooter.setStyle("-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 6;" +
@@ -417,29 +699,47 @@ public class BudgetManagment extends Application {
         return row;
     }
 
-    private VBox statCard(String label, String value, String icon, String iconBg) {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setStyle(cardStyle(18));
-        card.setMinHeight(150);
 
-        HBox top = new HBox();
-        top.setAlignment(Pos.CENTER_LEFT);
-        Label heading = new Label(label);
-        heading.setWrapText(true);
-        heading.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
-                "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label iconLabel = new Label(icon);
-        iconLabel.setStyle("-fx-font-size: 16px; -fx-padding: 8; -fx-background-color: " + iconBg + "; -fx-background-radius: 50%;");
-        top.getChildren().addAll(heading, spacer, iconLabel);
+     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
+        VBox card = new VBox();
+        card.setPrefWidth(320);
+        card.setMinHeight(190);
+        card.setStyle(cardStyle(16));
 
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        Region strip = new Region();
+        strip.setPrefHeight(6);
+        strip.setStyle("-fx-background-color: " + accent + "; -fx-background-radius: 16 16 0 0;");
 
-        card.getChildren().addAll(top, valueLabel);
-        addHoverLift(card, 18);
+        VBox inner = new VBox(20);
+        inner.setPadding(new Insets(20, 24, 24, 24));
+        VBox.setVgrow(inner, Priority.ALWAYS);
+
+        HBox head = new HBox(12);
+        head.setAlignment(Pos.CENTER_LEFT);
+        StackPane iconChip = new StackPane();
+        iconChip.setPrefSize(48, 48);
+        iconChip.setMinSize(48, 48);
+        iconChip.setStyle("-fx-background-color: " + rgba(accent, 0.12) + "; -fx-background-radius: 12;");
+        Label ic = new Label(icon);
+        ic.setStyle("-fx-font-size: 18px; -fx-text-fill: " + accent + ";");
+        iconChip.getChildren().add(ic);
+        Label lbl = new Label(labelText);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+            "-fx-text-fill: rgba(11,61,46,0.80); -fx-letter-spacing: 0.08em;");
+        lbl.setWrapText(true);
+        head.getChildren().addAll(iconChip, lbl);
+
+        Region grow = new Region();
+        VBox.setVgrow(grow, Priority.ALWAYS);
+
+        VBox bottom = new VBox(10);
+        Label stat = new Label(statText);
+        stat.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 40px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+        bottom.getChildren().add(stat);
+
+        inner.getChildren().addAll(head, grow, bottom);
+        card.getChildren().addAll(strip, inner);
+        addHoverLift(card, 16);
         return card;
     }
 
@@ -460,7 +760,8 @@ public class BudgetManagment extends Application {
     }
 
     /* ============================================================
-     *  VILLAGE-WISE UTILIZATION OVERVIEW
+     *  VILLAGE-WISE UTILIZATION OVERVIEW — one row per village in
+     *  scope (all four for "All Villages", just one otherwise).
      * ============================================================ */
     private VBox buildUtilizationSection() {
         VBox panel = new VBox(20);
@@ -477,12 +778,14 @@ public class BudgetManagment extends Application {
         viewMap.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-font-weight: 700; -fx-cursor: hand;");
         header.getChildren().addAll(title, spacer, viewMap);
 
-        panel.getChildren().addAll(header,
-                utilizationRow("\u0930\u093E\u092E\u092A\u0941\u0930 (Rampur)", 0.84, "\u20B92.1Cr / \u20B92.5Cr", FOREST_DEEP),
-                utilizationRow("\u0938\u0940\u0924\u093E\u092A\u0941\u0930 (Sitapur)", 0.9, "\u20B91.8Cr / \u20B92.0Cr", SAFFRON_MAIN),
-                utilizationRow("\u0917\u094B\u092A\u093E\u0932\u0917\u0902\u091C (Gopalganj)", 0.42, "\u20B90.5Cr / \u20B91.2Cr", CONTEXT_TEAL),
-                utilizationRow("\u092E\u093E\u0927\u0935\u092A\u0941\u0930 (Madhavpur)", 0.97, "\u20B91.4Cr / \u20B91.45Cr", DELAYED_RED)
-        );
+        panel.getChildren().add(header);
+
+        for (BudgetRecord b : getSelectedVillageBudgets()) {
+            double fraction = b.sanctionedCr > 0 ? (b.releasedCr / b.sanctionedCr) : 0;
+            String rightText = String.format("\u20B9%.1fCr / \u20B9%.1fCr", b.releasedCr, b.sanctionedCr);
+            panel.getChildren().add(utilizationRow(b.village, fraction, rightText, colorForUtilization(fraction)));
+        }
+
         addHoverLift(panel, 24);
         return panel;
     }
@@ -507,7 +810,8 @@ public class BudgetManagment extends Application {
     }
 
     /* ============================================================
-     *  VILLAGE BUDGET INVENTORY TABLE
+     *  VILLAGE BUDGET INVENTORY TABLE — filtered to the selected
+     *  village (or all four for "All Villages").
      * ============================================================ */
     private VBox buildInventoryPanel() {
         VBox panel = new VBox(18);
@@ -527,6 +831,17 @@ public class BudgetManagment extends Application {
                 "-fx-border-color: rgba(11,61,46,0.10); -fx-padding: 10 14; -fx-font-size: 13px;");
         header.getChildren().addAll(title, spacer, filter);
 
+        List<BudgetRecord> scope = getSelectedVillageBudgets();
+
+        if (scope.isEmpty()) {
+            Label empty = new Label("No budget records for " + Dashboard.selectedVillage + ".");
+            empty.setPadding(new Insets(20, 8, 4, 8));
+            empty.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+            panel.getChildren().addAll(header, empty);
+            addHoverLift(panel, 24);
+            return panel;
+        }
+
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(16);
@@ -534,9 +849,20 @@ public class BudgetManagment extends Application {
         grid.getColumnConstraints().addAll(pct(28), pct(16), pct(16), pct(12), pct(18), pct(10));
 
         addInventoryHeader(grid);
-        addInventoryRow(grid, 1, "\u0930\u093E\u092E\u092A\u0941\u0930 (Rampur)", "\u20B92,50,00,000", "\u20B91,80,00,000", "84%", CONTEXT_TEAL, "12 Oct 2023");
-        addInventoryRow(grid, 2, "\u0938\u0940\u0924\u093E\u092A\u0941\u0930 (Sitapur)", "\u20B92,00,00,000", "\u20B91,50,00,000", "90%", SAFFRON_MAIN, "05 Sep 2023");
-        addInventoryRow(grid, 3, "\u092E\u093E\u0927\u0935\u092A\u0941\u0930 (Madhavpur)", "\u20B91,45,00,000", "\u20B91,40,00,000", "96%", DELAYED_RED, "28 Aug 2023");
+
+        int row = 1;
+        for (BudgetRecord b : scope) {
+            double utilFraction = b.sanctionedCr > 0 ? (b.releasedCr / b.sanctionedCr) : 0;
+            int utilPct = (int) Math.round(utilFraction * 100);
+            addInventoryRow(grid, row,
+                    b.village,
+                    String.format("\u20B9%.2f Cr", b.sanctionedCr),
+                    String.format("\u20B9%.2f Cr", b.releasedCr),
+                    utilPct + "%",
+                    colorForUtilization(utilFraction),
+                    b.lastDisbursedDate);
+            row++;
+        }
 
         panel.getChildren().addAll(header, grid);
         addHoverLift(panel, 24);

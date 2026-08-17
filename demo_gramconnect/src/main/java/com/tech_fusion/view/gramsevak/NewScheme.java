@@ -1,19 +1,25 @@
+
 package com.tech_fusion.view.gramsevak;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 
 /**
  * GramConnect - Add New Government Scheme page.
@@ -44,26 +50,65 @@ public class NewScheme {
 
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
+    private GovScheme govScheme = new GovScheme();
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
     // ============================================================
     // MAIN ENTRY POINT
     // ============================================================
-    public static VBox getNewSchemeContent(Runnable backAction) {
+public Scene getNewSchemeScene(Runnable backAction) {
 
-        VBox mainContent = new VBox(24);
-        mainContent.setPadding(new Insets(32, 40, 48, 40));
+    BorderPane root = new BorderPane();
 
-        mainContent.getChildren().addAll(
-                buildTopBar(backAction),
-                buildSchemeInformationCard(),
-                buildEligibilityDetailsCard(),
-                buildRequiredDocumentsCard(),
-                buildApplicationDetailsCard(),
-                buildSchemeStatusCard(),
-                buildActionButtons());
+    root.setStyle(
+            "-fx-background-color: #F4F8FB;"
+    );
 
-        return mainContent;
-    }
+    // LEFT SIDEBAR
+    root.setLeft(
+            govScheme.buildSidebar(backAction)
+    );
 
+    // MAIN AREA
+    BorderPane mainArea = new BorderPane();
+
+    // TOP BAR
+    mainArea.setTop(
+            govScheme.buildHeader()
+    );
+
+    // CONTENT
+    VBox mainContent = new VBox(24);
+
+    mainContent.setPadding(
+            new Insets(32, 40, 48, 40)
+    );
+
+    mainContent.getChildren().addAll(
+            buildTopBar(backAction),
+            buildSchemeInformationCard(),
+            buildEligibilityDetailsCard(),
+            buildRequiredDocumentsCard(),
+            buildApplicationDetailsCard(),
+            buildSchemeStatusCard(),
+            buildActionButtons(backAction)
+    );
+
+    ScrollPane scrollPane = new ScrollPane(mainContent);
+
+    scrollPane.setFitToWidth(true);
+
+    scrollPane.setStyle(
+            "-fx-background-color: transparent;" +
+            "-fx-background: transparent;"
+    );
+
+    mainArea.setCenter(scrollPane);
+
+    root.setCenter(mainArea);
+
+    return new Scene(root,  screenSize.getWidth(), screenSize.getHeight());
+}
     // ============================================================
     // TOP BAR — Back button + Title + Subtitle
     // ============================================================
@@ -392,7 +437,7 @@ public class NewScheme {
     // ============================================================
     // BOTTOM ACTION BUTTONS
     // ============================================================
-    private static HBox buildActionButtons() {
+   private static HBox buildActionButtons(Runnable backAction) {
 
         HBox actionsRow = new HBox(14);
         actionsRow.setAlignment(Pos.CENTER_RIGHT);
@@ -414,7 +459,7 @@ public class NewScheme {
         cancelBtn.setStyle(cancelBase);
         cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle(cancelBase + "-fx-background-color: rgba(11,61,46,0.06);"));
         cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle(cancelBase));
-        cancelBtn.setOnAction(e -> System.out.println("Cancel clicked"));
+        cancelBtn.setOnAction(e -> backAction.run());
 
         // ----- Save as Draft: saffron accent -----
         Button saveDraftBtn = new Button("Save as Draft");
