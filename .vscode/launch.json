@@ -16,6 +16,7 @@
             "name": "Main",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.login.Main",
+            "mainClass": "com.tech_fusion.view.admin.Main",
             "projectName": "demo_gramconnect"
         },
         {
