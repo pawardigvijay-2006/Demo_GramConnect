@@ -1,7 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -59,7 +57,7 @@ public class SarpanchDashboard extends Application {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-    "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
+    "/assets/images/BackgroundImage.png";
 
     /** Shared Stage reference, following the same static-myStage pattern as HomePage.myStage. */
     public static Stage myStage;
@@ -85,7 +83,7 @@ public class SarpanchDashboard extends Application {
      */
     public Scene getDashboardScene() {
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,

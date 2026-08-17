@@ -1,7 +1,7 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
@@ -24,8 +24,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 
 /**
  * GramConnect - Create Project Page.
@@ -51,8 +49,7 @@ public class CreateProjectPage {
 
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     private Runnable backToProjectTrackerAction;
     private Runnable backToDashboardAction;
 
@@ -73,11 +70,14 @@ public class CreateProjectPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        root.setBackground(new Background(new BackgroundImage(
-            new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString()),
-            BackgroundRepeat.NO_REPEAT, BackgroundRepeat.NO_REPEAT,
-            BackgroundPosition.CENTER, new BackgroundSize(100, 100, true, true, false, true)
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
+        root.setBackground(new Background(new BackgroundImage(backgroundImage,
+                                                            BackgroundRepeat.NO_REPEAT,
+                                                            BackgroundRepeat.NO_REPEAT,
+                                                            BackgroundPosition.CENTER,
+                                                            new BackgroundSize(100, 100, true, true, false, true)
         )));
+        
         root.setLeft(buildSidebar());
 
         BorderPane contentArea = new BorderPane();

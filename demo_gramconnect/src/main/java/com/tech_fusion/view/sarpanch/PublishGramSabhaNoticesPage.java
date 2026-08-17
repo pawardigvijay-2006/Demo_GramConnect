@@ -1,6 +1,5 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
 import java.time.LocalDate;
 
 import javafx.collections.FXCollections;
@@ -66,8 +65,7 @@ public class PublishGramSabhaNoticesPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     /** Navigates back to AnnouncementsPage (passed in from AnnouncementsPage). */
     private Runnable backToAnnouncementsAction;
     /** Navigates back to the Dashboard (threaded through so the sidebar still works here). */
@@ -96,7 +94,7 @@ public class PublishGramSabhaNoticesPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
