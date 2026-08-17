@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,7 +16,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
 
 /**
  * GramConnect - Complaints Management
@@ -25,41 +23,32 @@ import javafx.stage.Stage;
  * ============================================================
  * DIFFERENCE FROM THE OTHER PAGES IN THIS PROJECT
  * ============================================================
- * VillagerDashboard.java and ProjectTransparency.java are each a full
- * javafx.application.Application (they build their own Stage/Scene and
- * call primaryStage.show()).
+ * This class is NOT an Application. It builds and returns a Scene via
  *
- * This class is NOT an Application. It is a plain class with one public
- * method:
+ *      public Scene getComplaintsPage(Runnable backAction)
  *
- * public BorderPane getComplaintsPage(Stage homepageStage)
- *
- * ...which builds and returns just the root BorderPane (sidebar + main
- * area), so a navigation controller can plug it straight into the
- * single shared "homepageStage" like this:
- *
- * homepageStage.getScene().setRoot(new
- * ComplaintsPage().getComplaintsPage(homepageStage));
- *
- * or, if no Scene exists yet:
- *
- * homepageStage.setScene(new Scene(new
- * ComplaintsPage().getComplaintsPage(homepageStage), 1500, 850));
+ * so a navigation controller can swap the whole window over to it on
+ * the single shared homeStage, the same way every other page here
+ * does (VillagerDashboard, ProjectTransparency, ...).
  *
  * ============================================================
  * NEW IN THIS VERSION
  * ============================================================
- * - "All Complaints" / "My Complaints" toggle above the list -> clicking
- *   "My Complaints" filters the Recent Submissions list down to only the
- *   complaints raised by the current villager (ComplaintData.mine == true).
- * - "Register New Complaint" now actually navigates to NewComplaintPage
- *   (title, location, description, upload photo, submit) on the SAME
- *   shared homepageStage. Submitting adds the complaint to the shared
- *   COMPLAINTS store (marked as "mine") and returns here with a
- *   "Complaint Submitted" popup already shown.
- * - COMPLAINTS is a static, in-memory store shared by ComplaintsPage and
- *   NewComplaintPage so newly submitted complaints show up immediately.
- *   Swap this out for a real ComplaintService/DB call later.
+ * - ComplaintData now also carries "raisedBy" (who filed it) and
+ *   "imagePath" (photo attached to the complaint), so both the list
+ *   row and the new details page can show them.
+ * - Each row in "Recent Submissions" now shows a "Raised by: <name>"
+ *   line alongside the date/location, and the old plain "View Details"
+ *   text link is now an eye-icon block (separated by a thin divider
+ *   from the ID/status pill) that opens the new ComplaintDetailsPage
+ *   for that specific complaint.
+ * - openComplaintDetails(ComplaintData) builds a "backToComplaintsAction"
+ *   Runnable that rebuilds THIS list (with the original backAction
+ *   preserved) - mirroring the same pattern used for
+ *   ProjectTransparency <-> ProjectTransparency1 navigation - so
+ *   ComplaintDetailsPage's "Back to Complaints" / breadcrumb / sidebar
+ *   "Complaints" item all return here consistently, and the sidebar's
+ *   "Dashboard" item still goes straight to the real Dashboard.
  * ============================================================
  */
 public class ComplaintsPage {
@@ -100,8 +89,9 @@ public class ComplaintsPage {
 
         // =================================================================
         // SHARED DATA MODEL + STORE
-        // Package-visible so NewComplaintPage can read/append to it.
-        // Replace with a real ComplaintService/DB call when one exists.
+        // Package-visible so NewComplaintPage and ComplaintDetailsPage can
+        // read/append to it. Replace with a real ComplaintService/DB call
+        // when one exists.
         // =================================================================
         static class ComplaintData {
                 String icon;
@@ -111,15 +101,17 @@ public class ComplaintsPage {
                 String complaintId;
                 String date;
                 String location;
+                String raisedBy;
                 String description;
+                String imagePath;
                 String status;
                 String pillBg;
                 String pillFg;
                 boolean mine;
 
                 ComplaintData(String icon, String iconBg, String iconColor, String title, String complaintId,
-                                String date, String location, String description, String status, String pillBg,
-                                String pillFg, boolean mine) {
+                                String date, String location, String raisedBy, String description, String imagePath,
+                                String status, String pillBg, String pillFg, boolean mine) {
                         this.icon = icon;
                         this.iconBg = iconBg;
                         this.iconColor = iconColor;
@@ -127,7 +119,9 @@ public class ComplaintsPage {
                         this.complaintId = complaintId;
                         this.date = date;
                         this.location = location;
+                        this.raisedBy = raisedBy;
                         this.description = description;
+                        this.imagePath = imagePath;
                         this.status = status;
                         this.pillBg = pillBg;
                         this.pillFg = pillFg;
@@ -141,35 +135,49 @@ public class ComplaintsPage {
         private static int nextComplaintNumber = 22;
 
         static {
+                // TODO: imagePath values below reuse existing mock assets as
+                // stand-ins - replace with the real uploaded photo per complaint
+                // (Firebase Storage URL) once ComplaintService exists.
                 COMPLAINTS.add(new ComplaintData("\uD83D\uDCA7", LIGHT_BLUE, SECONDARY,
                                 "Broken Water Pipe near Temple", "#CMP-2025-0012",
-                                "Oct 24, 2024", "Temple Square, Zone 4",
-                                "Water pipe near the temple has been leaking for two days.",
+                                "Oct 24, 2024", "Temple Square, Zone 4", "Sunil Kharat",
+                                "There is a water pipe broken near the temple. Water is leaking continuously and "
+                                                + "causing water wastage and inconvenience to the people in the area.",
+                                "assets\\images\\water_tank.jpg",
                                 "Assigned", LIGHT_BLUE, SECONDARY, true));
                 COMPLAINTS.add(new ComplaintData("\u2195", LIGHT_YELLOW, "#C2703D",
                                 "Pot hole on Main Road", "#CMP-2025-0015",
-                                "Oct 22, 2024", "Highway Junction",
-                                "Large pothole causing traffic slowdowns.",
+                                "Oct 22, 2024", "Highway Junction", "Meena Patil",
+                                "Large pothole causing traffic slowdowns and is a safety risk for two-wheelers, "
+                                                + "especially after dark.",
+                                "assets\\images\\road.jpg",
                                 "Pending", LIGHT_YELLOW, "#C2703D", false));
                 COMPLAINTS.add(new ComplaintData("\uD83D\uDCA1", LIGHT_YELLOW, WARNING,
                                 "Non-functional Street Light", "#CMP-2025-0008",
-                                "Oct 15, 2024", "Gandhi Street",
-                                "Street light has not worked in over a week.",
+                                "Oct 15, 2024", "Gandhi Street", "Rohan Deshmukh",
+                                "Street light has not worked in over a week, making the street unsafe to walk "
+                                                + "through at night.",
+                                "assets\\images\\street_light.jpg",
                                 "Resolved", LIGHT_GREEN, PRIMARY, true));
                 COMPLAINTS.add(new ComplaintData("\uD83D\uDDD1", LIGHT_RED, ERROR,
                                 "Waste Accumulation near School", "#CMP-2025-0021",
-                                "Oct 25, 2024", "Primary School, North Wing",
-                                "Garbage has been piling up near the school entrance.",
+                                "Oct 25, 2024", "Primary School, North Wing", "Priya More",
+                                "Garbage has been piling up near the school entrance for several days and is "
+                                                + "starting to smell.",
+                                "assets\\images\\road.jpg",
                                 "Action Required", LIGHT_RED, ERROR, false));
         }
 
-        /** Adds a newly submitted complaint (always marked as "mine"). */
+        /** Adds a newly submitted complaint (always marked as "mine", raised by the current villager). */
         static void addComplaint(String title, String location, String description) {
                 nextComplaintNumber++;
                 String id = String.format("#CMP-2025-%04d", nextComplaintNumber);
                 String date = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy"));
+                // TODO: pass the villager's actually-uploaded photo path through from
+                // NewComplaintPage instead of this placeholder image.
                 COMPLAINTS.add(0, new ComplaintData("\uD83D\uDCDD", LIGHT_YELLOW, "#C2703D",
-                                title, id, date, location, description,
+                                title, id, date, location, "Ramesh Patil", description,
+                                "assets\\images\\gramconnect.png",
                                 "Pending", LIGHT_YELLOW, "#C2703D", true));
         }
 
@@ -182,8 +190,7 @@ public class ComplaintsPage {
 
         /**
          * Builds the whole Complaints Management screen and returns it as a
-         * single BorderPane, ready to be set as a Scene's root on the shared
-         * homepageStage.
+         * Scene, ready to be set on the shared homeStage.
          */
         public Scene getComplaintsPage(Runnable backAction) {
                 this.backAction = backAction;
@@ -200,8 +207,7 @@ public class ComplaintsPage {
         // =================================================================
         // SIDEBAR (same structure as the other pages - "Complaints" is now
         // the active row). Each nav item is wired to swap the root on the
-        // SAME homepageStage - fill in the TODOs with your real page
-        // classes once they exist.
+        // SAME homeStage.
         // =================================================================
         private VBox buildSidebar(Runnable backAction) {
 
@@ -702,9 +708,10 @@ public class ComplaintsPage {
         }
 
         /**
-         * One complaint row: category icon on the left, title + complaint ID
-         * + status pill on the top line, date + location on the second line,
-         * and a "View Details ->" link underneath.
+         * One complaint row: category icon on the left, title + date/location/
+         * raised-by meta line + "View Details" link on the left side, and on
+         * the right, the complaint ID + status pill next to a divider and an
+         * eye-icon block that opens ComplaintDetailsPage for this complaint.
          */
         private VBox complaintRow(ComplaintData c) {
 
@@ -724,17 +731,17 @@ public class ComplaintsPage {
                 Label locationLabel = new Label("\uD83D\uDCCD  " + c.location);
                 locationLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
-                HBox metaRow = new HBox(14, dateLabel, locationLabel);
+                Label raisedByLabel = new Label("\uD83D\uDC64  Raised by: " + c.raisedBy);
+                raisedByLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + TEXT_PRIMARY + ";");
+
+                HBox metaRow = new HBox(14, dateLabel, locationLabel, raisedByLabel);
                 metaRow.setAlignment(Pos.CENTER_LEFT);
 
-                Label viewDetails = new Label("View Details  \u2192");
-                viewDetails.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + "; "
-                                + "-fx-cursor: hand;");
-                // TODO: wire this up to open a real ComplaintDetailView(complaintId)
-
-                VBox leftText = new VBox(5, titleLabel, metaRow, viewDetails);
+                VBox leftText = new VBox(6, titleLabel, metaRow);
                 HBox.setHgrow(leftText, Priority.ALWAYS);
 
+                // ---- right block: ID + status pill, a thin divider, then an
+                // eye-icon + "View Details" block that opens the details page ----
                 Label idLabel = new Label(c.complaintId);
                 idLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: " + TEXT_PRIMARY + ";");
 
@@ -742,16 +749,51 @@ public class ComplaintsPage {
                 statusPill.setStyle("-fx-background-color: " + c.pillBg + "; -fx-text-fill: " + c.pillFg + "; "
                                 + "-fx-background-radius: 10; -fx-padding: 4 12 4 12; -fx-font-size: 10px; -fx-font-weight: bold;");
 
-                VBox rightBlock = new VBox(8, idLabel, statusPill);
-                rightBlock.setAlignment(Pos.CENTER_RIGHT);
+                VBox idStatusBox = new VBox(6, idLabel, statusPill);
+                idStatusBox.setAlignment(Pos.CENTER_RIGHT);
+
+                Region divider = new Region();
+                divider.setPrefWidth(1);
+                divider.setMinWidth(1);
+                divider.setPrefHeight(42);
+                divider.setStyle("-fx-background-color: " + BORDER + ";");
+
+                Label eyeIcon = new Label("\uD83D\uDC41");
+                eyeIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: " + PRIMARY + ";");
+                Label viewDetailsLabel = new Label("View Details");
+                viewDetailsLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + PRIMARY + ";");
+                VBox viewDetailsBox = new VBox(4, eyeIcon, viewDetailsLabel);
+                viewDetailsBox.setAlignment(Pos.CENTER);
+                viewDetailsBox.setStyle("-fx-cursor: hand;");
+                viewDetailsBox.setOnMouseClicked(e -> openComplaintDetails(c));
+
+                HBox rightBlock = new HBox(40, idStatusBox, divider, viewDetailsBox);
+                rightBlock.setAlignment(Pos.CENTER);
 
                 HBox row = new HBox(14, iconCircle, leftText, rightBlock);
-                row.setAlignment(Pos.TOP_LEFT);
+                row.setAlignment(Pos.CENTER_LEFT);
                 row.setPadding(new Insets(16));
                 row.setStyle("-fx-background-color: white; -fx-background-radius: 12; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 12; -fx-border-width: 1;");
 
                 return new VBox(row);
+        }
+
+        /**
+         * Opens ComplaintDetailsPage for the given complaint. Builds a
+         * "backToComplaintsAction" Runnable that rebuilds THIS list (with the
+         * original backAction preserved) - the same pattern used for
+         * ProjectTransparency <-> ProjectTransparency1 - so every way back
+         * from the details page (breadcrumb, "Back to Complaints" button,
+         * sidebar "Complaints" item) behaves identically, and the sidebar's
+         * "Dashboard" item on the details page still goes straight to the
+         * real Dashboard via backAction.
+         */
+        private void openComplaintDetails(ComplaintData c) {
+                Runnable backToComplaintsAction = () -> VillagerDashboard.homeStage
+                                .setScene(new ComplaintsPage().getComplaintsPage(backAction));
+                VillagerDashboard.homeStage.setScene(
+                                new ComplaintDetailsPage().getComplaintDetailsScene(backToComplaintsAction, backAction, c));
         }
 
         // ---- "Show N more complaints" link ----
