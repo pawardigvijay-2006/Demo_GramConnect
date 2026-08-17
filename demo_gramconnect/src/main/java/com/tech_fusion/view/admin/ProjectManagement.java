@@ -90,8 +90,27 @@ public class ProjectManagement extends Application {
         final String date;
         final String priority;   // only meaningful for "Pending" projects: "HIGH PRIORITY" | "MEDIUM" | "NORMAL"
 
+        /*
+         * ---- Fields aligned with CreateProjectPage (Sarpanch Login) ----
+         * These use the exact same names/shape as the fields collected on
+         * CreateProjectPage's "Project Details" / "Budget & Timeline" form
+         * (CATEGORY, LOCATION / WARD, EXPECTED BUDGET, EXPECTED DURATION).
+         * Nothing sends real data into these yet — that wiring comes later —
+         * but keeping the shape identical here means that whenever
+         * CreateProjectPage (and eventually the Villager Login's New
+         * Complaints Page -> SarpanchComplaintsPage) starts submitting real
+         * data, the Pending Approval panel below can consume it as-is,
+         * with no field renaming/mapping required.
+         */
+        final String category;         // e.g. "Roads", "Water Supply", "Electricity", "Sanitation", "Education", "Other"
+        final String location;         // free-text village/ward, as typed on CreateProjectPage
+        final String expectedBudget;   // e.g. "Rs. 1,50,000"
+        final String expectedDuration; // e.g. "3 Months"
+
+        /** Full constructor — use this once a project actually carries data submitted from CreateProjectPage. */
         Project(String projectName, String projectId, String village, String locality, String department,
-                String budget, String status, String date, String priority) {
+                String budget, String status, String date, String priority,
+                String category, String location, String expectedBudget, String expectedDuration) {
             this.projectName = projectName;
             this.projectId = projectId;
             this.village = village;
@@ -101,6 +120,23 @@ public class ProjectManagement extends Application {
             this.status = status;
             this.date = date;
             this.priority = priority;
+            this.category = category;
+            this.location = location;
+            this.expectedBudget = expectedBudget;
+            this.expectedDuration = expectedDuration;
+        }
+
+        /**
+         * Back-compat constructor for sample/legacy data that hasn't been given
+         * explicit category/location/expectedDuration yet. Derives reasonable
+         * fallbacks from the existing fields so the Approved Projects panel and
+         * Project Inventory table (which don't use the new fields) keep working
+         * unchanged.
+         */
+        Project(String projectName, String projectId, String village, String locality, String department,
+                String budget, String status, String date, String priority) {
+            this(projectName, projectId, village, locality, department, budget, status, date, priority,
+                    department, village + ", " + locality, budget, "\u2014");
         }
     }
 
@@ -119,7 +155,8 @@ public class ProjectManagement extends Application {
             new Project("Water Tank Renovation", "#PRJ-088", "Rampur", "Near School Area",
                     "Water Supply", "\u20B985,000", "In Progress", "22 May 2025", null),
             new Project("Community Hall Construction", "#PRJ-092", "Rampur", "Panchayat Grounds",
-                    "Rural Development", "\u20B95,50,000", "Pending", "18 May 2025", "HIGH PRIORITY"),
+                    "Rural Development", "\u20B95,50,000", "Pending", "18 May 2025", "HIGH PRIORITY",
+                    "Other", "Rampur, Panchayat Grounds", "\u20B95,50,000", "6 Months"),
             new Project("Rampur Drainage Upgrade", "#PRJ-101", "Rampur", "East Ward",
                     "Sanitation", "\u20B92,10,000", "Completed", "02 Mar 2025", null),
 
@@ -127,7 +164,8 @@ public class ProjectManagement extends Application {
             new Project("Primary School Repair", "#PRJ-085", "Sitapur", "Gram Panchayat Office",
                     "Infrastructure", "\u20B92,50,000", "Delayed", "28 Aug 2023", null),
             new Project("Solar Street Lights", "#PRJ-095", "Sitapur", "Main Road",
-                    "Energy", "\u20B91,20,000", "Pending", "15 May 2025", "MEDIUM"),
+                    "Energy", "\u20B91,20,000", "Pending", "15 May 2025", "MEDIUM",
+                    "Electricity", "Sitapur, Main Road", "\u20B91,20,000", "2 Months"),
             new Project("Sitapur Health Sub-Center", "#PRJ-076", "Sitapur", "Ward 2",
                     "Health", "\u20B93,80,000", "In Progress", "10 Apr 2025", null),
             new Project("Sitapur Bus Shelter", "#PRJ-063", "Sitapur", "Bus Stand Road",
@@ -135,7 +173,8 @@ public class ProjectManagement extends Application {
 
             // ---- Madhavpur ----
             new Project("Library Construction", "#PRJ-098", "Madhavpur", "School Campus",
-                    "Education", "\u20B93,00,000", "Pending", "12 May 2025", "NORMAL"),
+                    "Education", "\u20B93,00,000", "Pending", "12 May 2025", "NORMAL",
+                    "Education", "Madhavpur, School Campus", "\u20B93,00,000", "8 Months"),
             new Project("Madhavpur Check Dam", "#PRJ-071", "Madhavpur", "Riverside",
                     "Irrigation", "\u20B94,60,000", "In Progress", "05 Apr 2025", null),
             new Project("Anganwadi Renovation", "#PRJ-058", "Madhavpur", "Ward 1",
@@ -147,7 +186,8 @@ public class ProjectManagement extends Application {
             new Project("Gopalganj Road Widening", "#PRJ-110", "Gopalganj", "NH Link Road",
                     "Rural Development", "\u20B96,20,000", "Approved", "20 May 2025", null),
             new Project("Gopalganj Water Pipeline", "#PRJ-104", "Gopalganj", "Colony Road",
-                    "Water Supply", "\u20B92,90,000", "Pending", "08 May 2025", "HIGH PRIORITY"),
+                    "Water Supply", "\u20B92,90,000", "Pending", "08 May 2025", "HIGH PRIORITY",
+                    "Water Supply", "Gopalganj, Colony Road", "\u20B92,90,000", "4 Months"),
             new Project("Gopalganj Panchayat Bhavan", "#PRJ-047", "Gopalganj", "Gram Panchayat Office",
                     "Infrastructure", "\u20B91,45,000", "In Progress", "22 Mar 2025", null),
             new Project("Gopalganj Playground", "#PRJ-039", "Gopalganj", "Ward 3",
@@ -630,7 +670,7 @@ public class ProjectManagement extends Application {
     /* ---------------- KPI cards (dynamic) ---------------- */
     private void refreshStatCards() {
         List<Project> scoped = getProjectsForSelectedVillage();
-        boolean allVillages = Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage);
+        // boolean allVillages = Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage);
 
         int total = scoped.size();
         int active = 0, completed = 0, delayed = 0;
@@ -641,25 +681,25 @@ public class ProjectManagement extends Application {
         }
 
         VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCBC", "TOTAL PROJECTS", String.valueOf(total));
-        Label totalFooter = new Label(allVillages ? "All village projects" : "Projects in " + Dashboard.selectedVillage);
-        totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        totalCard.getChildren().add(totalFooter);
+        // Label totalFooter = new Label(allVillages ? "All village projects" : "Projects in " + Dashboard.selectedVillage);
+        // totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // totalCard.getChildren().add(totalFooter);
 
         VBox activeCard = kpiCard(SAFFRON_MAIN, "\u25B6", "ACTIVE PROJECTS", String.valueOf(active));
         VBox activeRow = new VBox(6);
         activeRow.getChildren().add(progressBar(safeFraction(active, total), CONTEXT_TEAL, 8));
-        Label activeFooter = new Label(safePct(active, total) + " currently in progress");
-        activeFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        activeRow.getChildren().add(activeFooter);
+        // Label activeFooter = new Label(safePct(active, total) + " currently in progress");
+        // activeFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // activeRow.getChildren().add(activeFooter);
         activeCard.getChildren().add(activeRow);
 
         VBox completedCard = kpiCard(CONTEXT_TEAL, "\u2705", "COMPLETED", String.valueOf(completed));
-        Label completedFooter = new Label(safePct(completed, total) + " of all projects");
-        completedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        completedCard.getChildren().add(completedFooter);
+        // Label completedFooter = new Label(safePct(completed, total) + " of all projects");
+        // completedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // completedCard.getChildren().add(completedFooter);
 
         VBox delayedCard = kpiCard(AI_VIOLET, "\u26A0", "DELAYED PROJECTS", String.valueOf(delayed));
-        Label delayedFooter = new Label(delayed > 0 ? "Requires action this month" : "No delayed projects");
+        Label delayedFooter = new Label();
         delayedFooter.setPadding(new Insets(6, 10, 6, 10));
         delayedFooter.setMaxWidth(Region.USE_PREF_SIZE);
         delayedFooter.setStyle("-fx-background-color: " + (delayed > 0 ? "rgba(224,122,31,0.14)" : "rgba(14,140,140,0.12)") + "; -fx-background-radius: 6;" +
@@ -913,12 +953,22 @@ public class ProjectManagement extends Application {
         return panel;
     }
 
+    /**
+     * Renders one Pending Approval card using exactly the five fields
+     * CreateProjectPage (Sarpanch Login) collects — Project Name, Category,
+     * Location, Expected Budget, Expected Duration — via {@link Project#category},
+     * {@link Project#location}, {@link Project#expectedBudget}, and
+     * {@link Project#expectedDuration}. Not wired to CreateProjectPage yet;
+     * this only makes sure the shape matches so a future submit-and-fetch
+     * (here, and later on SarpanchComplaintsPage) needs no field renaming.
+     */
     private VBox pendingApprovalCard(Project p, String priorityColor) {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: rgba(240,244,242,0.6); -fx-background-radius: 14;" +
                 "-fx-border-color: rgba(11,61,46,0.08); -fx-border-radius: 14; -fx-border-width: 1;");
 
+        // ---- Project Name + Priority ----
         HBox titleRow = new HBox(8);
         titleRow.setAlignment(Pos.CENTER_LEFT);
         Label nameLabel = new Label(p.projectName);
@@ -933,16 +983,29 @@ public class ProjectManagement extends Application {
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-text-fill: " + priorityColor + ";");
         titleRow.getChildren().addAll(nameLabel, spacer, priorityBadge);
 
-        Label deptLabel = new Label("Dept: " + p.department + " | " + p.projectId + " | " + p.village);
-        deptLabel.setWrapText(true);
-        deptLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // ---- Category ----
+        Label categoryLabel = new Label(p.category);
+        categoryLabel.setPadding(new Insets(3, 9, 3, 9));
+        categoryLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        categoryLabel.setStyle("-fx-background-color: " + rgba(AI_VIOLET, 0.14) + "; -fx-background-radius: 999;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + AI_VIOLET + ";");
+
+        // ---- Location ----
+        Label locationLabel = new Label("\uD83D\uDCCD " + p.location);
+        locationLabel.setWrapText(true);
+        locationLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+
+        // ---- Expected Budget + Expected Duration ----
+        HBox statsRow = new HBox(10);
+        statsRow.setAlignment(Pos.CENTER_LEFT);
+        VBox budgetStat = pendingStatTile("EXPECTED BUDGET", p.expectedBudget, CONTEXT_TEAL);
+        VBox durationStat = pendingStatTile("EXPECTED DURATION", p.expectedDuration, SAFFRON_MAIN);
+        HBox.setHgrow(budgetStat, Priority.ALWAYS);
+        HBox.setHgrow(durationStat, Priority.ALWAYS);
+        statsRow.getChildren().addAll(budgetStat, durationStat);
 
         HBox bottomRow = new HBox(10);
-        bottomRow.setAlignment(Pos.CENTER_LEFT);
-        Label budgetLabel = new Label(p.budget);
-        budgetLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region bottomSpacer = new Region();
-        HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
+        bottomRow.setAlignment(Pos.CENTER_RIGHT);
 
         StackPane editBtn = new StackPane();
         editBtn.setPrefSize(34, 34);
@@ -962,14 +1025,30 @@ public class ProjectManagement extends Application {
         approveBtn.setOnMouseClicked(e -> {
             ALL_PROJECTS.remove(p);
             ALL_PROJECTS.add(new Project(p.projectName, p.projectId, p.village, p.locality, p.department,
-                    p.budget, "Approved", p.date, null));
+                    p.budget, "Approved", p.date, null,
+                    p.category, p.location, p.expectedBudget, p.expectedDuration));
             refreshVillageData();
         });
 
-        bottomRow.getChildren().addAll(budgetLabel, bottomSpacer, editBtn, approveBtn);
+        bottomRow.getChildren().addAll(editBtn, approveBtn);
 
-        card.getChildren().addAll(titleRow, deptLabel, bottomRow);
+        card.getChildren().addAll(titleRow, categoryLabel, locationLabel, statsRow, bottomRow);
         return card;
+    }
+
+    /** Small labeled tile used to show Expected Budget / Expected Duration on a Pending Approval card. */
+    private VBox pendingStatTile(String label, String value, String accent) {
+        VBox tile = new VBox(2);
+        tile.setPadding(new Insets(8, 10, 8, 10));
+        tile.setStyle("-fx-background-color: " + rgba(accent, 0.08) + "; -fx-background-radius: 10;");
+        Label lbl = new Label(label);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 9.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.04em;");
+        Label val = new Label(value);
+        val.setWrapText(true);
+        val.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 900; -fx-text-fill: " + accent + ";");
+        tile.getChildren().addAll(lbl, val);
+        return tile;
     }
 
     /* ---------------- Project Inventory (dynamic) ---------------- */
