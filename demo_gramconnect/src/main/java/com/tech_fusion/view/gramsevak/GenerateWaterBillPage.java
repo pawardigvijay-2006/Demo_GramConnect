@@ -3,31 +3,66 @@ package com.tech_fusion.view.gramsevak;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
+
+
+
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.layout.*;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class GenerateWaterBillPage extends Application {
 
-    /* 
+    /* =========================================================
        COLORS
-       */
+       ========================================================= */
 
     private static final String FOREST_DEEP = "#0B3D2E";
     private static final String FOREST_LIGHT = "#0F4736";
+
+    // NORMAL GREEN FOR GENERATE BILL BUTTON
+    private static final String NORMAL_GREEN = "#247C0C";
+
     private static final String SAFFRON_MAIN = "#E07A1F";
 
-    // SARPANCH SIDEBAR COLOR
+    private static final String BACKGROUND = "#F5F8F6";
+    private static final String TEXT_PRIMARY = "#27352F";
+    private static final String TEXT_SECONDARY = "#65736D";
+
+    // SARPANCH SIDEBAR COLORS
     private static final String SIDEBAR_TOP = "#CDEBD8";
     private static final String SIDEBAR_MID = "#C2E7D0";
     private static final String SIDEBAR_BOT = "#B7E0C7";
+
+    // BILL CALCULATION GREEN
+    private static final String BILL_GREEN = "#E7F5EC";
+    private static final String BILL_GREEN_BORDER = "#A8D5B8";
 
     private static final String FONT_FAMILY =
             "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private Scene waterBillScene;
+
+    /*
+     * SCREEN SIZE
+     */
+    private final Rectangle2D screenSize =
+            Screen.getPrimary().getVisualBounds();
 
 
     /* =========================================================
@@ -38,53 +73,94 @@ public class GenerateWaterBillPage extends Application {
 
         BorderPane root = new BorderPane();
 
-        
-Image bgImage = new Image(
-        getClass()
-              .getResource("/assets/images/BackgroundImage.png")
-               .toExternalForm()
-);
+        // =====================================================
+        // BACKGROUND IMAGE
+        // =====================================================
 
-BackgroundImage backgroundImage =
-        new BackgroundImage(
-        bgImage,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundRepeat.NO_REPEAT,
-                BackgroundPosition.CENTER,
-                new BackgroundSize(
-                        100,
-                        100,
-                        true,
-                        true,
-                        false,
-                        true
-                )
-        );
+        try {
 
-root.setBackground(
-        new Background(backgroundImage)
-);
-        
+            Image bgImage = new Image(
+                    getClass()
+                            .getResource(
+                                    "/assets/images/BackgroundImage.png"
+                            )
+                            .toExternalForm()
+            );
 
+            BackgroundImage backgroundImage =
+                    new BackgroundImage(
+                            bgImage,
+                            BackgroundRepeat.NO_REPEAT,
+                            BackgroundRepeat.NO_REPEAT,
+                            BackgroundPosition.CENTER,
+                            new BackgroundSize(
+                                    100,
+                                    100,
+                                    true,
+                                    true,
+                                    false,
+                                    true
+                            )
+                    );
+
+            root.setBackground(
+                    new Background(backgroundImage)
+            );
+
+        } catch (Exception e) {
+
+            root.setStyle(
+                    "-fx-background-color: #F5F8F6;"
+            );
+        }
+
+
+        // =====================================================
         // SIDEBAR
+        // =====================================================
+
         root.setLeft(
                 buildSidebar(backToDashboardAction)
         );
 
-        // RIGHT AREA
-        BorderPane contentArea = new BorderPane();
-        contentArea.setStyle("-fx-background-color: transparent;");
 
+        // =====================================================
+        // RIGHT CONTENT AREA
+        // =====================================================
+
+        BorderPane contentArea = new BorderPane();
+
+        contentArea.setStyle(
+                "-fx-background-color: transparent;"
+        );
+
+
+        // TOP HEADER
         contentArea.setTop(
                 buildTopBar()
         );
 
+
+        // =====================================================
+        // SCROLL PANE
+        // =====================================================
+
         ScrollPane scrollPane =
-                new ScrollPane(buildMainContent(backToDashboardAction));
+                new ScrollPane(
+                        buildMainContent(
+                                backToDashboardAction
+                        )
+                );
 
         scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+
         scrollPane.setHbarPolicy(
                 ScrollPane.ScrollBarPolicy.NEVER
+        );
+
+        scrollPane.setVbarPolicy(
+                ScrollPane.ScrollBarPolicy.AS_NEEDED
         );
 
         scrollPane.setStyle(
@@ -101,8 +177,19 @@ root.setBackground(
                 contentArea
         );
 
-        waterBillScene =
-                new Scene(root, 1300, 800);
+
+        // =====================================================
+        // RESPONSIVE SCENE
+        // =====================================================
+
+        double screenWidth = screenSize.getWidth();
+        double screenHeight = screenSize.getHeight();
+
+        waterBillScene = new Scene(
+                root,
+                screenWidth,
+                screenHeight
+        );
 
         return waterBillScene;
     }
@@ -119,13 +206,9 @@ root.setBackground(
         VBox sidebar = new VBox();
 
         sidebar.setPrefWidth(288);
-        sidebar.setMinWidth(288);
+        sidebar.setMinWidth(250);
         sidebar.setMaxWidth(288);
 
-        /*
-         * ONLY SIDEBAR COLOR CHANGED
-         * SARPANCH FILE COLOR
-         */
         sidebar.setStyle(
                 "-fx-background-color: linear-gradient(to bottom, "
                         + SIDEBAR_TOP + ", "
@@ -275,7 +358,6 @@ root.setBackground(
                 );
 
 
-        // Dashboard click
         dashboard.setOnMouseClicked(
                 e -> {
 
@@ -371,13 +453,16 @@ root.setBackground(
 
 
         Label settingsLabel =
-                new Label("⚙   Settings");
+                new Label(
+                        "⚙   Settings"
+                );
 
         settingsLabel.setStyle(
                 "-fx-font-size: 13px;" +
                 "-fx-text-fill: rgba(11,61,46,0.70);" +
                 "-fx-cursor: hand;"
         );
+
 
         footer.getChildren().addAll(
                 divider,
@@ -432,8 +517,8 @@ root.setBackground(
 
         iconLabel.setStyle(
                 "-fx-font-size: 17px;" +
-                "-fx-text-fill: "
-                        + (active
+                "-fx-text-fill: " +
+                (active
                         ? SAFFRON_MAIN
                         : FOREST_DEEP)
                         + ";"
@@ -506,41 +591,39 @@ root.setBackground(
 
 
     /* =========================================================
-       TOP BAR
+       TOP HEADER
        ========================================================= */
 
     private HBox buildTopBar() {
 
-        HBox topBar =
-                new HBox(20);
+        HBox header =
+                new HBox(16);
 
-        topBar.setAlignment(
+        header.setAlignment(
                 Pos.CENTER_LEFT
         );
 
-        topBar.setPrefHeight(72);
-
-        topBar.setPadding(
+        header.setPadding(
                 new Insets(
-                        0,
-                        32,
-                        0,
-                        32
+                        14,
+                        28,
+                        14,
+                        28
                 )
         );
 
-        topBar.setStyle(
-                "-fx-background-color: "
-                        + "rgba(255,255,255,0.95);" +
-                "-fx-effect: dropshadow(gaussian, "
-                        + "rgba(11,61,46,0.08), "
-                        + "8, 0.1, 0, 2);"
+        header.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.92);" +
+                "-fx-border-color: transparent transparent " +
+                "rgba(255,255,255,0.6) transparent;" +
+                "-fx-effect: dropshadow(gaussian, " +
+                "rgba(11,61,46,0.08), " +
+                "8, 0.1, 0, 2);"
         );
 
 
-        
         /* =====================================================
-           SMALL SEARCH BOX
+           SEARCH BOX
            ===================================================== */
 
         HBox searchBox =
@@ -551,34 +634,28 @@ root.setBackground(
         );
 
         searchBox.setPadding(
-                new Insets(
-                        0,
-                        12,
-                        0,
-                        12
-                )
+                new Insets(0, 16, 0, 16)
         );
 
-        // SMALLER THAN BEFORE
-        searchBox.setPrefWidth(270);
-        searchBox.setMaxWidth(270);
-
-        searchBox.setPrefHeight(10);
+        searchBox.setPrefWidth(300);
+        searchBox.setPrefHeight(38);
 
         searchBox.setStyle(
-                "-fx-background-color: #F5F7F6;" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-color: "
-                        + "rgba(11,61,46,0.10);" +
-                "-fx-border-radius: 10;"
+                "-fx-background-color: "
+                        + BACKGROUND + ";" +
+                "-fx-background-radius: 20;" +
+                "-fx-border-color: rgba(11,61,46,0.10);" +
+                "-fx-border-radius: 20;" +
+                "-fx-border-width: 1;"
         );
 
 
         Label searchIcon =
-                new Label("⌕");
+                new Label("\uD83D\uDD0D");
 
         searchIcon.setStyle(
-                "-fx-font-size: 17px;"
+                "-fx-font-size: 12px;" +
+                "-fx-text-fill: rgba(11,61,46,0.60);"
         );
 
 
@@ -586,14 +663,16 @@ root.setBackground(
                 new TextField();
 
         search.setPromptText(
-                "Search..."
+                "Search projects, schemes, services"
         );
 
         search.setStyle(
                 "-fx-background-color: transparent;" +
-                "-fx-font-size: 13px;"
+                "-fx-font-family: " + FONT_FAMILY + ";" +
+                "-fx-font-size: 12px;" +
+                "-fx-text-fill: " + FOREST_DEEP + ";" +
+                "-fx-prompt-text-fill: rgba(11,61,46,0.40);"
         );
-
 
         HBox.setHgrow(
                 search,
@@ -607,6 +686,10 @@ root.setBackground(
         );
 
 
+        /* =====================================================
+           SPACER
+           ===================================================== */
+
         Region spacer =
                 new Region();
 
@@ -616,49 +699,219 @@ root.setBackground(
         );
 
 
-        Label notification =
-                new Label("🔔");
+        /* =====================================================
+           NOTIFICATION
+           ===================================================== */
 
-        notification.setStyle(
-                "-fx-font-size: 18px;" +
-                "-fx-cursor: hand;"
-        );
+        Label bellIcon =
+                new Label("\uD83D\uDD14");
 
-
-        Label profile =
-                new Label(
-                        "Gram Sevak  ▾"
-                );
-
-        profile.setPadding(
-                new Insets(
-                        10,
-                        14,
-                        10,
-                        14
-                )
-        );
-
-        profile.setStyle(
-                "-fx-background-color: #F5F7F6;" +
-                "-fx-background-radius: 12;" +
-                "-fx-font-size: 13px;" +
-                "-fx-font-weight: bold;" +
+        bellIcon.setStyle(
+                "-fx-font-size: 15px;" +
                 "-fx-text-fill: "
                         + FOREST_DEEP + ";"
         );
 
 
-        topBar.getChildren().addAll(
-                
+        StackPane bell =
+                new StackPane(
+                        bellIcon
+                );
+
+        bell.setPrefSize(38, 38);
+        bell.setMaxSize(38, 38);
+
+        bell.setStyle(
+                "-fx-background-color: "
+                        + BACKGROUND + ";" +
+                "-fx-background-radius: 999;" +
+                "-fx-effect: dropshadow(gaussian, " +
+                "rgba(11,61,46,0.08), " +
+                "4, 0.1, 0, 1);"
+        );
+
+
+        Label badge =
+                new Label("3");
+
+        badge.setStyle(
+                "-fx-font-family: " + FONT_FAMILY + ";" +
+                "-fx-background-color: #D94C38;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 9px;" +
+                "-fx-font-weight: 800;" +
+                "-fx-background-radius: 999;" +
+                "-fx-padding: 1 5 1 5;"
+        );
+
+
+        StackPane bellWithBadge =
+                new StackPane(
+                        bell,
+                        badge
+                );
+
+        StackPane.setAlignment(
+                badge,
+                Pos.TOP_RIGHT
+        );
+
+
+        /* =====================================================
+           PROFILE AVATAR
+           ===================================================== */
+
+        Label avatarLabel =
+                new Label("AJ");
+
+        avatarLabel.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 12px;" +
+                "-fx-font-weight: bold;"
+        );
+
+
+        StackPane avatar =
+                new StackPane(
+                        avatarLabel
+                );
+
+        avatar.setPrefSize(34, 34);
+        avatar.setMaxSize(34, 34);
+
+        avatar.setStyle(
+                "-fx-background-color: "
+                        + FOREST_DEEP + ";" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: "
+                        + SAFFRON_MAIN + ";" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 18;"
+        );
+
+
+        /* =====================================================
+           PROFILE NAME
+           ===================================================== */
+
+        Label name =
+                new Label(
+                        "Amit Jadhav"
+                );
+
+        name.setStyle(
+                "-fx-font-family: "
+                        + FONT_FAMILY + ";" +
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: 800;" +
+                "-fx-text-fill: "
+                        + TEXT_PRIMARY + ";"
+        );
+
+
+        Label role =
+                new Label(
+                        "Gram Sevak"
+                );
+
+        role.setStyle(
+                "-fx-font-family: "
+                        + FONT_FAMILY + ";" +
+                "-fx-font-size: 11px;" +
+                "-fx-text-fill: "
+                        + TEXT_SECONDARY + ";"
+        );
+
+
+        VBox nameBox =
+                new VBox(
+                        1,
+                        name,
+                        role
+                );
+
+
+        Label chevron =
+                new Label("\u25BE");
+
+        chevron.setStyle(
+                "-fx-text-fill: "
+                        + TEXT_SECONDARY + ";" +
+                "-fx-font-size: 11px;"
+        );
+
+
+        HBox profile =
+                new HBox(
+                        8,
+                        avatar,
+                        nameBox,
+                        chevron
+                );
+
+        profile.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        profile.setPadding(
+                new Insets(5, 8, 5, 8)
+        );
+
+        profile.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-background-radius: 10;" +
+                "-fx-cursor: hand;"
+        );
+
+
+        profile.setOnMouseClicked(
+                e -> showProfile()
+        );
+
+
+        profile.setOnMouseEntered(
+                e -> profile.setStyle(
+                        "-fx-background-color: "
+                                + "rgba(11,61,46,0.08);" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-cursor: hand;"
+                )
+        );
+
+
+        profile.setOnMouseExited(
+                e -> profile.setStyle(
+                        "-fx-background-color: transparent;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-cursor: hand;"
+                )
+        );
+
+
+        header.getChildren().addAll(
                 searchBox,
                 spacer,
-                notification,
+                bellWithBadge,
                 profile
         );
 
 
-        return topBar;
+        return header;
+    }
+
+
+    /* =========================================================
+       PROFILE
+       ========================================================= */
+
+    private void showProfile() {
+
+        showMessage(
+                "Profile",
+                "Name: Amit Jadhav\n" +
+                "Role: Gram Sevak\n" +
+                "Department: Gram Panchayat"
+        );
     }
 
 
@@ -666,7 +919,9 @@ root.setBackground(
        MAIN CONTENT
        ========================================================= */
 
-    private VBox buildMainContent(Runnable backToDashboardAction) {
+    private VBox buildMainContent(
+            Runnable backToDashboardAction
+    ) {
 
         VBox main =
                 new VBox(20);
@@ -680,8 +935,6 @@ root.setBackground(
                 )
         );
 
-        // Keep the main area transparent so the background image on the
-        // right side of the page remains visible.
         main.setStyle(
                 "-fx-background-color: transparent;"
         );
@@ -713,13 +966,17 @@ root.setBackground(
                 "-fx-text-fill: #65736D;" +
                 "-fx-cursor: hand;"
         );
-        back.setOnMouseClicked(e -> {
 
-    if (backToDashboardAction != null) {
-        backToDashboardAction.run();
-    }
 
-});
+        back.setOnMouseClicked(
+                e -> {
+
+                    if (backToDashboardAction != null) {
+                        backToDashboardAction.run();
+                    }
+
+                }
+        );
 
 
         Label title =
@@ -806,6 +1063,8 @@ root.setBackground(
         HBox body =
                 new HBox(18);
 
+        body.setFillHeight(true);
+
 
         VBox left =
                 new VBox(18);
@@ -819,9 +1078,17 @@ root.setBackground(
                 Priority.ALWAYS
         );
 
+        HBox.setHgrow(
+                right,
+                Priority.ALWAYS
+        );
+
+
+        left.setMinWidth(0);
+        right.setMinWidth(0);
 
         left.setPrefWidth(650);
-        right.setPrefWidth(300);
+        right.setPrefWidth(350);
 
 
         left.getChildren().addAll(
@@ -853,6 +1120,10 @@ root.setBackground(
                 Pos.CENTER_RIGHT
         );
 
+
+        // =====================================================
+        // GENERATE BILL BUTTON - NORMAL GREEN
+        // =====================================================
 
         Button generate =
                 new Button(
@@ -906,6 +1177,17 @@ root.setBackground(
                         "Saved",
                         "Water bill saved as draft."
                 )
+        );
+
+
+        cancel.setOnAction(
+                e -> {
+
+                    if (backToDashboardAction != null) {
+                        backToDashboardAction.run();
+                    }
+
+                }
         );
 
 
@@ -1035,18 +1317,19 @@ root.setBackground(
         );
 
 
-        addField(
-                grid,
+        VBox addressBox =
+                fieldBlock(
+                        "Address",
+                        address
+                );
+
+
+        grid.add(
+                addressBox,
                 0,
                 2,
-                "Address",
-                address
-        );
-
-
-        GridPane.setColumnSpan(
-                address,
-                2
+                2,
+                1
         );
 
 
@@ -1195,10 +1478,12 @@ root.setBackground(
                                         previousReading.getText()
                                 );
 
+
                         double current =
                                 Double.parseDouble(
                                         currentReading.getText()
                                 );
+
 
                         double units =
                                 Math.max(
@@ -1206,12 +1491,14 @@ root.setBackground(
                                         current - previous
                                 );
 
+
                         unitsConsumed.setText(
                                 String.format(
                                         "%.0f Units",
                                         units
                                 )
                         );
+
 
                     } catch (Exception ignored) {
 
@@ -1258,6 +1545,47 @@ root.setBackground(
                 );
 
 
+        // =====================================================
+        // FOREST GREEN BILL CALCULATION CARD
+        // =====================================================
+
+        box.setStyle(
+                "-fx-background-color: "
+                        + FOREST_DEEP + ";" +
+                "-fx-background-radius: 12;" +
+                "-fx-border-color: "
+                        + BILL_GREEN_BORDER + ";" +
+                "-fx-border-width: 1.5;" +
+                "-fx-border-radius: 12;" +
+                "-fx-effect: dropshadow(gaussian, " +
+                "rgba(15,64,49,0.18), " +
+                "10, 0.1, 0, 3);"
+        );
+
+
+        // =====================================================
+        // HEADING - WHITE
+        // =====================================================
+
+        if (box.getChildren().get(0) instanceof HBox) {
+
+            HBox heading =
+                    (HBox) box.getChildren().get(0);
+
+            for (Node node : heading.getChildren()) {
+
+                if (node instanceof Label) {
+
+                    ((Label) node).setStyle(
+                            "-fx-font-size: 18px;" +
+                            "-fx-font-weight: 800;" +
+                            "-fx-text-fill: white;"
+                    );
+                }
+            }
+        }
+
+
         GridPane grid =
                 new GridPane();
 
@@ -1268,17 +1596,22 @@ root.setBackground(
         TextField basic =
                 moneyField("100.00");
 
+
         TextField usage =
                 moneyField("0.00");
+
 
         TextField meter =
                 moneyField("20.00");
 
+
         TextField maintenance =
                 moneyField("15.00");
 
+
         TextField late =
                 moneyField("0.00");
+
 
         TextField discount =
                 moneyField("0.00");
@@ -1332,8 +1665,47 @@ root.setBackground(
         );
 
 
+        // =====================================================
+        // MAKE ALL BILL LABELS WHITE
+        // =====================================================
+
+        for (Node node : grid.getChildren()) {
+
+            if (node instanceof Label) {
+
+                ((Label) node).setStyle(
+                        "-fx-font-size: 12px;" +
+                        "-fx-text-fill: white;"
+                );
+            }
+
+
+            if (node instanceof HBox) {
+
+                HBox amountBox =
+                        (HBox) node;
+
+                for (Node child :
+                        amountBox.getChildren()) {
+
+                    if (child instanceof Label) {
+
+                        ((Label) child).setStyle(
+                                "-fx-font-weight: bold;" +
+                                "-fx-text-fill: white;"
+                        );
+                    }
+                }
+            }
+        }
+
+
         Separator separator =
                 new Separator();
+
+        separator.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.35);"
+        );
 
 
         VBox totalBox =
@@ -1357,8 +1729,7 @@ root.setBackground(
         totalLabel.setStyle(
                 "-fx-font-size: 14px;" +
                 "-fx-font-weight: bold;" +
-                "-fx-text-fill: "
-                        + FOREST_DEEP + ";"
+                "-fx-text-fill: white;"
         );
 
 
@@ -1370,8 +1741,7 @@ root.setBackground(
         total.setStyle(
                 "-fx-font-size: 25px;" +
                 "-fx-font-weight: 900;" +
-                "-fx-text-fill: "
-                        + FOREST_DEEP + ";"
+                "-fx-text-fill: white;"
         );
 
 
@@ -1388,6 +1758,10 @@ root.setBackground(
         );
 
 
+        // =====================================================
+        // CALCULATE TOTAL
+        // =====================================================
+
         Runnable calculateTotal =
                 () -> {
 
@@ -1398,25 +1772,30 @@ root.setBackground(
                                         basic.getText()
                                 );
 
+
                         double u =
                                 Double.parseDouble(
                                         usage.getText()
                                 );
+
 
                         double m =
                                 Double.parseDouble(
                                         meter.getText()
                                 );
 
+
                         double maint =
                                 Double.parseDouble(
                                         maintenance.getText()
                                 );
 
+
                         double lateFee =
                                 Double.parseDouble(
                                         late.getText()
                                 );
+
 
                         double dis =
                                 Double.parseDouble(
@@ -1425,10 +1804,12 @@ root.setBackground(
 
 
                         double finalAmount =
-                                b + u + m
-                                        + maint
-                                        + lateFee
-                                        - dis;
+                                b
+                                + u
+                                + m
+                                + maint
+                                + lateFee
+                                - dis;
 
 
                         total.setText(
@@ -1441,7 +1822,9 @@ root.setBackground(
                                 )
                         );
 
+
                     } catch (Exception ignored) {
+
                     }
                 };
 
@@ -1585,9 +1968,9 @@ root.setBackground(
                 "-fx-background-radius: 10;" +
                 "-fx-border-color: #DCE5E0;" +
                 "-fx-border-radius: 10;" +
-                "-fx-effect: dropshadow(gaussian, "
-                + "rgba(11,61,46,0.05), "
-                + "8, 0.1, 0, 2);"
+                "-fx-effect: dropshadow(gaussian, " +
+                "rgba(11,61,46,0.05), " +
+                "8, 0.1, 0, 2);"
         );
 
 
@@ -1652,11 +2035,19 @@ root.setBackground(
 
         c1.setPercentWidth(50);
 
+        c1.setHgrow(
+                Priority.ALWAYS
+        );
+
 
         ColumnConstraints c2 =
                 new ColumnConstraints();
 
         c2.setPercentWidth(50);
+
+        c2.setHgrow(
+                Priority.ALWAYS
+        );
 
 
         grid.getColumnConstraints()
@@ -1731,7 +2122,7 @@ root.setBackground(
 
         name.setStyle(
                 "-fx-font-size: 12px;" +
-                "-fx-text-fill: #596861;"
+                "-fx-text-fill: white;"
         );
 
 
@@ -1740,7 +2131,7 @@ root.setBackground(
 
         rupee.setStyle(
                 "-fx-font-weight: bold;" +
-                "-fx-text-fill: #596861;"
+                "-fx-text-fill: white;"
         );
 
 
@@ -1793,6 +2184,11 @@ root.setBackground(
                 "-fx-font-size: 11px;" +
                 "-fx-font-weight: 600;" +
                 "-fx-text-fill: #596861;"
+        );
+
+
+        control.setMaxWidth(
+                Double.MAX_VALUE
         );
 
 
@@ -1939,10 +2335,11 @@ root.setBackground(
         Scene scene =
                 getWaterBillScene(
                         () -> {
-                            // Dashboard navigation
+
                             System.out.println(
                                     "Back to Dashboard"
                             );
+
                         }
                 );
 
@@ -1950,12 +2347,40 @@ root.setBackground(
         stage.setScene(scene);
 
 
-        stage.setWidth(1300);
-        stage.setHeight(800);
+        // =====================================================
+        // RESPONSIVE LAPTOP SCREEN
+        // =====================================================
+
+        stage.setX(
+                screenSize.getMinX()
+        );
+
+        stage.setY(
+                screenSize.getMinY()
+        );
+
+        stage.setWidth(
+                screenSize.getWidth()
+        );
+
+        stage.setHeight(
+                screenSize.getHeight()
+        );
+
+
+        stage.setMaximized(true);
 
 
         stage.show();
     }
 
 
+    /* =========================================================
+       MAIN
+       ========================================================= */
+
+    public static void main(String[] args) {
+
+        launch(args);
+    }
 }
