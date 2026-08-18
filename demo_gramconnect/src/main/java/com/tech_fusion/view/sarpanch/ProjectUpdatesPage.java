@@ -55,11 +55,27 @@ public class ProjectUpdatesPage extends ProjectTrackerActionPage {
         Project(String n, String l, int c, boolean open) { name = n; location = l; current = c; this.open = open; }
     }
 
-    private final List<Project> projects = new ArrayList<>(List.of(
+    // Static so a project the Sarpanch initializes on the Project Initialize
+    // page is still here the next time this page is opened (each click on
+    // the "Project Updates" tile builds a fresh ProjectUpdatesPage instance).
+    private static final List<Project> projects = new ArrayList<>(List.of(
         new Project("Ward 4 Road Metaling", "Main Street", 6, true),
         new Project("Water Tank Renovation", "Near School Area", 7, false),
         new Project("Primary School Repair", "Gram Panchayat Office", 3, false)
     ));
+
+    /**
+     * Adds a newly initialized project to Project Updates at its first
+     * stage. Called by {@code ProjectInitializePage} once the Sarpanch
+     * initializes an approved project. Safe to call more than once for the
+     * same project name — duplicates are skipped.
+     */
+    public static void addInitializedProject(String name, String location) {
+        boolean alreadyPresent = projects.stream().anyMatch(p -> p.name.equals(name));
+        if (!alreadyPresent) {
+            projects.add(new Project(name, location, 0, false));
+        }
+    }
 
     public Scene getProjectUpdatesScene(Runnable backToProjectTrackerAction, Runnable backToDashboardAction) {
         return createActionScene(
