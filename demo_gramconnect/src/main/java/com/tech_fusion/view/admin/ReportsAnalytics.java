@@ -615,10 +615,10 @@ public class ReportsAnalytics extends Application {
         VBox budgetCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCB0", "TOTAL BLOCK BUDGET");
         budgetValueLabel = statValueLabel(budgetCard);
         VBox budgetExtra = new VBox(8);
-        budgetProgressBar = dynamicProgressBar(CONTEXT_TEAL, 8);
+        // budgetProgressBar = dynamicProgressBar(CONTEXT_TEAL, 8);
         budgetFootnoteLabel = new Label();
         budgetFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        budgetExtra.getChildren().addAll(budgetProgressBar.track, budgetFootnoteLabel);
+        budgetExtra.getChildren().addAll(budgetFootnoteLabel);
         budgetCard.getChildren().add(budgetExtra);
 
         VBox successCard = kpiCard(SAFFRON_MAIN, "\u2705", "PROJECT SUCCESS RATE");
@@ -629,20 +629,21 @@ public class ReportsAnalytics extends Application {
 
         VBox approvalCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCB", "AVG. APPROVAL TIME");
         approvalValueLabel = statValueLabel(approvalCard);
-        approvalFootnoteLabel = new Label("Target: <5 Days");
-        approvalFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        approvalCard.getChildren().add(approvalFootnoteLabel);
+        // approvalFootnoteLabel = new Label("Target: <5 Days");
+        // approvalFootnoteLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // approvalCard.getChildren().add(approvalFootnoteLabel);
 
         VBox grievanceCard = kpiCard(AI_VIOLET, "\u26A0", "ACTIVE GRIEVANCES");
         grievanceValueLabel = statValueLabel(grievanceCard);
         grievanceValueLabel.setStyle(
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 26px; -fx-font-weight: 900; -fx-text-fill: " + DELAYED_RED + ";");
-        VBox grievanceExtra = new VBox(4);
-        grievancePendingLabel = new Label();
-        grievancePendingLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + DELAYED_RED + ";");
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 30px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
+    
+                VBox grievanceExtra = new VBox(4);
+        // grievancePendingLabel = new Label();
+        // grievancePendingLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + DELAYED_RED + ";");
         grievanceResolutionLabel = new Label();
         grievanceResolutionLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        grievanceExtra.getChildren().addAll(grievancePendingLabel, grievanceResolutionLabel);
+        grievanceExtra.getChildren().addAll( grievanceResolutionLabel);
         grievanceCard.getChildren().add(grievanceExtra);
 
         HBox.setHgrow(budgetCard, Priority.ALWAYS);
@@ -664,18 +665,18 @@ public class ReportsAnalytics extends Application {
     private void updateStatCards() {
         String village = currentVillage();
 
-        double totalBudget = VillageDataStore.getTotalBudget(village);
-        double utilizedBudget = VillageDataStore.getUtilizedBudget(village);
-        double utilizationFraction = VillageDataStore.getBudgetUtilizationFraction(village);
+         double totalBudget = VillageDataStore.getTotalBudget(village);
+        //  double utilizedBudget = VillageDataStore.getUtilizedBudget(village);
+        //  double utilizationFraction = VillageDataStore.getBudgetUtilizationFraction(village);
         budgetValueLabel.setText(String.format("%.1fCr", totalBudget / ONE_CRORE));
-        budgetProgressBar.update(utilizationFraction);
-        budgetFootnoteLabel.setText(String.format("%.0f%% Utilized     \u20B9%.1fCr",
-                utilizationFraction * 100, utilizedBudget / ONE_CRORE));
+        // budgetProgressBar.update(utilizationFraction);
+        //  budgetFootnoteLabel.setText(String.format("%.0f%% Utilized     \u20B9%.1fCr",
+                //  utilizationFraction * 100, utilizedBudget / ONE_CRORE));
 
         double successRate = VillageDataStore.getProjectSuccessRate(village);
-        int totalProjects = VillageDataStore.getTotalProjectCount(village);
+        // int totalProjects = VillageDataStore.getTotalProjectCount(village);
         successValueLabel.setText(String.format("%.0f%%", successRate));
-        successFootnoteLabel.setText(String.format("Based on %d project%s", totalProjects, totalProjects == 1 ? "" : "s"));
+        // successFootnoteLabel.setText(String.format("Based on %d project%s", totalProjects, totalProjects == 1 ? "" : "s"));
 
         double avgApproval = VillageDataStore.getAvgApprovalTimeDays(village);
         approvalValueLabel.setText(String.format("%.1fday", avgApproval));
@@ -683,8 +684,8 @@ public class ReportsAnalytics extends Application {
         int activeGrievances = VillageDataStore.getActiveGrievances(village);
         double resolutionRate = VillageDataStore.getGrievanceResolutionRate(village);
         grievanceValueLabel.setText(String.valueOf(activeGrievances));
-        grievancePendingLabel.setText("Pending");
-        grievanceResolutionLabel.setText(String.format("%.0f%% Resolution Rate", resolutionRate));
+        //  grievancePendingLabel.setText("Pending");
+        // grievanceResolutionLabel.setText(String.format("%.0f%% Resolution Rate", resolutionRate));
     }
 
     private VBox kpiCard(String accent, String icon, String labelText) {

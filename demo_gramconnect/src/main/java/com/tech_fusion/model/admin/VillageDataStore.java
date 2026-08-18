@@ -23,16 +23,27 @@ import java.util.Map;
  * in whichever village is currently selected.
  *
  * ---------------------------------------------------------------------
+ * SARPANCH NAMES
+ * ---------------------------------------------------------------------
+ * {@link #SARPANCH_NAMES} maps each village to its Sarpanch's display
+ * name. {@link ComplaintManagement} (and any other page) reads this
+ * through {@link #getSarpanchName(String)} - never hardcode a Sarpanch
+ * name anywhere else. Update the map below when real names are
+ * available; every caller keeps working unchanged since they only go
+ * through the accessor method.
+ * ---------------------------------------------------------------------
  * FIREBASE READINESS
  * ---------------------------------------------------------------------
- * The three private lists below (PROJECTS / COMPLAINTS / REPORTS) are the
- * only place that currently holds "local/sample" data. To move to Firebase:
+ * The three private lists below (PROJECTS / COMPLAINTS / REPORTS), plus
+ * SARPANCH_NAMES, are the only place that currently holds "local/sample"
+ * data. To move to Firebase:
  *   1. Replace the static initializer blocks with a Firestore listener /
- *      one-time fetch that populates the same lists (or swap the fields
- *      for ObservableList and attach a Firestore snapshot listener).
- *   2. Every method below (getProjects, getTotalBudget, etc.) keeps working
- *      unchanged, because none of the UI code talks to Firestore directly -
- *      it only talks to this class.
+ *      one-time fetch that populates the same lists/map (or swap the
+ *      fields for ObservableList/ObservableMap and attach a Firestore
+ *      snapshot listener).
+ *   2. Every method below (getProjects, getTotalBudget, getSarpanchName,
+ *      etc.) keeps working unchanged, because none of the UI code talks
+ *      to Firestore directly - it only talks to this class.
  * ---------------------------------------------------------------------
  */
 public final class VillageDataStore {
@@ -56,14 +67,57 @@ public final class VillageDataStore {
     private static final List<Complaint> COMPLAINTS = new ArrayList<>();
     private static final List<GeneratedReport> REPORTS = new ArrayList<>();
 
+    /**
+     * Village -> Sarpanch display name. Every real village (i.e. every
+     * entry in {@link #VILLAGES} except {@link #ALL_VILLAGES}) should
+     * have an entry here. Missing/blank entries are treated as
+     * "unassigned" by {@link #getSarpanchName(String)} callers.
+     *
+     * NOTE: names below are placeholders in the same style as the
+     * seeded officer names - replace with real Sarpanch names whenever
+     * you have them; nothing else in the codebase needs to change.
+     */
+    private static final Map<String, String> SARPANCH_NAMES = new LinkedHashMap<>();
+
+    static {
+        SARPANCH_NAMES.put("Sitapur", "Ramesh Bhosale");
+        SARPANCH_NAMES.put("Rampur", "Vasant Kadam");
+        SARPANCH_NAMES.put("Kondli", "Sunanda Pawar");
+        SARPANCH_NAMES.put("Main St.", "Dilip Chavan");
+        SARPANCH_NAMES.put("North Vill.", "Manisha Jadhav");
+        SARPANCH_NAMES.put("East Ward", "Anil Thakur");
+    }
+
     static {
         seedProjects();
         seedComplaints();
         seedReports();
+
+        // ASSUMPTION: default selected project until ProjectManagement wires
+        // real user selection (mirrors selectedVillage defaulting above).
+        if (!PROJECTS.isEmpty()) {
+            ProjectDataStore.selectedProject = PROJECTS.get(0);
+        }
     }
 
     private VillageDataStore() {
         // static utility class
+    }
+
+    /* ============================================================
+     *  SARPANCH LOOKUP
+     * ============================================================ */
+
+    /**
+     * The Sarpanch's display name for the given village, or {@code null}
+     * if the village is unrecognized, is {@link #ALL_VILLAGES}, or has
+     * no Sarpanch on record. Callers (e.g. {@code ComplaintManagement})
+     * are responsible for turning a null/blank result into whatever
+     * "unassigned" fallback text they want to show.
+     */
+    public static String getSarpanchName(String village) {
+        if (village == null || ALL_VILLAGES.equals(village)) return null;
+        return SARPANCH_NAMES.get(village);
     }
 
     /* ============================================================
@@ -271,6 +325,55 @@ public final class VillageDataStore {
             {"CMP-1503", "Vinod Kamble",   "Electricity",            "Panchayat Bhavan wiring needs inspection", Complaint.Priority.LOW,   Complaint.Status.IN_PROGRESS, "10 Aug 2026", "Officer Kiran Shetty", null, null},
             {"CMP-1504", "Sneha Gaikwad",  "Sanitation",             "Library restroom needs cleaning supplies", Complaint.Priority.LOW,   Complaint.Status.REJECTED,    "27 Jul 2026", "Officer Kiran Shetty", "Handled by facility staff directly", null},
         });
+
+        seedSarpanchTargetedComplaints();
+    }
+
+    /**
+     * Sample complaints filed AGAINST the Sarpanch, tied to the first
+     * seeded project ("Sitapur Approach Road") so the Complaint
+     * Management page's Sarpanch panel has visible sample data by
+     * default. Target person is now the Sitapur Sarpanch's ACTUAL name
+     * (from {@link #SARPANCH_NAMES}), matching how
+     * {@code ComplaintManagement.isTargetedAtSarpanch()} checks name
+     * first - the "Sarpanch" role tag is kept too, purely as the
+     * fallback path. CMP-9004 is deliberately filed BY the Sarpanch and
+     * must never appear in that panel - it exercises the self-filed
+     * exclusion.
+     */
+    private static void seedSarpanchTargetedComplaints() {
+        String firstProjectId = PROJECTS.isEmpty() ? null : PROJECTS.get(0).getProjectId();
+        String sitapurSarpanch = SARPANCH_NAMES.get("Sitapur"); // "Ramesh Bhosale"
+
+        COMPLAINTS.add(new Complaint(
+                "CMP-9001", "Ramesh Bhosale", "Sitapur", "Road & Infrastructure",
+                "Sarpanch allegedly diverted road-widening funds to a private contractor",
+                Complaint.Priority.CRITICAL, Complaint.Status.PENDING, "15 Aug 2026",
+                "Unassigned", null, null,
+                firstProjectId, sitapurSarpanch, "Villager"));
+
+        COMPLAINTS.add(new Complaint(
+                "CMP-9002", null, "Sitapur", "Road & Infrastructure",
+                "Anonymous tip: work on approach road stalled but bills already cleared",
+                Complaint.Priority.HIGH, Complaint.Status.IN_PROGRESS, "12 Aug 2026",
+                "Officer Nilesh Patil", null, null,
+                firstProjectId, sitapurSarpanch, "Villager"));
+
+        COMPLAINTS.add(new Complaint(
+                "CMP-9003", "Sunil Gaikwad", "Sitapur", "Other",
+                "Sarpanch reportedly favored relatives in project labor contracts",
+                Complaint.Priority.MEDIUM, Complaint.Status.RESOLVED, "20 Jul 2026",
+                "Officer Nilesh Patil", "Contracts reviewed; process corrected", 12.0,
+                firstProjectId, sitapurSarpanch, "Villager"));
+
+        // NOTE: filed BY the Sarpanch (name matches SARPANCH_NAMES.get("Sitapur"))
+        // - must never appear in the "against Sarpanch" panel.
+        COMPLAINTS.add(new Complaint(
+                "CMP-9004", sitapurSarpanch, "Sitapur", "Water Supply",
+                "Requesting urgent repair funds for overhead tank",
+                Complaint.Priority.HIGH, Complaint.Status.PENDING, "14 Aug 2026",
+                "Unassigned", null, null,
+                firstProjectId, null, "Sarpanch"));
     }
 
     @SuppressWarnings("unchecked")
