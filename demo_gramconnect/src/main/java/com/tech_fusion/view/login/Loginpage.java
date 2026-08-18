@@ -93,7 +93,7 @@ public class Loginpage {
         );
 
         loginCard.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.96);" +
+                "-fx-background-color: transparent;" +
                 "-fx-background-radius: 25;"
         );
 
