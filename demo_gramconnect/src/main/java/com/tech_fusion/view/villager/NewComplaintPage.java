@@ -34,11 +34,29 @@ import javafx.stage.FileChooser;
  * - onSubmittedGoBack -> called after the user dismisses the "Complaint
  * Submitted" popup; normally this just re-opens ComplaintsPage so the
  * new complaint shows up in the list.
+ *
+ * ============================================================
+ * WHAT CHANGED (complaint type support)
+ * ============================================================
+ * The form now starts with a "1. Select Type of Complaint" section with
+ * two selectable cards - General Issue (default) and Official Complaint -
+ * matching the reference screenshot. Picking "Official Complaint" reveals
+ * one extra required field, "Official's Name / Designation", right below
+ * Location/Area. Everything else (title, location, description, optional
+ * photo, validation, submit flow, sidebar, header) is unchanged.
+ *
+ * The selected type is folded into the description string passed to the
+ * existing ComplaintsPage.addComplaint(title, location, description) call
+ * (prefixed with "[General Issue]" or "[Official Complaint against: X]"),
+ * so it's actually stored with the complaint without requiring any change
+ * to ComplaintsPage.java's method signature.
+ * ============================================================
  */
 public class NewComplaintPage {
 
         private static final String PRIMARY = "#005B1B";
         private static final String LIGHT_GREEN = "#E8F7EA";
+        private static final String LIGHT_ORANGE = "#FDECDD";
         private static final String BACKGROUND = "#F4F8FB";
         private static final String TEXT_PRIMARY = "#10251A";
         private static final String TEXT_SECONDARY = "#66756C";
@@ -53,6 +71,12 @@ public class NewComplaintPage {
         private static final String SIDEBAR_MID = "#BCE3CC";
         private static final String SIDEBAR_BOT = "#A9D8BD";
         private static final String DELAYED_RED = "#D94C38";
+        private static final String LIGHT_BLUE = "#ceecff";
+        private static final String SECONDARY = "#196dc2";
+
+        // Complaint type constants
+        private static final String TYPE_GENERAL = "General Issue";
+        private static final String TYPE_OFFICIAL = "Official Complaint";
 
         // Form fields (built once, referenced from the submit handler)
         private TextField titleField;
@@ -63,6 +87,13 @@ public class NewComplaintPage {
         private Label titleError;
         private Label locationError;
         private Label descriptionError;
+
+        // Complaint-type selection state
+        private String selectedComplaintType = TYPE_GENERAL;
+        private HBox typeRow;
+        private VBox officialDetailsBox;
+        private TextField officialNameField;
+        private Label officialNameError;
 
         public Scene getNewComplaintScene(Runnable backAction, Runnable onSubmittedGoBack) {
                 BorderPane root = new BorderPane();
@@ -347,45 +378,134 @@ public class NewComplaintPage {
                 return header;
         }
 
-        private ScrollPane buildScrollableContent(Runnable backAction, Runnable onSubmittedGoBack) {
+        private ScrollPane buildScrollableContent(
+                        Runnable backAction,
+                        Runnable onSubmittedGoBack) {
+
                 VBox content = new VBox(18);
-                content.setPadding(new Insets(20, 28, 28, 28));
-                content.setMaxWidth(720);
+
+                content.setPadding(
+                                new Insets(20, 28, 28, 28));
+
+                content.setMaxWidth(820);
                 content.setFillWidth(true);
 
                 content.getChildren().addAll(
-                                buildPageTitle(),
+                                buildPageTitle(onSubmittedGoBack),
                                 buildForm(onSubmittedGoBack));
 
                 VBox centered = new VBox(content);
                 centered.setAlignment(Pos.TOP_CENTER);
 
                 ScrollPane scrollPane = new ScrollPane(centered);
+
                 scrollPane.setFitToWidth(true);
                 scrollPane.setFitToHeight(false);
-                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-                scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+                scrollPane.setHbarPolicy(
+                                ScrollPane.ScrollBarPolicy.NEVER);
+
+                scrollPane.setVbarPolicy(
+                                ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
                 scrollPane.setPannable(true);
+
                 scrollPane.setStyle(
-                                "-fx-background-color: transparent;"
-                                                + "-fx-background-insets: 0;"
-                                                + "-fx-padding: 0;");
+                                "-fx-background-color: transparent;" +
+                                                "-fx-background-insets: 0;" +
+                                                "-fx-padding: 0;");
+
+                scrollPane.setVvalue(0);
 
                 return scrollPane;
         }
 
-        private VBox buildPageTitle() {
+        private HBox buildPageTitle(Runnable backToComplaints) {
+
+                // ---------------- Back button ----------------
+
+                Button backButton = new Button("\u2190  Back to Complaints");
+
+                backButton.setStyle(
+                                "-fx-background-color: white;" +
+                                                "-fx-text-fill: " + TEXT_PRIMARY + ";" +
+                                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 12px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-background-radius: 8;" +
+                                                "-fx-border-color: " + BORDER + ";" +
+                                                "-fx-border-width: 1;" +
+                                                "-fx-border-radius: 8;" +
+                                                "-fx-padding: 9 14 9 14;" +
+                                                "-fx-cursor: hand;");
+
+                backButton.setOnMouseEntered(e -> {
+                        backButton.setStyle(
+                                        "-fx-background-color: " + LIGHT_GREEN + ";" +
+                                                        "-fx-text-fill: " + PRIMARY + ";" +
+                                                        "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                        "-fx-font-size: 12px;" +
+                                                        "-fx-font-weight: bold;" +
+                                                        "-fx-background-radius: 8;" +
+                                                        "-fx-border-color: " + PRIMARY + ";" +
+                                                        "-fx-border-width: 1;" +
+                                                        "-fx-border-radius: 8;" +
+                                                        "-fx-padding: 9 14 9 14;" +
+                                                        "-fx-cursor: hand;");
+                });
+
+                backButton.setOnMouseExited(e -> {
+                        backButton.setStyle(
+                                        "-fx-background-color: white;" +
+                                                        "-fx-text-fill: " + TEXT_PRIMARY + ";" +
+                                                        "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                        "-fx-font-size: 12px;" +
+                                                        "-fx-font-weight: bold;" +
+                                                        "-fx-background-radius: 8;" +
+                                                        "-fx-border-color: " + BORDER + ";" +
+                                                        "-fx-border-width: 1;" +
+                                                        "-fx-border-radius: 8;" +
+                                                        "-fx-padding: 9 14 9 14;" +
+                                                        "-fx-cursor: hand;");
+                });
+
+                backButton.setOnAction(e -> backToComplaints.run());
+
+                // ---------------- Title ----------------
+
                 Label title = new Label("Register New Complaint");
-                title.setStyle("-fx-text-fill: " + TEXT_PRIMARY + "; -fx-font-size: 22px; -fx-font-weight: bold;");
 
-                Label subtitle = new Label("Tell us what's wrong - we'll route it to the right department.");
-                subtitle.setStyle("-fx-text-fill: " + TEXT_SECONDARY + "; -fx-font-size: 12px;");
+                title.setStyle(
+                                "-fx-text-fill: " + TEXT_PRIMARY + ";" +
+                                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 22px;" +
+                                                "-fx-font-weight: 900;");
 
-                return new VBox(2, title, subtitle);
+                Label subtitle = new Label(
+                                "Tell us what's wrong - we'll route it to the right department.");
+
+                subtitle.setStyle(
+                                "-fx-text-fill: " + TEXT_SECONDARY + ";" +
+                                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 12px;");
+
+                VBox titleBox = new VBox(
+                                2,
+                                title,
+                                subtitle);
+
+                HBox titleRow = new HBox(
+                                16,
+                                backButton,
+                                titleBox);
+
+                titleRow.setAlignment(Pos.CENTER_LEFT);
+
+                return titleRow;
         }
 
         // =================================================================
-        // FORM: title, location, description, upload photo, submit
+        // FORM: complaint type, title, location, description, upload photo, submit
         // =================================================================
         private VBox buildForm(Runnable onSubmittedGoBack) {
 
@@ -394,24 +514,40 @@ public class NewComplaintPage {
                 card.setStyle("-fx-background-color: white; -fx-background-radius: 14; "
                                 + "-fx-border-color: " + BORDER + "; -fx-border-radius: 14; -fx-border-width: 1;");
 
-                // ---- Complaint title ----
-                Label titleLabel = fieldLabel("Complaint Title");
+                // ---- 1. Select Type of Complaint ----
+                Label typeSectionLabel = fieldLabel("1. Select Type of Complaint");
+                typeRow = new HBox(16);
+                refreshTypeCards();
+                VBox typeSectionBox = new VBox(10, typeSectionLabel, typeRow);
+
+                // ---- 2. Complaint title ----
+                Label titleLabel = fieldLabel("2. Complaint Title");
                 titleField = new TextField();
                 titleField.setPromptText("e.g. Broken water pipe near temple");
                 titleField.setStyle(fieldStyle());
                 titleError = errorLabel();
                 VBox titleBox = new VBox(6, titleLabel, titleField, titleError);
 
-                // ---- Location area ----
-                Label locationLabel = fieldLabel("Location / Area");
+                // ---- 3. Location area ----
+                Label locationLabel = fieldLabel("3. Location / Area");
                 locationField = new TextField();
                 locationField.setPromptText("e.g. Temple Square, Zone 4");
                 locationField.setStyle(fieldStyle());
                 locationError = errorLabel();
                 VBox locationBox = new VBox(6, locationLabel, locationField, locationError);
 
-                // ---- Description ----
-                Label descriptionLabel = fieldLabel("Description");
+                // ---- Official's Name / Designation (only shown for Official Complaint) ----
+                Label officialNameLabel = fieldLabel("Official's Name / Designation");
+                officialNameField = new TextField();
+                officialNameField.setPromptText("e.g. Ramesh Patil, Sarpanch");
+                officialNameField.setStyle(fieldStyle());
+                officialNameError = errorLabel();
+                officialDetailsBox = new VBox(6, officialNameLabel, officialNameField, officialNameError);
+                officialDetailsBox.setVisible(selectedComplaintType.equals(TYPE_OFFICIAL));
+                officialDetailsBox.setManaged(selectedComplaintType.equals(TYPE_OFFICIAL));
+
+                // ---- 4. Description ----
+                Label descriptionLabel = fieldLabel("4. Description");
                 descriptionField = new TextArea();
                 descriptionField.setPromptText("Describe the issue in detail...");
                 descriptionField.setWrapText(true);
@@ -420,8 +556,8 @@ public class NewComplaintPage {
                 descriptionError = errorLabel();
                 VBox descriptionBox = new VBox(6, descriptionLabel, descriptionField, descriptionError);
 
-                // ---- Upload photo ----
-                Label photoLabel = fieldLabel("Upload Photo (optional)");
+                // ---- 5. Upload photo ----
+                Label photoLabel = fieldLabel("5. Upload Photo (optional)");
 
                 Button uploadBtn = new Button("\uD83D\uDCF7  Choose Photo");
                 uploadBtn.setStyle(secondaryButtonStyle());
@@ -438,7 +574,8 @@ public class NewComplaintPage {
                         if (file != null) {
                                 selectedPhoto = file;
                                 photoNameLabel.setText(file.getName());
-                                photoNameLabel.setStyle("-fx-text-fill: " + TEXT_PRIMARY + "; -fx-font-size: 12px; -fx-font-weight: 600;");
+                                photoNameLabel.setStyle("-fx-text-fill: " + TEXT_PRIMARY
+                                                + "; -fx-font-size: 12px; -fx-font-weight: 600;");
                         }
                 });
 
@@ -459,7 +596,223 @@ public class NewComplaintPage {
                 HBox actionsRow = new HBox(10, submitBtn, cancelBtn);
                 actionsRow.setAlignment(Pos.CENTER_LEFT);
 
-                card.getChildren().addAll(titleBox, locationBox, descriptionBox, photoBox, actionsRow);
+                card.getChildren().addAll(
+                                typeSectionBox, titleBox, locationBox, officialDetailsBox,
+                                descriptionBox, photoBox, actionsRow);
+                return card;
+        }
+
+        // =================================================================
+        // COMPLAINT TYPE CARDS (General Issue / Official Complaint)
+        // =================================================================
+
+        /**
+         * Rebuilds both type cards from scratch so the "selected" styling always
+         * matches selectedComplaintType.
+         */
+        private void refreshTypeCards() {
+
+                typeRow.getChildren().clear();
+
+                VBox generalCard = typeCard(
+                                "\u26A0", // ⚠
+                                LIGHT_BLUE,
+                                SECONDARY,
+                                "General Issue",
+                                "Report problems related to village infrastructure, services and other general issues.",
+                                TYPE_GENERAL);
+
+                VBox officialCard = typeCard(
+                                "\u2696", // ⚖
+                                LIGHT_ORANGE,
+                                SAFFRON_MAIN,
+                                "Official Complaint",
+                                "Report complaint regarding Sarpanch or Gramsevak's behaviour, decisions or misconduct.",
+                                TYPE_OFFICIAL);
+
+                // Give both cards equal width
+                HBox.setHgrow(generalCard, Priority.ALWAYS);
+                HBox.setHgrow(officialCard, Priority.ALWAYS);
+
+                generalCard.setMinWidth(340);
+                officialCard.setMinWidth(340);
+
+                generalCard.setPrefHeight(115);
+                officialCard.setPrefHeight(115);
+
+                typeRow.getChildren().addAll(
+                                generalCard,
+                                officialCard);
+        }
+
+        /**
+         * One selectable complaint-type card: icon chip, title, description, and a
+         * radio indicator.
+         */
+        private VBox typeCard(
+                        String icon,
+                        String iconBg,
+                        String iconColor,
+                        String title,
+                        String description,
+                        String typeValue) {
+
+                boolean selected = selectedComplaintType.equals(typeValue);
+
+                // =====================================================
+                // ICON
+                // =====================================================
+
+                Label iconLabel = new Label(icon);
+
+                iconLabel.setStyle(
+                                "-fx-font-family: 'Segoe UI Symbol';" +
+                                                "-fx-font-size: 25px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-text-fill: " + iconColor + ";");
+
+                StackPane iconChip = new StackPane(iconLabel);
+
+                iconChip.setPrefSize(54, 54);
+                iconChip.setMinSize(54, 54);
+                iconChip.setMaxSize(54, 54);
+
+                iconChip.setStyle(
+                                "-fx-background-color: " + iconBg + ";" +
+                                                "-fx-background-radius: 27;");
+
+                // =====================================================
+                // TITLE
+                // =====================================================
+
+                Label titleLabel = new Label(title);
+
+                titleLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 14px;" +
+                                                "-fx-font-weight: 800;" +
+                                                "-fx-text-fill: " + TEXT_PRIMARY + ";");
+
+                // =====================================================
+                // DESCRIPTION
+                // =====================================================
+
+                Label descLabel = new Label(description);
+
+                descLabel.setWrapText(true);
+
+                descLabel.setMaxWidth(245);
+
+                descLabel.setStyle(
+                                "-fx-font-family: " + FONT_FAMILY + ";" +
+                                                "-fx-font-size: 11px;" +
+                                                "-fx-line-spacing: 1;" +
+                                                "-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+                VBox textBox = new VBox(
+                                5,
+                                titleLabel,
+                                descLabel);
+
+                textBox.setAlignment(Pos.CENTER_LEFT);
+
+                HBox.setHgrow(
+                                textBox,
+                                Priority.ALWAYS);
+
+                // =====================================================
+                // RADIO INDICATOR
+                // =====================================================
+
+                Region radioOuter = new Region();
+
+                radioOuter.setPrefSize(18, 18);
+                radioOuter.setMinSize(18, 18);
+                radioOuter.setMaxSize(18, 18);
+
+                radioOuter.setStyle(
+                                "-fx-background-color: white;" +
+                                                "-fx-border-color: " +
+                                                (selected ? PRIMARY : BORDER) + ";" +
+                                                "-fx-border-width: 2;" +
+                                                "-fx-background-radius: 9;" +
+                                                "-fx-border-radius: 9;");
+
+                Region radioInner = new Region();
+
+                radioInner.setPrefSize(8, 8);
+                radioInner.setMinSize(8, 8);
+                radioInner.setMaxSize(8, 8);
+
+                radioInner.setStyle(
+                                "-fx-background-color: " + PRIMARY + ";" +
+                                                "-fx-background-radius: 4;");
+
+                radioInner.setVisible(selected);
+
+                StackPane radio = new StackPane(
+                                radioOuter,
+                                radioInner);
+
+                radio.setMinSize(18, 18);
+
+                // =====================================================
+                // CARD CONTENT
+                // =====================================================
+
+                HBox row = new HBox(
+                                16,
+                                iconChip,
+                                textBox,
+                                radio);
+
+                row.setAlignment(
+                                Pos.CENTER_LEFT);
+
+                // =====================================================
+                // CARD
+                // =====================================================
+
+                VBox card = new VBox(row);
+
+                card.setMinWidth(340);
+                card.setPrefWidth(380);
+                card.setPrefHeight(115);
+
+                card.setPadding(
+                                new Insets(16));
+
+                card.setStyle(
+                                "-fx-background-color: " +
+                                                (selected ? LIGHT_GREEN : "white") + ";" +
+                                                "-fx-border-color: " +
+                                                (selected ? PRIMARY : BORDER) + ";" +
+                                                "-fx-border-width: " +
+                                                (selected ? 2 : 1) + ";" +
+                                                "-fx-border-radius: 12;" +
+                                                "-fx-background-radius: 12;" +
+                                                "-fx-cursor: hand;");
+
+                // =====================================================
+                // CLICK
+                // =====================================================
+
+                card.setOnMouseClicked(e -> {
+
+                        selectedComplaintType = typeValue;
+
+                        refreshTypeCards();
+
+                        boolean isOfficial = selectedComplaintType.equals(TYPE_OFFICIAL);
+
+                        officialDetailsBox.setVisible(isOfficial);
+                        officialDetailsBox.setManaged(isOfficial);
+
+                        if (!isOfficial) {
+                                officialNameError.setText("");
+                        }
+                });
+
                 return card;
         }
 
@@ -467,6 +820,7 @@ public class NewComplaintPage {
                 String title = titleField.getText() == null ? "" : titleField.getText().trim();
                 String location = locationField.getText() == null ? "" : locationField.getText().trim();
                 String description = descriptionField.getText() == null ? "" : descriptionField.getText().trim();
+                String officialName = officialNameField.getText() == null ? "" : officialNameField.getText().trim();
 
                 boolean valid = true;
 
@@ -491,14 +845,29 @@ public class NewComplaintPage {
                         descriptionError.setText("");
                 }
 
+                boolean isOfficial = selectedComplaintType.equals(TYPE_OFFICIAL);
+                if (isOfficial && officialName.isEmpty()) {
+                        officialNameError.setText("4. Official's name / designation is required.");
+                        valid = false;
+                } else {
+                        officialNameError.setText("");
+                }
+
                 if (!valid) {
                         return;
                 }
 
+                // Fold the selected type (+ official name, if applicable) into the
+                // description so it's actually stored with the complaint, without
+                // requiring any change to ComplaintsPage's addComplaint signature.
+                String finalDescription = isOfficial
+                                ? "[Official Complaint against: " + officialName + "]\n\n" + description
+                                : "[General Issue]\n\n" + description;
+
                 // Save into the shared in-memory store (replace with a real
                 // ComplaintService/DB call when the backend exists). Photo
                 // upload is captured as a local file reference for now.
-                ComplaintsPage.addComplaint(title, location, description);
+                ComplaintsPage.addComplaint(title, location, finalDescription);
 
                 Alert confirm = new Alert(AlertType.INFORMATION);
                 confirm.setTitle("Complaint Submitted");
