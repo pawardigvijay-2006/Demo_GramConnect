@@ -71,7 +71,6 @@ public class AuthController {
                     .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                     .build();
 
-                    System.out.println("hello");
             System.out.println(request);
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
