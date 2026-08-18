@@ -553,27 +553,40 @@ public class DocumentView {
         );
 
         HBox applicantRow1 = new HBox(30);
-        applicantRow1.getChildren().addAll(
-                infoBlock("Full Name", document.getApplicantName()),
-                infoBlock("Mobile Number", document.getMobileNumber())
-        );
+applicantRow1.getChildren().addAll(
+        infoBlock("Full Name", document.getApplicantName()),
+        infoBlock("Father's/Husband's Name",
+                document.getApplicantFatherName()),
+        infoBlock("Date of Birth", document.getDob()),
+        infoBlock("Gender", document.getGender())
+);
 
-        HBox applicantRow2 = new HBox(30);
-        applicantRow2.getChildren().addAll(
-                infoBlock("Address", document.getAddress()),
-                infoBlock("Village", document.getVillage())
-        );
+HBox applicantRow2 = new HBox(30);
+applicantRow2.getChildren().addAll(
+        infoBlock("Mobile Number", document.getMobileNumber()),
+        infoBlock("Email", document.getEmail()),
+        infoBlock("Occupation", document.getOccupation()),
+        infoBlock("Annual Income", document.getAnnualIncome())
+);
 
-        HBox applicantRow3 = new HBox(30);
-        applicantRow3.getChildren().add(
-                infoBlock("ID / Aadhaar Number", document.getMaskedIdNumber())
-        );
+HBox applicantRow3 = new HBox(30);
+applicantRow3.getChildren().addAll(
+        infoBlock("Village", document.getVillage()),
+        infoBlock("ID / Aadhaar Number",
+                document.getMaskedIdNumber())
+);
+
+HBox applicantRow4 = new HBox(30);
+applicantRow4.getChildren().add(
+        infoBlock("Address", document.getAddress())
+);
 
         applicantCard.getChildren().addAll(
                 applicantTitle,
                 applicantRow1,
                 applicantRow2,
-                applicantRow3
+                applicantRow3,
+                applicantRow4
         );
 
         // ========================================================
@@ -625,96 +638,58 @@ public class DocumentView {
         // UPLOADED DOCUMENT / PREVIEW CARD
         // ========================================================
 
-        VBox previewCard = new VBox(12);
-        previewCard.setPadding(new Insets(20));
-        previewCard.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 16;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 16;"
-        );
+        // ========================================================
+// UPLOADED DOCUMENTS
+// ========================================================
 
-        Label previewTitle = new Label("Uploaded Document");
-        previewTitle.setStyle(
-                "-fx-font-size: 16px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #0B4F43;"
-        );
+VBox uploadedDocumentsCard = new VBox(12);
 
-        Label fileLine = new Label("📄  " + document.getFileName());
-        fileLine.setStyle(
-                "-fx-font-size: 13px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + TEXT_PRIMARY + ";"
-        );
+uploadedDocumentsCard.setPadding(new Insets(20));
 
-        // ------------------------------------------------------
-        // TEMPORARY PREVIEW PLACEHOLDER
-        // ------------------------------------------------------
-        // The backend/API is not connected yet, so there is no
-        // real file to render here. This box just shows a
-        // placeholder. Later, if the uploaded file is an image,
-        // this VBox can be swapped for an ImageView. If it's a
-        // PDF, "View Document" can open the real file URL.
-        // ------------------------------------------------------
+uploadedDocumentsCard.setStyle(
+        "-fx-background-color: white;"
+        + "-fx-background-radius: 16;"
+        + "-fx-border-color: #E1E7E4;"
+        + "-fx-border-radius: 16;"
+);
 
-        VBox previewBox = new VBox(8);
-        previewBox.setAlignment(Pos.CENTER);
-        previewBox.setPrefHeight(220);
-        previewBox.setStyle(
-                "-fx-background-color: " + BACKGROUND + ";"
-                        + "-fx-background-radius: 12;"
-                        + "-fx-border-color: #D8E2DC;"
-                        + "-fx-border-style: dashed;"
-                        + "-fx-border-radius: 12;"
-        );
+Label uploadedTitle = new Label("Uploaded Documents");
 
-        Label previewLabel = new Label("DOCUMENT PREVIEW");
-        previewLabel.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #7A8A87;"
-        );
+uploadedTitle.setStyle(
+        "-fx-font-size: 16px;"
+        + "-fx-font-weight: bold;"
+        + "-fx-text-fill: #0B4F43;"
+);
 
-        Label previewIcon = new Label("📄  PDF Document");
-        previewIcon.setStyle(
-                "-fx-font-size: 15px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + TEXT_PRIMARY + ";"
-        );
+uploadedDocumentsCard.getChildren().add(uploadedTitle);
 
-        Label previewFileName = new Label(document.getFileName());
-        previewFileName.setStyle(
-                "-fx-font-size: 12px;"
-                        + "-fx-text-fill: #7A8A87;"
-        );
+uploadedDocumentsCard.getChildren().add(
+        createUploadedDocumentRow(
+                "Aadhaar Card",
+                "aadhaar_card.pdf"
+        )
+);
 
-        previewBox.getChildren().addAll(
-                previewLabel,
-                previewIcon,
-                previewFileName
-        );
+uploadedDocumentsCard.getChildren().add(
+        createUploadedDocumentRow(
+                "Income Certificate",
+                "income_certificate.pdf"
+        )
+);
 
-        Button viewDocumentButton = new Button("View Document");
-        viewDocumentButton.setStyle(
-                "-fx-background-color: #EAF5FC;"
-                        + "-fx-text-fill: #1976D2;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 8;"
-                        + "-fx-padding: 8 16 8 16;"
-                        + "-fx-cursor: hand;"
-        );
+uploadedDocumentsCard.getChildren().add(
+        createUploadedDocumentRow(
+                "Address Proof",
+                "address_proof.pdf"
+        )
+);
 
-        viewDocumentButton.setOnAction(
-                event -> System.out.println("View uploaded document")
-        );
-
-        previewCard.getChildren().addAll(
-                previewTitle,
-                fileLine,
-                previewBox,
-                viewDocumentButton
-        );
+uploadedDocumentsCard.getChildren().add(
+        createUploadedDocumentRow(
+                "Passport Photo",
+                "passport_photo.jpg"
+        )
+);
 
         // ========================================================
         // VERIFICATION DETAILS CARD
@@ -873,7 +848,7 @@ public class DocumentView {
                 basicInfoCard,
                 applicantCard,
                 documentInfoCard,
-                previewCard,
+                uploadedDocumentsCard,
                 verificationDetailsCard,
                 actionCard
         );
@@ -888,6 +863,70 @@ public class DocumentView {
     // ============================================================
     // SMALL HELPERS
     // ============================================================
+        private HBox createUploadedDocumentRow(
+        String documentName,
+        String fileName) {
+
+    HBox row = new HBox(12);
+    row.setAlignment(Pos.CENTER_LEFT);
+    row.setPadding(new Insets(12));
+
+    row.setStyle(
+            "-fx-background-color: #F8FBF9;"
+            + "-fx-background-radius: 10;"
+            + "-fx-border-color: #E1E7E4;"
+            + "-fx-border-radius: 10;"
+    );
+
+    Label icon = new Label("📄");
+    icon.setStyle("-fx-font-size: 20px;");
+
+    VBox fileInfo = new VBox(3);
+
+    Label name = new Label(documentName);
+    name.setStyle(
+            "-fx-font-size: 13px;"
+            + "-fx-font-weight: bold;"
+            + "-fx-text-fill: #10251A;"
+    );
+
+    Label file = new Label(fileName);
+    file.setStyle(
+            "-fx-font-size: 11px;"
+            + "-fx-text-fill: #7A8A87;"
+    );
+
+    fileInfo.getChildren().addAll(name, file);
+
+    Region spacer = new Region();
+    HBox.setHgrow(spacer, Priority.ALWAYS);
+
+    Button viewButton = new Button("View");
+
+    viewButton.setStyle(
+            "-fx-background-color: #EAF5FC;"
+            + "-fx-text-fill: #1976D2;"
+            + "-fx-font-weight: bold;"
+            + "-fx-background-radius: 7;"
+            + "-fx-padding: 6 14 6 14;"
+            + "-fx-cursor: hand;"
+    );
+
+    viewButton.setOnAction(
+            event -> System.out.println(
+                    "View document: " + fileName
+            )
+    );
+
+    row.getChildren().addAll(
+            icon,
+            fileInfo,
+            spacer,
+            viewButton
+    );
+
+    return row;
+}
 
     private VBox infoBlock(String titleText, String valueText) {
 
