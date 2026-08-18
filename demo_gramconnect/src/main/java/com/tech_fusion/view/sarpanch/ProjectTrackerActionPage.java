@@ -1,9 +1,8 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -30,11 +29,14 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Screen;
 
 /**
  * Shared layout and UI helpers for the individual Project Tracker action pages.
  */
 public abstract class ProjectTrackerActionPage {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     private static final String FOREST_DEEP = "#0B3D2E";
     private static final String FOREST_LIGHT = "#0F4736";
@@ -47,8 +49,7 @@ public abstract class ProjectTrackerActionPage {
     private static final String SIDEBAR_MID = "#BCE3CC";
     private static final String SIDEBAR_BOT = "#A9D8BD";
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     private Runnable backToProjectTrackerAction;
     private Runnable backToDashboardAction;
 
@@ -59,7 +60,7 @@ public abstract class ProjectTrackerActionPage {
 
         BorderPane root = new BorderPane();
         root.setBackground(new Background(new BackgroundImage(
-            new javafx.scene.image.Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString()),
+            new javafx.scene.image.Image(BACKGROUND_IMAGE_PATH),
             BackgroundRepeat.NO_REPEAT,
             BackgroundRepeat.NO_REPEAT,
             BackgroundPosition.CENTER,
@@ -75,7 +76,7 @@ public abstract class ProjectTrackerActionPage {
         scroller.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
         page.setCenter(scroller);
         root.setCenter(page);
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /** Matches the complete Dashboard sidebar; only Project Tracker is active. */
@@ -122,11 +123,11 @@ public abstract class ProjectTrackerActionPage {
             SarpanchDashboard.myStage.setTitle("GramConnect - Complaints");
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Bills & Payments", false);
         citizenServicesNav.setOnMouseClicked(e -> {
-            System.out.println("Citizen Services clicked");
+            System.out.println("Bills & Payments clicked");
             CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setTitle("GramConnect ");
             SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
         });
         HBox announcementsNav = navItem("\uD83D\uDCE2", "Announcements", false);
@@ -189,11 +190,20 @@ public abstract class ProjectTrackerActionPage {
 
         HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(0, 16, 0, 16));
-        searchBox.setPrefWidth(480);
-        searchBox.setPrefHeight(42);
-        searchBox.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12;" +
-            "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
+        searchBox.setPadding(new Insets(0, 14, 0, 14));
+        searchBox.setPrefWidth(400);
+        searchBox.setMinWidth(400);
+        searchBox.setMaxWidth(400);
+        searchBox.setPrefHeight(38);
+        searchBox.setMinHeight(38);
+        searchBox.setMaxHeight(38);     
+        searchBox.setStyle(
+            "-fx-background-color: rgba(255,255,255,0.7);" +
+            "-fx-background-radius: 12;" +
+            "-fx-border-color: rgba(11,61,46,0.10);" +
+            "-fx-border-radius: 12;" +
+            "-fx-border-width: 1;"
+        );
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
         TextField searchField = new TextField();

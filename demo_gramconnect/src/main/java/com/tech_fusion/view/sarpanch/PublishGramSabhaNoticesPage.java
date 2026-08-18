@@ -1,12 +1,12 @@
 package com.tech_fusion.view.sarpanch;
 
-import java.io.File;
 import java.time.LocalDate;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
@@ -35,6 +35,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 /**
  * GramConnect - Publish Gram Sabha Notices Page.
@@ -52,6 +53,8 @@ import javafx.scene.text.FontWeight;
  */
 public class PublishGramSabhaNoticesPage {
 
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
     /* ---------- Color palette (kept identical to the other pages) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
     private static final String FOREST_LIGHT  = "#0F4736";
@@ -66,8 +69,7 @@ public class PublishGramSabhaNoticesPage {
     private static final String FONT_FAMILY = "'Inter', 'Segoe UI', 'Arial', sans-serif";
 
     private static final String BACKGROUND_IMAGE_PATH =
-        "C:/Users/Ashish/Downloads/Background File of each Page/Background Image.png";
-
+        "/assets/images/BackgroundImage.png";
     /** Navigates back to AnnouncementsPage (passed in from AnnouncementsPage). */
     private Runnable backToAnnouncementsAction;
     /** Navigates back to the Dashboard (threaded through so the sidebar still works here). */
@@ -96,7 +98,7 @@ public class PublishGramSabhaNoticesPage {
         this.backToDashboardAction = backToDashboardAction;
 
         BorderPane root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+        Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
         root.setBackground(new Background(new BackgroundImage(backgroundImage,
                                                             BackgroundRepeat.NO_REPEAT,
                                                             BackgroundRepeat.NO_REPEAT,
@@ -121,7 +123,7 @@ public class PublishGramSabhaNoticesPage {
 
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================
@@ -185,11 +187,11 @@ public class PublishGramSabhaNoticesPage {
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Bills & Payments", false);
         citizenServicesNav.setOnMouseClicked(e -> {
-            System.out.println("Citizen Services clicked");
+            System.out.println("Bills & Payments clicked");
             CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setTitle("GramConnect ");
             SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
         });
 
@@ -330,11 +332,20 @@ createBtn.setOnMouseClicked(e -> {
 
         HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(0, 16, 0, 16));
-        searchBox.setPrefWidth(480);
-        searchBox.setPrefHeight(42);
-        searchBox.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12;" +
-            "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
+        searchBox.setPadding(new Insets(0, 14, 0, 14));
+        searchBox.setPrefWidth(400);
+        searchBox.setMinWidth(400);
+        searchBox.setMaxWidth(400);
+        searchBox.setPrefHeight(38);
+        searchBox.setMinHeight(38);
+        searchBox.setMaxHeight(38);     
+        searchBox.setStyle(
+            "-fx-background-color: rgba(255,255,255,0.7);" +
+            "-fx-background-radius: 12;" +
+            "-fx-border-color: rgba(11,61,46,0.10);" +
+            "-fx-border-radius: 12;" +
+            "-fx-border-width: 1;"
+        );
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
         TextField searchField = new TextField();
