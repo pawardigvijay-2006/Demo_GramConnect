@@ -4,6 +4,7 @@ import java.io.File;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -24,6 +25,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 /**
  * GramConnect - Sarpanch Complaint Details.
@@ -44,6 +46,8 @@ import javafx.scene.text.FontWeight;
  * pattern used across those pages.
  */
 public class SarpanchComplaintDetailPage {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     private static final String FOREST_DEEP   = "#0B3D2E";
     private static final String FOREST_LIGHT  = "#0F4736";
@@ -101,7 +105,7 @@ public class SarpanchComplaintDetailPage {
 
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================
@@ -153,10 +157,10 @@ public class SarpanchComplaintDetailPage {
             SarpanchDashboard.myStage.setScene(projectTrackerPage.getProjectTrackerScene(backToDashboardAction));
         });
 
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Bills & Payments", false);
         citizenServicesNav.setOnMouseClicked(e -> {
             CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setTitle("GramConnect ");
             SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
         });
 

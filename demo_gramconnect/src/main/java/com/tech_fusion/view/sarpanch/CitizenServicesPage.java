@@ -2,6 +2,7 @@ package com.tech_fusion.view.sarpanch;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -25,6 +26,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 
 /**
  * GramConnect - Citizen Services Page.
@@ -37,6 +39,8 @@ import javafx.scene.text.FontWeight;
  * every other page in the sidebar.
  */
 public class CitizenServicesPage {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     /* ---------- Color palette (kept identical to the other pages) ---------- */
     private static final String FOREST_DEEP   = "#0B3D2E";
@@ -91,7 +95,7 @@ public class CitizenServicesPage {
 
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================
@@ -167,7 +171,7 @@ public class CitizenServicesPage {
             dashboardNav,
             projectTrackerNav,
             complaintsNav,
-            navItem("\uD83D\uDCC4", "Citizen Services", true),
+            navItem("\uD83D\uDCC4", "Bills & Payments", true),
             announcementsNav
         );
         VBox.setVgrow(nav, Priority.ALWAYS);
@@ -293,11 +297,20 @@ createBtn.setOnMouseClicked(e -> {
 
         HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(0, 16, 0, 16));
-        searchBox.setPrefWidth(480);
-        searchBox.setPrefHeight(42);
-        searchBox.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12;" +
-            "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
+        searchBox.setPadding(new Insets(0, 14, 0, 14));
+        searchBox.setPrefWidth(400);
+        searchBox.setMinWidth(400);
+        searchBox.setMaxWidth(400);
+        searchBox.setPrefHeight(38);
+        searchBox.setMinHeight(38);
+        searchBox.setMaxHeight(38);     
+        searchBox.setStyle(
+            "-fx-background-color: rgba(255,255,255,0.7);" +
+            "-fx-background-radius: 12;" +
+            "-fx-border-color: rgba(11,61,46,0.10);" +
+            "-fx-border-radius: 12;" +
+            "-fx-border-width: 1;"
+        );
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
         TextField searchField = new TextField();
@@ -355,7 +368,7 @@ createBtn.setOnMouseClicked(e -> {
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
         VBox welcome = new VBox(6);
-        Label welcomeTitle = new Label("Citizen Services");
+        Label welcomeTitle = new Label("Bills & Payments");
         welcomeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
         Label welcomeSub = new Label("Manage property and water tax records, and review water bill and property tax payments collected from every villager.");
         welcomeSub.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 16px; -fx-font-weight: 500; -fx-text-fill: rgba(11,61,46,0.70);");
