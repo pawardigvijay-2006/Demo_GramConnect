@@ -22,8 +22,14 @@ import javafx.stage.Screen;
 public class CreateAccountPage {
 
     public static Scene CreateSccountPageScene;
+    
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
+
+double screenWidth = screenSize.getWidth();
+double screenHeight = screenSize.getHeight();
 
     public Scene getCreateAccountScene(Runnable callbackAction) {
+        
 
         // =========================================================
         // BACKGROUND IMAGE
@@ -56,21 +62,51 @@ public class CreateAccountPage {
         // SAME SIZE AS LOGIN PAGE
         // =========================================================
 
-        VBox card = new VBox(15);
+       /*  VBox card = new VBox(15);
 
         card.setPadding(new Insets(35));
 
         // SAME SIZE AS LOGIN CARD
-        card.setPrefWidth(500);
-        card.setMinWidth(500);
-        card.setMaxWidth(500);
+        card.setPrefWidth(550);
+        card.setMinWidth(550);
+        card.setMaxWidth(550);
 
         card.setPrefHeight(700);
         card.setMinHeight(700);
-        card.setMaxHeight(700);
+        card.setMaxHeight(700);*/
+
+        VBox Card = new VBox(15);
+
+        Card.setPadding(
+                new Insets(
+                        screenHeight * 0.035
+                )
+        );
+
+        // Card width = approximately 33% of screen width
+        Card.setPrefWidth(
+                screenWidth * 0.33
+        );
+
+        Card.setMaxWidth(
+                screenWidth * 0.33
+        );
+
+        // Card height = approximately 88% of screen height
+        Card.setPrefHeight(
+                screenHeight * 0.88
+        );
+
+        Card.setMaxHeight(
+                screenHeight * 0.88
+        );
+
+        Card.setTranslateX(
+                screenWidth * 0.022
+        );
        
 
-        card.setStyle(
+        Card.setStyle(
                 "-fx-background-color: rgba(248,252,253,0.96);" +
                 "-fx-background-radius: 25;"
         );
@@ -692,7 +728,7 @@ public class CreateAccountPage {
         // ADD EVERYTHING
         // =========================================================
 
-        card.getChildren().addAll(
+        Card.getChildren().addAll(
 
                 icon,
                 title,
@@ -726,8 +762,18 @@ public class CreateAccountPage {
         root.getChildren().addAll(
                 background,
                 overlay,
-                card
+                Card
         );
+
+        
+        // =========================================================
+        // SCENE
+        // =========================================================
+
+        CreateSccountPageScene =
+                new Scene(root,screenSize.getWidth(),
+                screenSize.getHeight());
+
 
 
         // =========================================================
@@ -762,12 +808,12 @@ public class CreateAccountPage {
         // =========================================================
 
         StackPane.setAlignment(
-                card,
+                Card,
                 Pos.CENTER_RIGHT
         );
 
         StackPane.setMargin(
-                card,
+                Card,
                 new Insets(
                         25,
                         60,
@@ -776,13 +822,6 @@ public class CreateAccountPage {
                 )
         );
 
-
-        // =========================================================
-        // SCENE
-        // =========================================================
-
-        CreateSccountPageScene =
-                new Scene(root);
 
         return CreateSccountPageScene;
     }

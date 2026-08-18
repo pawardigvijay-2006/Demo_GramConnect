@@ -8,15 +8,18 @@ import com.tech_fusion.model.gramsevak.Bill;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -25,7 +28,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Screen;
-import javafx.stage.Stage;
+
 
 public class BillManagement {
         // ================= COLORS (same palette as the other pages) =================
@@ -78,6 +81,10 @@ Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
                 BorderPane root = new BorderPane();
                 root.setStyle("-fx-background-color: " + BACKGROUND + ";");
+                
+//root.setBackground(
+//        new Background(backgroundImage)
+//);
 
                 root.setLeft(buildSidebar(backAction));
                 root.setCenter(buildMainArea());
@@ -354,8 +361,31 @@ searchBox.getChildren().addAll(searchIcon, searchField);
         VBox content = new VBox(18);
         content.setPadding(new Insets(16, 24, 24, 24));
         content.setFillWidth(true);
-        content.setStyle("-fx-background-color: transparent;");
+        Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
 
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
+        );
+
+        content.setBackground(
+        new Background(backgroundImage)
+);
         // ============================================================
         // HEADER
         // ============================================================
@@ -393,8 +423,33 @@ searchBox.getChildren().addAll(searchIcon, searchField);
                         "-fx-padding: 10 15 10 15;" +
                         "-fx-cursor: hand;");
 
-        waterBillButton.setOnAction(
-                        event -> System.out.println("Generate Water Bill clicked"));
+        waterBillButton.setOnAction(event -> {
+
+    Runnable backToBillManagement = () -> {
+
+        Dashboard.homeStage.setScene(
+                getBillManagementPage(backAction)
+        );
+
+        Dashboard.homeStage.setTitle(
+                "GramConnect - Bill Management"
+        );
+    };
+
+    Scene waterBillScene =
+            new GenerateWaterBillPage()
+                    .getWaterBillScene(
+                            backToBillManagement
+                    );
+
+    Dashboard.homeStage.setScene(
+            waterBillScene
+    );
+
+    Dashboard.homeStage.setTitle(
+            "GramConnect - Generate Water Bill"
+    );
+});
 
         Button propertyBillButton = new Button("+  Generate Property Bill");
 
@@ -583,8 +638,9 @@ summaryCards.getChildren().addAll(
         scrollPane.setFitToWidth(true);
 
         scrollPane.setStyle(
-                        "-fx-background-color: transparent;");
-
+    "-fx-background-color: transparent;" +
+    "-fx-background: transparent;"
+);
         return scrollPane;
 }
 private static VBox createSummaryCard(

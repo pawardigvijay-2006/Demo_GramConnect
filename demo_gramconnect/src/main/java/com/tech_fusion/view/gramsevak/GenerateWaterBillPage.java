@@ -41,7 +41,7 @@ public class GenerateWaterBillPage extends Application {
         
 Image bgImage = new Image(
         getClass()
-              .getResource("/assets/images/WhatsApp Image 2026-08-15 at 11.04.55 AM.jpeg")
+              .getResource("/assets/images/BackgroundImage.png")
                .toExternalForm()
 );
 
@@ -80,9 +80,7 @@ root.setBackground(
         );
 
         ScrollPane scrollPane =
-                new ScrollPane(
-                        buildMainContent()
-                );
+                new ScrollPane(buildMainContent(backToDashboardAction));
 
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(
@@ -668,7 +666,7 @@ root.setBackground(
        MAIN CONTENT
        ========================================================= */
 
-    private VBox buildMainContent() {
+    private VBox buildMainContent(Runnable backToDashboardAction) {
 
         VBox main =
                 new VBox(20);
@@ -715,6 +713,13 @@ root.setBackground(
                 "-fx-text-fill: #65736D;" +
                 "-fx-cursor: hand;"
         );
+        back.setOnMouseClicked(e -> {
+
+    if (backToDashboardAction != null) {
+        backToDashboardAction.run();
+    }
+
+});
 
 
         Label title =
