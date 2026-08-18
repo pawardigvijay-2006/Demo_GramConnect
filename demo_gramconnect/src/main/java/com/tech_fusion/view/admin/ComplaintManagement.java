@@ -1,8 +1,8 @@
 package com.tech_fusion.view.admin;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.io.File;
 
 import com.tech_fusion.model.admin.VillageDataStore;
 import com.tech_fusion.model.admin.Complaint;
@@ -11,10 +11,8 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
@@ -46,37 +44,42 @@ import javafx.stage.Stage;
  * only thing this page still reaches into {@link Dashboard} for.
  *
  * ------------------------------------------------------------------
- * VILLAGE-WISE DYNAMIC DATA (this revision)
+ * VILLAGE-WISE DYNAMIC DATA (Sarpanch-centric revision)
  * ------------------------------------------------------------------
- * This page keeps no local copy of the village list, no local
- * "currently selected village" field, and no local complaint data.
- * All three live on the shared data layer, {@link VillageDataStore}:
+ * This page keeps NO local copy of the village list, the currently
+ * selected village, the current village's Sarpanch, or any complaint
+ * data - all of it lives on {@link VillageDataStore} and is read
+ * fresh every time {@link #refreshComplaintManagement()} runs.
  *
- *   VillageDataStore.VILLAGES          -> the fixed list of villages under this block
- *   VillageDataStore.selectedVillage   -> the block-wide "currently active" village
- *   VillageDataStore.getComplaints(v)  -> every Complaint tagged with village v
- *                                          ("All Villages" / null returns everything)
+ * Whenever the BDO picks a different village in the sidebar selector
+ * ({@link #villageToggle(String, ToggleGroup)}), three things update
+ * in place, instantaneously, with no scene rebuild:
+ *   1. The KPI cards (total / resolved / in-progress / pending),
+ *      scoped to the selected village.
+ *   2. The Sarpanch info line, showing that village's Sarpanch.
+ *   3. The "Complaints Against Sarpanch" table, scoped to the
+ *      selected village's Sarpanch specifically.
  *
- * {@link #getComplaintsForSelectedVillage()} is this page's single
- * required entry point into that data: it always resolves against
- * {@code VillageDataStore.selectedVillage}. Every KPI card, the
- * category breakdown, and the complaint table are computed from it -
- * no numeric/percentage value is hard-coded in this class.
+ * There is NO project filtering anywhere on this page anymore - all
+ * complaint data shown is general, village-level complaint data.
  *
- * Filtering pipeline (exactly as specified):
- *   Selected Village -> Complaint Data -> Search -> Category -> Status -> Priority -> Display
+ * ------------------------------------------------------------------
+ * SARPANCH RESOLUTION
+ * ------------------------------------------------------------------
+ * Each village has its own, distinct Sarpanch, and nothing here is
+ * hardcoded to a single name. This resolves through
+ * {@code VillageDataStore.getSarpanchName(String village)}, which
+ * returns that village's Sarpanch's display name (or null/blank if
+ * unassigned). See {@link #currentSarpanchName()}.
  *
- * KPI cards and the category breakdown use ONLY the village filter
- * (getComplaintsForSelectedVillage()); the search/category/status/
- * priority controls further narrow just the table below them, so the
- * KPIs always describe the whole selected village even while someone
- * is mid-search.
- *
- * Selecting a different village, or changing a table filter, calls
- * {@link #refreshComplaintManagement()} (or the narrower
- * {@link #updateComplaintTable()} for filter-only changes), which
- * update every dynamic component in place - the scene is never
- * rebuilt, so there is no flicker and no layout change.
+ * REMAINING ASSUMPTION: Complaint.getTargetPerson() /
+ * getComplainantRole() / getCitizenName() - guessed at the most
+ * natural method names for the Complaint class. If your real
+ * Complaint API differs, update just
+ * {@link #isTargetedAtSarpanch(Complaint, String)},
+ * {@link #isFiledBySarpanch(Complaint, String)}, and
+ * {@link #complainantDisplayName(Complaint)} - everything else keeps
+ * working unchanged.
  */
 public class ComplaintManagement extends Application {
 
@@ -94,21 +97,29 @@ public class ComplaintManagement extends Application {
 
     private static final String BACKGROUND_IMAGE_PATH ="demo_gramconnect\\src\\main\\resources\\assets\\images\\WhatsApp Image 2026-08-10 at 11.55.38 PM.jpeg";
 
-    /** The four categories shown in the breakdown panel - matches the original UI exactly (still 4 rows). */
-    private static final String[] BREAKDOWN_CATEGORIES = {
-            "Water Supply", "Road & Infrastructure", "Sanitation", "Electricity"
-    };
+    /** Fallback text shown when a village has no Sarpanch on record. */
+    private static final String SARPANCH_UNASSIGNED = "Not Assigned";
+
+    /**
+     * Generic role string some complaints may use for "target"/"filed by"
+     * instead of (or alongside) the Sarpanch's actual name. Kept as a
+     * secondary match so this still works if your Complaint data tags
+     * things by role rather than by name - see
+     * {@link #isTargetedAtSarpanch(Complaint, String)}.
+     */
+    private static final String SARPANCH_ROLE = "Sarpanch";
 
     private Label selectedNavItem;
 
-    /* ---------- Live references so village/filter changes can refresh in place ---------- */
+    /* ---------- Live references so village changes can refresh in place ---------- */
     private Label villageNameLabel;
     private Label villageChevron;
     private VBox villageListBox;
     private Label scopeSubtitle;
+    private Label sarpanchNameLabel;
     private boolean villageListExpanded = false;
 
-    // KPI cards
+    // KPI cards (unchanged from the original page - still village-scoped)
     private Label totalValueLabel;
     private Label totalFooterLabel;
     private Label resolvedValueLabel;
@@ -119,19 +130,9 @@ public class ComplaintManagement extends Application {
     private Label pendingFooterLabel;
     private Label prioritySecondaryLabel;
 
-    // Category breakdown
-    private VBox categoryRowsHolder;
-
-    // Complaint table + filters
-    private TextField searchField;
-    private ComboBox<String> categoryFilterCombo;
-    private ComboBox<String> statusFilterCombo;
-    private ComboBox<String> priorityFilterCombo;
-    private GridPane complaintGrid;
-
-    private static final String ALL_CATEGORIES = "All Categories";
-    private static final String ALL_STATUSES = "All Statuses";
-    private static final String ALL_PRIORITIES = "All Priorities";
+    // Sarpanch-targeted complaints (village-scoped) - the only complaint list on this page
+    private GridPane sarpanchComplaintGrid;
+    private Label sarpanchComplaintEmptyLabel;
 
     @Override
     public void start(Stage stage) {
@@ -181,7 +182,8 @@ public class ComplaintManagement extends Application {
     }
 
     /* ============================================================
-     *  VILLAGE + COMPLAINT FILTER HELPERS
+     *  VILLAGE HELPERS (unchanged - still drive the village selector
+     *  and the KPI cards, exactly as in the original page)
      * ============================================================ */
 
     /** Currently selected village, defaulting safely if it hasn't been set yet. */
@@ -195,54 +197,97 @@ public class ComplaintManagement extends Application {
     }
 
     /**
-     * Required reusable entry point: every complaint belonging to the
-     * currently selected village ("All Villages" returns everything).
-     * KPI cards and the category breakdown are computed from this list
-     * only - search/category/status/priority never affect them, only
-     * the table below.
+     * Every complaint belonging to the currently selected village
+     * ("All Villages" returns everything). Drives both the KPI cards
+     * AND (as of this revision) the Sarpanch-targeted complaint list -
+     * see {@link #getSarpanchComplaintsForSelectedVillage()}.
      */
     private List<Complaint> getComplaintsForSelectedVillage() {
         return VillageDataStore.getComplaints(currentVillage());
     }
 
+    /* ============================================================
+     *  SARPANCH RESOLUTION (village-scoped, dynamic - no hardcoding)
+     * ============================================================ */
+
     /**
-     * Applies the search box plus the category/status/priority combo
-     * filters on top of the village-filtered list, in the required
-     * order: Village (already applied) -> Search -> Category -> Status -> Priority.
-     * Used only to decide what the table displays.
+     * The current village's Sarpanch, looked up fresh every call so it
+     * always reflects whatever village is currently selected. Never a
+     * fixed name - falls back to {@link #SARPANCH_UNASSIGNED} only when
+     * the store genuinely has nothing on record for this village.
      */
-    private List<Complaint> getTableFilteredComplaints() {
-        List<Complaint> result = new ArrayList<>(getComplaintsForSelectedVillage());
+    private String currentSarpanchName() {
+        String name = VillageDataStore.getSarpanchName(currentVillage());
+        return (name == null || name.trim().isEmpty()) ? SARPANCH_UNASSIGNED : name;
+    }
 
-        String query = searchField == null ? "" : searchField.getText();
-        if (query != null && !query.trim().isEmpty()) {
-            String q = query.trim().toLowerCase();
-            result.removeIf(c ->
-                    !(c.getDescription().toLowerCase().contains(q)
-                            || c.getCitizenName().toLowerCase().contains(q)
-                            || c.getCategory().toLowerCase().contains(q)
-                            || c.getVillage().toLowerCase().contains(q)
-                            || c.getComplaintId().toLowerCase().contains(q)));
+    /* ============================================================
+     *  SARPANCH-TARGETED COMPLAINTS (VILLAGE-SCOPED, NOT PROJECT-SCOPED)
+     * ============================================================
+     * ASSUMPTION: Complaint.getTargetPerson() / getComplainantRole() /
+     * getCitizenName() - guessed at the most natural names. Update
+     * them once you confirm the real Complaint API.
+     */
+
+    /**
+     * Complaints for the currently selected village that are targeted
+     * at that village's Sarpanch, excluding any complaint the Sarpanch
+     * filed themselves. Fully village-driven: switching villages in
+     * the sidebar changes both which complaints are pulled AND which
+     * Sarpanch name they're matched against - there is no project
+     * filtering anywhere in this method.
+     */
+    private List<Complaint> getSarpanchComplaintsForSelectedVillage() {
+        String sarpanchName = currentSarpanchName();
+        if (SARPANCH_UNASSIGNED.equals(sarpanchName)) {
+            return List.of();
         }
 
-        String category = categoryFilterCombo == null ? null : categoryFilterCombo.getValue();
-        if (category != null && !ALL_CATEGORIES.equals(category)) {
-            result.removeIf(c -> !c.getCategory().equals(category));
-        }
+        return getComplaintsForSelectedVillage().stream()
+                .filter(c -> isTargetedAtSarpanch(c, sarpanchName))
+                .filter(c -> !isFiledBySarpanch(c, sarpanchName))
+                .collect(Collectors.toList());
+    }
 
-        String status = statusFilterCombo == null ? null : statusFilterCombo.getValue();
-        if (status != null && !ALL_STATUSES.equals(status)) {
-            Complaint.Status target = Complaint.Status.valueOf(status.toUpperCase().replace(' ', '_'));
-            result.removeIf(c -> c.getStatus() != target);
-        }
+    /**
+     * True when a complaint is targeted at this village's Sarpanch.
+     * Matches on the Sarpanch's actual name first (so this stays
+     * correct per-village); also accepts a generic {@code "Sarpanch"}
+     * role tag as a fallback, in case your Complaint data marks the
+     * target by role rather than by name.
+     *
+     * ASSUMPTION: Complaint.getTargetPerson() holds who the complaint
+     * is against.
+     */
+    private boolean isTargetedAtSarpanch(Complaint c, String sarpanchName) {
+        String target = c.getTargetPerson();
+        if (target == null) return false;
+        String trimmed = target.trim();
+        return sarpanchName.equalsIgnoreCase(trimmed) || SARPANCH_ROLE.equalsIgnoreCase(trimmed);
+    }
 
-        String priority = priorityFilterCombo == null ? null : priorityFilterCombo.getValue();
-        if (priority != null && !ALL_PRIORITIES.equals(priority)) {
-            Complaint.Priority target = Complaint.Priority.valueOf(priority.toUpperCase());
-            result.removeIf(c -> c.getPriority() != target);
+    /**
+     * True when a complaint was filed BY this village's Sarpanch (and
+     * so should be excluded from the "against the Sarpanch" list).
+     * Matches on the filer's name first, with the same role-tag
+     * fallback as {@link #isTargetedAtSarpanch(Complaint, String)}.
+     *
+     * ASSUMPTION: Complaint.getCitizenName() holds the filer's name,
+     * Complaint.getComplainantRole() holds the filer's role.
+     */
+    private boolean isFiledBySarpanch(Complaint c, String sarpanchName) {
+        String filerName = c.getCitizenName();
+        if (filerName != null && sarpanchName.equalsIgnoreCase(filerName.trim())) {
+            return true;
         }
+        String role = c.getComplainantRole();
+        return role != null && SARPANCH_ROLE.equalsIgnoreCase(role.trim());
+    }
 
-        return result;
+    /** "Anonymous" whenever the complainant name is missing/blank. */
+    private String complainantDisplayName(Complaint c) {
+        String name = c.getCitizenName();
+        return (name == null || name.trim().isEmpty()) ? "Anonymous" : name;
     }
 
     /**
@@ -252,9 +297,9 @@ public class ComplaintManagement extends Application {
      */
     private void refreshComplaintManagement() {
         updateScopeSubtitle();
+        updateSarpanchInfo();
         updateStatCards();
-        updateCategoryBreakdown();
-        updateComplaintTable();
+        updateSarpanchComplaintPanel();
     }
 
     /* ============================================================
@@ -338,7 +383,7 @@ public class ComplaintManagement extends Application {
             reportsNav
         );
 
-        
+
         VBox.setVgrow(nav, Priority.ALWAYS);
 
         VBox footer = new VBox(10);
@@ -348,7 +393,7 @@ public class ComplaintManagement extends Application {
         divider.setPrefHeight(1);
         divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
 
-       
+
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -368,7 +413,7 @@ public class ComplaintManagement extends Application {
      *  "All Villages" and any single village under their block.
      *  Reads/writes the shared VillageDataStore.VILLAGES /
      *  VillageDataStore.selectedVillage state instead of a
-     *  page-local copy.
+     *  page-local copy. Unchanged from the original page.
      * ============================================================ */
     private VBox buildVillageSelector() {
         VBox wrap = new VBox(8);
@@ -455,7 +500,9 @@ public class ComplaintManagement extends Application {
                 villageListBox.setManaged(false);
                 villageChevron.setText("\u25BE");
 
-                // Immediate, in-place refresh of every dynamic component.
+                // Immediate, in-place refresh of every dynamic component -
+                // KPI cards, Sarpanch info line, and the Sarpanch complaint
+                // table all pick up the newly selected village here.
                 refreshComplaintManagement();
             }
         });
@@ -467,6 +514,20 @@ public class ComplaintManagement extends Application {
     private void updateScopeSubtitle() {
         if (scopeSubtitle == null) return;
         scopeSubtitle.setText(isAllVillages() ? "All Villages" : currentVillage());
+    }
+
+    /**
+     * Keeps the Sarpanch info line in sync with whichever village is
+     * currently selected - always re-reads through
+     * {@link #currentSarpanchName()}, never cached, never hardcoded.
+     */
+    private void updateSarpanchInfo() {
+        if (sarpanchNameLabel == null) return;
+        if (isAllVillages()) {
+            sarpanchNameLabel.setText("Select a village to view its Sarpanch");
+        } else {
+            sarpanchNameLabel.setText(currentSarpanchName());
+        }
     }
 
     private HBox navItem(String icon, String text, boolean active) {
@@ -525,7 +586,7 @@ public class ComplaintManagement extends Application {
     }
 
     /* ============================================================
-     *  TOP NAVIGATION BAR — shared shell
+     *  TOP NAVIGATION BAR — shared shell, unchanged
      * ============================================================ */
     private HBox buildTopBar() {
         HBox topBar = new HBox(24);
@@ -550,7 +611,7 @@ public class ComplaintManagement extends Application {
                 "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
-        TextField topSearchField = new TextField();
+        javafx.scene.control.TextField topSearchField = new javafx.scene.control.TextField();
         topSearchField.setPromptText("Search complaints, villages, or categories...");
         topSearchField.setStyle("-fx-background-color: transparent; -fx-font-family: " + FONT_FAMILY + ";" +
                 "-fx-font-size: 14px; -fx-text-fill: " + FOREST_DEEP + "; -fx-prompt-text-fill: rgba(11,61,46,0.40);");
@@ -598,6 +659,8 @@ public class ComplaintManagement extends Application {
 
     /* ============================================================
      *  MAIN CONTENT
+     *  Title row (with the Sarpanch info line), KPI cards, and the
+     *  Sarpanch complaint panel. No project-related content anywhere.
      * ============================================================ */
     private VBox buildMainContent() {
         VBox main = new VBox(24);
@@ -607,23 +670,36 @@ public class ComplaintManagement extends Application {
         main.getChildren().addAll(
                 buildTitleRow(),
                 buildStatCardsRow(),
-                buildCategorySection(),
-                buildInventoryPanel()
+                buildSarpanchComplaintPanel()
         );
         return main;
     }
 
     private HBox buildTitleRow() {
         VBox text = new VBox(6);
-        Label title = new Label("Complaint Management");
+        Label title = new Label("Complaints Against Sarpanch");
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 32px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+
         HBox subtitleRow = new HBox(4);
         Label subtitle = new Label("Managing complaints for:");
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
         scopeSubtitle = new Label();
         scopeSubtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
         subtitleRow.getChildren().addAll(subtitle, scopeSubtitle);
-        text.getChildren().addAll(title, subtitleRow);
+
+        // Sarpanch info line - the core "Sarpanch-centric" element. Always
+        // re-populated by updateSarpanchInfo(), never set once and forgotten.
+        HBox sarpanchRow = new HBox(6);
+        sarpanchRow.setAlignment(Pos.CENTER_LEFT);
+        Label sarpanchIcon = new Label("\uD83E\uDDD1\u200D\uD83D\uDCBC");
+        sarpanchIcon.setStyle("-fx-font-size: 13px;");
+        Label sarpanchCaption = new Label("Sarpanch:");
+        sarpanchCaption.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.60);");
+        sarpanchNameLabel = new Label();
+        sarpanchNameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + SAFFRON_MAIN + ";");
+        sarpanchRow.getChildren().addAll(sarpanchIcon, sarpanchCaption, sarpanchNameLabel);
+
+        text.getChildren().addAll(title, subtitleRow, sarpanchRow);
 
         HBox actions = new HBox(12);
         actions.setAlignment(Pos.CENTER_RIGHT);
@@ -637,9 +713,8 @@ public class ComplaintManagement extends Application {
     }
 
     /* ============================================================
-     *  STAT CARDS ROW
-     *  Card shells/visuals unchanged; the value/footnote Labels are
-     *  kept as instance fields and populated by updateStatCards().
+     *  STAT CARDS ROW (unchanged design/behaviour from the original
+     *  page - still describes the currently selected village)
      * ============================================================ */
     private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
@@ -691,9 +766,8 @@ public class ComplaintManagement extends Application {
 
     /**
      * Recomputes and writes every KPI card value from
-     * {@link #getComplaintsForSelectedVillage()} - never from the
-     * table-filtered list, so the cards always describe the whole
-     * selected village.
+     * {@link #getComplaintsForSelectedVillage()} - unchanged from the
+     * original page, still village-scoped, never project-scoped.
      */
     private void updateStatCards() {
         List<Complaint> complaints = getComplaintsForSelectedVillage();
@@ -702,31 +776,21 @@ public class ComplaintManagement extends Application {
         long resolved = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.RESOLVED).count();
         long inProgress = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.IN_PROGRESS).count();
         long pending = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.PENDING).count();
-        long rejected = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.REJECTED).count();
         long highPriority = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.HIGH).count();
         long critical = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.CRITICAL).count();
 
-        // double avgResolutionDays = complaints.stream()
-                // .filter(c -> c.getStatus() == Complaint.Status.RESOLVED && c.getResolutionDays() != null)
-                // .mapToDouble(Complaint::getResolutionDays)
-                // .average()
-                // .orElse(-1);
+        totalValueLabel.setText(String.valueOf(total));
+        // FIX: was concatenating a boolean into the footer text
+        // ("trueSitapur" / "falseSitapur"). Now shows a proper scope label.
+        totalFooterLabel.setText(isAllVillages() ? "All Villages" : "Village: " + currentVillage());
 
-         totalValueLabel.setText(String.valueOf(total));
-         totalFooterLabel.setText((isAllVillages() + currentVillage()));
-
-        // double resolutionRate = total == 0 ? 0 : (resolved * 100.0) / total;
         resolvedValueLabel.setText(String.valueOf(resolved));
-        // resolvedFooterLabel.setText(avgResolutionDays < 0
-                // ? String.format("%.0f%% resolution rate", resolutionRate)
-                // : String.format("%.0f%% resolution rate \u00B7 avg %.1fd to resolve", resolutionRate, avgResolutionDays));
 
         progressValueLabel.setText(String.valueOf(inProgress));
-        // progressFooterLabel.setText("Being actively worked on");
 
         pendingValueLabel.setText(String.valueOf(pending));
-          pendingFooterLabel.setText(pending == 0 ? "No action required" : "Requires action this week");
-         prioritySecondaryLabel.setText(highPriority + " High \u00B7 " + critical + " Critical priority");
+        pendingFooterLabel.setText(pending == 0 ? "No action required" : "Requires action this week");
+        prioritySecondaryLabel.setText(highPriority + " High \u00B7 " + critical + " Critical priority");
     }
 
     private VBox kpiCard(String accent, String icon, String labelText) {
@@ -772,177 +836,128 @@ public class ComplaintManagement extends Application {
         return card;
     }
 
-    private StackPane progressBar(double fraction, String color, double height) {
-        StackPane track = new StackPane();
-        track.setPrefHeight(height);
-        track.setMinHeight(height);
-        track.setMaxWidth(Double.MAX_VALUE);
-        track.setStyle("-fx-background-color: rgba(11,61,46,0.08); -fx-background-radius: 999;");
-        Region fill = new Region();
-        fill.setPrefHeight(height);
-        fill.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 999;");
-        StackPane.setAlignment(fill, Pos.CENTER_LEFT);
-        track.widthProperty().addListener((obs, o, w) -> fill.setMaxWidth(w.doubleValue() * fraction));
-        fill.setMaxWidth(0);
-        track.getChildren().add(fill);
-        return track;
-    }
-
     /* ============================================================
-     *  COMPLAINT CATEGORY BREAKDOWN
+     *  SARPANCH COMPLAINT PANEL (village-scoped, NOT project-scoped)
+     *  This is the only complaint list rendered on the page. No
+     *  PROJECT column - project data is not shown anywhere here.
      * ============================================================ */
-    private VBox buildCategorySection() {
-        VBox panel = new VBox(20);
-        panel.setPadding(new Insets(28));
-        panel.setStyle(cardStyle(24));
-
-        HBox header = new HBox(10);
-        header.setAlignment(Pos.CENTER_LEFT);
-        Label title = new Label("Complaint Category Breakdown");
-        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label viewAll = new Label("View All Categories");
-        viewAll.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-font-weight: 700; -fx-cursor: hand;");
-        header.getChildren().addAll(title, spacer, viewAll);
-
-        categoryRowsHolder = new VBox(20);
-
-        panel.getChildren().addAll(header, categoryRowsHolder);
-        addHoverLift(panel, 24);
-        return panel;
-    }
-
-    /** Rebuilds the 4 category rows from the village-filtered complaint list - same 4 categories, same layout. */
-    private void updateCategoryBreakdown() {
-        List<Complaint> complaints = getComplaintsForSelectedVillage();
-        String[] colors = {FOREST_DEEP, SAFFRON_MAIN, CONTEXT_TEAL, DELAYED_RED};
-
-        categoryRowsHolder.getChildren().clear();
-        for (int i = 0; i < BREAKDOWN_CATEGORIES.length; i++) {
-            String category = BREAKDOWN_CATEGORIES[i];
-            long categoryTotal = complaints.stream().filter(c -> c.getCategory().equals(category)).count();
-            long categoryResolved = complaints.stream()
-                    .filter(c -> c.getCategory().equals(category) && c.getStatus() == Complaint.Status.RESOLVED)
-                    .count();
-            double fraction = categoryTotal == 0 ? 0 : (double) categoryResolved / categoryTotal;
-            String rightText = categoryResolved + " / " + categoryTotal + " resolved";
-            categoryRowsHolder.getChildren().add(categoryRow(category, fraction, rightText, colors[i]));
-        }
-    }
-
-    private VBox categoryRow(String name, double fillRatio, String rightText, String barColor) {
-        VBox row = new VBox(8);
-
-        HBox labelRow = new HBox(16);
-        labelRow.setAlignment(Pos.CENTER_LEFT);
-        Label nameLabel = new Label(name);
-        nameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label amountLabel = new Label(rightText);
-        amountLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        labelRow.getChildren().addAll(nameLabel, spacer, amountLabel);
-
-        StackPane bar = progressBar(fillRatio, barColor, 12);
-
-        row.getChildren().addAll(labelRow, bar);
-        return row;
-    }
-
-    /* ============================================================
-     *  COMPLAINT LOG TABLE
-     * ============================================================ */
-    private VBox buildInventoryPanel() {
+    private VBox buildSarpanchComplaintPanel() {
         VBox panel = new VBox(18);
         panel.setPadding(new Insets(28));
         panel.setStyle(cardStyle(24));
 
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
-        Label title = new Label("Complaint Log");
+        Label title = new Label("Complaints Against Sarpanch \u2014 Selected Village");
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        header.getChildren().addAll(title);
 
-        searchField = new TextField();
-        searchField.setPromptText("Filter complaints...");
-        searchField.setPrefWidth(220);
-        searchField.setStyle(filterFieldStyle());
-        searchField.textProperty().addListener((obs, oldV, newV) -> updateComplaintTable());
+        sarpanchComplaintGrid = new GridPane();
+        sarpanchComplaintGrid.setHgap(12);
+        sarpanchComplaintGrid.setVgap(16);
+        sarpanchComplaintGrid.setPadding(new Insets(6, 0, 0, 0));
+        sarpanchComplaintGrid.getColumnConstraints().addAll(
+                pct(11), pct(15), pct(10), pct(12), pct(28), pct(10), pct(14));
 
-        categoryFilterCombo = filterCombo(ALL_CATEGORIES, BREAKDOWN_CATEGORIES);
-        statusFilterCombo = filterCombo(ALL_STATUSES, new String[]{"Pending", "In Progress", "Resolved", "Rejected"});
-        priorityFilterCombo = filterCombo(ALL_PRIORITIES, new String[]{"Low", "Medium", "High", "Critical"});
+        sarpanchComplaintEmptyLabel = new Label();
+        sarpanchComplaintEmptyLabel.setWrapText(true);
+        sarpanchComplaintEmptyLabel.setPadding(new Insets(16, 8, 16, 8));
+        sarpanchComplaintEmptyLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+        sarpanchComplaintEmptyLabel.setManaged(false);
+        sarpanchComplaintEmptyLabel.setVisible(false);
 
-        header.getChildren().addAll(title, spacer, categoryFilterCombo, statusFilterCombo, priorityFilterCombo, searchField);
-
-        complaintGrid = new GridPane();
-        complaintGrid.setHgap(12);
-        complaintGrid.setVgap(16);
-        complaintGrid.setPadding(new Insets(6, 0, 0, 0));
-        complaintGrid.getColumnConstraints().addAll(pct(30), pct(16), pct(18), pct(14), pct(14), pct(8));
-
-        addInventoryHeader(complaintGrid);
-
-        panel.getChildren().addAll(header, complaintGrid);
+        panel.getChildren().addAll(header, sarpanchComplaintGrid, sarpanchComplaintEmptyLabel);
         addHoverLift(panel, 24);
         return panel;
     }
 
-    /** Small ComboBox styled to match the existing "Filter complaints..." text field, defaulting to "All ...". */
-    private ComboBox<String> filterCombo(String allLabel, String[] options) {
-        ComboBox<String> combo = new ComboBox<>();
-        combo.getItems().add(allLabel);
-        combo.getItems().addAll(options);
-        combo.setValue(allLabel);
-        combo.setPrefWidth(150);
-        combo.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12; -fx-border-radius: 12;" +
-                "-fx-border-color: rgba(11,61,46,0.10); -fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px;");
-        combo.valueProperty().addListener((obs, oldV, newV) -> updateComplaintTable());
-        return combo;
-    }
-
-    private String filterFieldStyle() {
-        return "-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12; -fx-border-radius: 12;" +
-                "-fx-border-color: rgba(11,61,46,0.10); -fx-padding: 10 14; -fx-font-size: 13px;";
+    private void addSarpanchComplaintHeader(GridPane grid) {
+        grid.add(headerCell("COMPLAINT ID"), 0, 0);
+        grid.add(headerCell("COMPLAINANT"), 1, 0);
+        grid.add(headerCell("DATE FILED"), 2, 0);
+        grid.add(headerCell("CATEGORY"), 3, 0);
+        grid.add(headerCell("DESCRIPTION"), 4, 0);
+        grid.add(headerCell("PRIORITY"), 5, 0);
+        grid.add(headerCell("STATUS"), 6, 0);
     }
 
     /**
-     * Rebuilds the table body (keeping row 0's headers) from
-     * {@link #getTableFilteredComplaints()} - the village-filtered list
-     * narrowed further by search/category/status/priority.
+     * Rebuilds the Sarpanch-targeted panel from
+     * {@link #getSarpanchComplaintsForSelectedVillage()}. Shows the
+     * required empty-state message when nothing matches (including
+     * when the selected village has no Sarpanch on record, or when
+     * "All Villages" is selected). Every complaint shown here already
+     * satisfies both conditions: targeted at the current village's
+     * Sarpanch AND not filed by that Sarpanch.
      */
-    private void updateComplaintTable() {
-        complaintGrid.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) != 0);
+    private void updateSarpanchComplaintPanel() {
+        sarpanchComplaintGrid.getChildren().clear();
+        addSarpanchComplaintHeader(sarpanchComplaintGrid);
 
-        List<Complaint> villageComplaints = getComplaintsForSelectedVillage();
-        List<Complaint> filtered = getTableFilteredComplaints();
+        List<Complaint> complaints = getSarpanchComplaintsForSelectedVillage();
 
-        if (villageComplaints.isEmpty()) {
-            Label none = new Label("No complaints found for " + (isAllVillages() ? "any village" : currentVillage()) + ".");
-            none.setPadding(new Insets(16, 8, 16, 8));
-            none.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
-            complaintGrid.add(none, 0, 1, 6, 1);
+        if (complaints.isEmpty()) {
+            sarpanchComplaintGrid.setManaged(false);
+            sarpanchComplaintGrid.setVisible(false);
+            sarpanchComplaintEmptyLabel.setManaged(true);
+            sarpanchComplaintEmptyLabel.setVisible(true);
+            sarpanchComplaintEmptyLabel.setText(isAllVillages()
+                    ? "Select a specific village to view complaints against its Sarpanch."
+                    : "No complaints have been reported against the Sarpanch for " + currentVillage() + ".");
             return;
         }
 
-        if (filtered.isEmpty()) {
-            Label none = new Label("No complaints match the current search/filters.");
-            none.setPadding(new Insets(16, 8, 16, 8));
-            none.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
-            complaintGrid.add(none, 0, 1, 6, 1);
-            return;
-        }
+        sarpanchComplaintGrid.setManaged(true);
+        sarpanchComplaintGrid.setVisible(true);
+        sarpanchComplaintEmptyLabel.setManaged(false);
+        sarpanchComplaintEmptyLabel.setVisible(false);
 
         int row = 1;
-        for (Complaint c : filtered) {
-            String statusText = displayStatus(c.getStatus());
-            String statusColor = statusColor(c.getStatus());
-            addInventoryRow(complaintGrid, row, c.getDescription(), c.getVillage(), c.getCategory(),
-                    statusText, statusColor, c.getDateFiled());
+        for (Complaint c : complaints) {
+            addSarpanchComplaintRow(sarpanchComplaintGrid, row, c);
             row++;
         }
+    }
+
+    private void addSarpanchComplaintRow(GridPane grid, int row, Complaint c) {
+        String statusText = displayStatus(c.getStatus());
+        String statusColor = statusColor(c.getStatus());
+
+        Label idLabel = new Label(c.getComplaintId());
+        idLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Label nameLabel = new Label(complainantDisplayName(c));
+        nameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.80);");
+
+        Label dateLabel = new Label(c.getDateFiled());
+        dateLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
+
+        Label categoryLabel = new Label(c.getCategory());
+        categoryLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
+
+        Label descLabel = new Label(c.getDescription());
+        descLabel.setWrapText(true);
+        descLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.80);");
+
+        Label priorityLabel = new Label(c.getPriority().toString());
+        priorityLabel.setPadding(new Insets(4, 10, 4, 10));
+        priorityLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        priorityLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + DELAYED_RED + "; -fx-background-color: " + rgba(DELAYED_RED, 0.12) + "; -fx-background-radius: 999;");
+
+        Label statusLabel = new Label(statusText);
+        statusLabel.setPadding(new Insets(4, 10, 4, 10));
+        statusLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        statusLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + statusColor + "; -fx-background-color: " + rgba(statusColor, 0.12) + "; -fx-background-radius: 999;");
+
+        grid.add(idLabel, 0, row);
+        grid.add(nameLabel, 1, row);
+        grid.add(dateLabel, 2, row);
+        grid.add(categoryLabel, 3, row);
+        grid.add(descLabel, 4, row);
+        grid.add(priorityLabel, 5, row);
+        grid.add(statusLabel, 6, row);
     }
 
     private String displayStatus(Complaint.Status status) {
@@ -961,42 +976,6 @@ public class ComplaintManagement extends Application {
             case REJECTED: return "#6B7B74";
             default: return DELAYED_RED;
         }
-    }
-
-    private void addInventoryHeader(GridPane grid) {
-        grid.add(headerCell("COMPLAINT"), 0, 0);
-        grid.add(headerCell("VILLAGE"), 1, 0);
-        grid.add(headerCell("CATEGORY"), 2, 0);
-        grid.add(headerCell("STATUS"), 3, 0);
-        grid.add(headerCell("DATE FILED"), 4, 0);
-        grid.add(headerCell("ACTION"), 5, 0);
-    }
-
-    private void addInventoryRow(GridPane grid, int row, String complaint, String village, String category,
-                                  String status, String statusColor, String date) {
-        Label complaintLabel = new Label(complaint);
-        complaintLabel.setWrapText(true);
-        complaintLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label villageLabel = new Label(village);
-        villageLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
-        Label categoryLabel = new Label(category);
-        categoryLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
-        Label statusLabel = new Label(status);
-        statusLabel.setPadding(new Insets(4, 10, 4, 10));
-        statusLabel.setMaxWidth(Region.USE_PREF_SIZE);
-        statusLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
-                "-fx-text-fill: " + statusColor + "; -fx-background-color: " + rgba(statusColor, 0.12) + "; -fx-background-radius: 999;");
-        Label dateLabel = new Label(date);
-        dateLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
-        Label actionLabel = new Label("\uD83D\uDC41");
-        actionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
-
-        grid.add(complaintLabel, 0, row);
-        grid.add(villageLabel, 1, row);
-        grid.add(categoryLabel, 2, row);
-        grid.add(statusLabel, 3, row);
-        grid.add(dateLabel, 4, row);
-        grid.add(actionLabel, 5, row);
     }
 
     private Label headerCell(String text) {
