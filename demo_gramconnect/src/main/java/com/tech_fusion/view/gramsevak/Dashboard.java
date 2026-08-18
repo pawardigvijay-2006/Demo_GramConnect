@@ -692,17 +692,17 @@ main.setBackground(
                 row.setAlignment(Pos.TOP_LEFT);
 
                 // 1. PENDING BILLS
-                VBox kpi1 = kpiCard("#0B4F43", "💧", "PENDING BILLS", "5");
+                VBox kpi1 = kpiCard("#07352d", "💧", "PENDING BILLS", "5");
                 VBox bottom1 = kpiBottom(kpi1);
                 Label status1 = new Label("●  Pending");
-                status1.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #D97706;");
+                status1.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #ad610c;");
                 bottom1.getChildren().add(status1);
 
                 // 3. GOVERNMENT SCHEMES
-                VBox kpi3 = kpiCard("#E67E1F", "🏛", "GOVERNMENT SCHEMES", "8");
+                VBox kpi3 = kpiCard("#964901", "🏛", "GOVERNMENT SCHEMES", "8");
                 VBox bottom3 = kpiBottom(kpi3);
                 Label status3 = new Label("●  Active");
-                status3.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #16803C;");
+                status3.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #0c682d;");
                 bottom3.getChildren().add(status3);
 
                 // 4. OPEN COMPLAINTS
@@ -713,7 +713,7 @@ main.setBackground(
                 bottom4.getChildren().add(status4);
 
                 // 5. CERTIFICATES ISSUED
-                VBox kpi5 = kpiCard("#0B4F43", "📜", "CERTIFICATES ISSUED", "12");
+                VBox kpi5 = kpiCard("#073f35", "📜", "CERTIFICATES ISSUED", "12");
                 VBox bottom5 = kpiBottom(kpi5);
                 Label status5 = new Label("●  Active");
                 status5.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #16803C;");
@@ -857,14 +857,14 @@ main.setBackground(
                 // -------------------------
                 // ACTIVITY ITEMS
                 // -------------------------
-                HBox activity1 = createActivity("💧", "Water bill payment submitted", "Today, 10:30 AM", "#159A9C");
+                HBox activity1 = createActivity("💧", "Water bill payment submitted", "Today, 10:30 AM", "#023a3c");
 
                 HBox activity2 = createActivity("📄", "Certificate application submitted", "Yesterday, 4:15 PM",
-                                "#7956F5");
+                                "#210781");
 
-                HBox activity3 = createActivity("⚠", "Complaint status updated", "Yesterday, 11:20 AM", "#E67E1F");
+                HBox activity3 = createActivity("⚠", "Complaint status updated", "Yesterday, 11:20 AM", "#763d07");
 
-                HBox activity4 = createActivity("🏛", "Government scheme application", "2 days ago", "#0B4F43");
+                HBox activity4 = createActivity("🏛", "Government scheme application", "2 days ago", "#0d473d");
 
                 VBox activityList = new VBox(10);
                 activityList.getChildren().addAll(
