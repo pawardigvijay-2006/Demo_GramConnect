@@ -1,8 +1,12 @@
 package com.tech_fusion.view.admin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -37,9 +41,9 @@ import javafx.stage.Stage;
 /**
  * GramConnect - BDO (Block Development Officer) Dashboard Page
  * ------------------------------------------------------------------
- * Same glass / forest-saffron template as {@link Dashboard},
+ * Same glass / forest-saffron template as {@link ProjectManagement},
  * {@link BudgetManagment}, {@link ComplaintManagement} and
- * {@link ProjectManagement}. Keeps BDO's own content (Block
+ * {@link ReportsAnalytics}. Keeps BDO's own content (Block
  * Development Overview, Recent Projects requiring Approval,
  * Emergency Queue, Recent Citizen Complaints) but rebuilt with the
  * shared sidebar / top bar / card shell and Runnable-based full mesh
@@ -49,12 +53,35 @@ import javafx.stage.Stage;
  * can toggle which village under their block the dashboard is
  * currently scoped to ("All Villages" or any single village).
  *
- * NOTE: {@link #VILLAGES} and {@link #selectedVillage} are now
- * static so the currently-selected village is shared across every
- * page in the app (Dashboard, ReportsAnalytics, etc). Whichever
- * village the BDO picks on one page stays selected when they
- * navigate to another page, since every page reads/writes this
- * same authoritative state instead of keeping its own copy.
+ * NOTE: {@link #VILLAGES} and {@link #selectedVillage} are static so
+ * the currently-selected village is shared across every page in the
+ * app (Dashboard, ProjectManagement, ReportsAnalytics, etc). Whichever
+ * village the BDO picks on one page stays selected when they navigate
+ * to another page, since every page reads/writes this same
+ * authoritative state instead of keeping its own copy.
+ *
+ * ------------------------------------------------------------------
+ * VILLAGE-WISE DYNAMIC DATA
+ * ------------------------------------------------------------------
+ * Every number and row on this page is now derived from
+ * {@link #allProjects}, {@link #allComplaints}, {@link #allEmergencies}
+ * and {@link #villageBudgetCr} — filtered through
+ * {@link #getSelectedVillageProjects()}, {@link #getSelectedVillageComplaints()},
+ * {@link #getSelectedVillageEmergencies()} and {@link #getSelectedVillageBudget()}.
+ * Nothing is hard-coded per village any more. When the BDO taps a
+ * village in the sidebar, {@link #villageToggle(String, ToggleGroup)}
+ * updates {@code selectedVillage} and immediately calls
+ * {@link #refreshDashboard()}, which rebuilds the stat cards, the
+ * projects panel, the emergency queue and the complaints panel in
+ * place — no page reload required.
+ *
+ * FIREBASE READINESS: {@link #loadSampleData()} is the single seam
+ * where local sample lists are populated. To switch to Firebase,
+ * replace the body of that method with a Firestore fetch that
+ * populates the same {@code allProjects} / {@code allComplaints} /
+ * {@code allEmergencies} / {@code villageBudgetCr} fields — every
+ * other method in this class (filtering, KPI math, UI building)
+ * already reads through those fields and needs no further changes.
  */
 public class Dashboard extends Application {
 
@@ -99,8 +126,86 @@ public class Dashboard extends Application {
 
     public static Stage myStage;
 
+    /* ============================================================
+     *  DATA MODEL — village-wise, Firebase-ready
+     * ============================================================ */
+
+    /** A single project entry. {@code village} must be one of {@link #VILLAGES} (excluding "All Villages"). */
+    private static class Project {
+        String id;
+        String title;
+        String location;   // e.g. "Main Street" — sub-label shown under the title, NOT the filter key
+        String village;    // filter key — must match a Dashboard.VILLAGES entry
+        String status;     // "In Review" | "Approved" | "Completed" | "Delayed"
+        String budget;     // display string, e.g. "₹1,20,000"
+
+        Project(String id, String title, String location, String village, String status, String budget) {
+            this.id = id;
+            this.title = title;
+            this.location = location;
+            this.village = village;
+            this.status = status;
+            this.budget = budget;
+        }
+
+        boolean isApprovable() { return "In Review".equals(status); }
+    }
+
+    /** A single citizen complaint entry. */
+    private static class Complaint {
+        String id;
+        String type;
+        String village;
+        String description;
+        String date;
+        String status;      // "Pending" | "In Progress" | "Resolved"
+
+        Complaint(String id, String type, String village, String description, String date, String status) {
+            this.id = id;
+            this.type = type;
+            this.village = village;
+            this.description = description;
+            this.date = date;
+            this.status = status;
+        }
+
+        boolean isAssignable() { return "Pending".equals(status); }
+    }
+
+    /** A single emergency-queue entry. */
+    private static class EmergencyItem {
+        String title;
+        String village;
+        String description;
+        String timeAgo;
+        boolean waterType; // true = water-style red card, false = road-style saffron card
+
+        EmergencyItem(String title, String village, String description, String timeAgo, boolean waterType) {
+            this.title = title;
+            this.village = village;
+            this.description = description;
+            this.timeAgo = timeAgo;
+            this.waterType = waterType;
+        }
+    }
+
+    /** Central, Firebase-ready data lists. Populated once by {@link #loadSampleData()}. */
+    private List<Project> allProjects;
+    private List<Complaint> allComplaints;
+    private List<EmergencyItem> allEmergencies;
+
+    /** village name -> {allocatedCr, usedCr}. "All Villages" is derived by summing these, never stored directly. */
+    private Map<String, double[]> villageBudgetCr;
+
+    /* ---- References kept so refreshDashboard() can rebuild sections in place ---- */
+    private VBox mainContentBox;
+    private HBox statCardsRowRef;
+    private HBox midSectionRef;
+    private VBox complaintsPanelRef;
+
     @Override
     public void start(Stage stage) {
+        loadSampleData();
         Dashboard.myStage = stage;
         stage.setTitle("GramConnect - BDO Office | Block Development Dashboard");
         stage.setScene(getBDODashboardScene());
@@ -111,6 +216,12 @@ public class Dashboard extends Application {
 
     /** Builds the BDO Dashboard scene. Public so other pages can navigate here. */
     public Scene getBDODashboardScene() {
+        if (allProjects == null) {
+            // Guard for callers that construct Dashboard directly (e.g. sidebar navigation)
+            // without going through start(), so sample data is always available.
+            loadSampleData();
+        }
+
         BorderPane root = new BorderPane();
         root.setBackground(buildBackground());
 
@@ -140,6 +251,134 @@ public class Dashboard extends Application {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /* ============================================================
+     *  SAMPLE DATA — swap this method for a Firebase fetch later.
+     *  Every other method reads through allProjects / allComplaints /
+     *  allEmergencies / villageBudgetCr, so nothing else needs to change.
+     * ============================================================ */
+    private void loadSampleData() {
+        allProjects = new ArrayList<>(Arrays.asList(
+                new Project("#PRJ-089", "Village Road Construction", "Main Street", "Rampur", "In Review", "\u20B91,20,000"),
+                new Project("#PRJ-088", "Water Tank Renovation", "Near School Area", "Sitapur", "Approved", "\u20B985,000"),
+                new Project("#PRJ-085", "Panchayat Bhavan Repair", "Gram Panchayat Office", "Madhavpur", "In Review", "\u20B92,50,000"),
+                new Project("#PRJ-091", "Community Hall Flooring", "Ward Office", "Ward 4 Cluster", "Completed", "\u20B960,000"),
+                new Project("#PRJ-093", "Drainage Line Upgrade", "Market Road", "Rampur", "Completed", "\u20B995,000"),
+                new Project("#PRJ-094", "Solar Streetlight Installation", "Bus Stand", "Sitapur", "Delayed", "\u20B91,10,000"),
+                new Project("#PRJ-095", "Anganwadi Renovation", "Ward 3", "Madhavpur", "In Review", "\u20B970,000"),
+                new Project("#PRJ-096", "Check Dam Construction", "River Side", "Ward 4 Cluster", "In Review", "\u20B93,00,000")
+        ));
+
+        allComplaints = new ArrayList<>(Arrays.asList(
+                new Complaint("#CMP-102", "Water Supply", "Rampur", "Low pressure in Ward 2 for 3 days.", "Oct 24, 2023", "Pending"),
+                new Complaint("#CMP-098", "Street Lighting", "Sitapur", "Main road lights flickering near temple.", "Oct 23, 2023", "Resolved"),
+                new Complaint("#CMP-101", "Drainage Blockage", "Madhavpur", "Overflow near market area.", "Oct 22, 2023", "Pending"),
+                new Complaint("#CMP-097", "Road Damage", "Ward 4 Cluster", "Potholes near bus stand.", "Oct 20, 2023", "In Progress")
+        ));
+
+        allEmergencies = new ArrayList<>(Arrays.asList(
+                new EmergencyItem("Water Shortage", "Ward 4 Cluster", "Ward 4 main supply line burst. Immediate repair needed.", "10m ago", true),
+                new EmergencyItem("Road Blockage", "Rampur", "Fallen tree blocking access to North Village clinic.", "1h ago", false)
+        ));
+
+        villageBudgetCr = new LinkedHashMap<>();
+        villageBudgetCr.put("Rampur",          new double[]{1.6, 1.2});
+        villageBudgetCr.put("Sitapur",         new double[]{1.2, 0.9});
+        villageBudgetCr.put("Madhavpur",       new double[]{0.9, 0.55});
+        villageBudgetCr.put("Ward 4 Cluster",  new double[]{0.7, 0.35});
+    }
+
+    /* ============================================================
+     *  VILLAGE FILTERING — single source of truth for all sections
+     * ============================================================ */
+
+    /** Projects for the currently selected village, or all projects if "All Villages" is selected. */
+    private List<Project> getSelectedVillageProjects() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            return allProjects;
+        }
+        return allProjects.stream()
+                .filter(p -> p.village.equals(Dashboard.selectedVillage))
+                .collect(Collectors.toList());
+    }
+
+    /** Complaints for the currently selected village, or all complaints if "All Villages" is selected. */
+    private List<Complaint> getSelectedVillageComplaints() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            return allComplaints;
+        }
+        return allComplaints.stream()
+                .filter(c -> c.village.equals(Dashboard.selectedVillage))
+                .collect(Collectors.toList());
+    }
+
+    /** Emergency-queue items for the currently selected village, or all if "All Villages" is selected. */
+    private List<EmergencyItem> getSelectedVillageEmergencies() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            return allEmergencies;
+        }
+        return allEmergencies.stream()
+                .filter(e -> e.village.equals(Dashboard.selectedVillage))
+                .collect(Collectors.toList());
+    }
+
+    /** {allocatedCr, usedCr} for the selected village, summed across all villages for "All Villages". */
+    private double[] getSelectedVillageBudget() {
+        if (Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage)) {
+            double allocated = 0, used = 0;
+            for (double[] v : villageBudgetCr.values()) {
+                allocated += v[0];
+                used += v[1];
+            }
+            return new double[]{allocated, used};
+        }
+        double[] v = villageBudgetCr.get(Dashboard.selectedVillage);
+        return v != null ? v : new double[]{0, 0};
+    }
+
+    private String colorForProjectStatus(String status) {
+        switch (status) {
+            case "In Review": return SAFFRON_MAIN;
+            case "Delayed":   return DELAYED_RED;
+            case "Approved":
+            case "Completed":
+            default:          return CONTEXT_TEAL;
+        }
+    }
+
+    private String colorForComplaintStatus(String status) {
+        switch (status) {
+            case "Pending":     return SAFFRON_MAIN;
+            case "In Progress": return AI_VIOLET;
+            case "Resolved":
+            default:            return CONTEXT_TEAL;
+        }
+    }
+
+    /* ============================================================
+     *  REFRESH — called immediately after Dashboard.selectedVillage
+     *  changes, so the whole page updates without a reload.
+     * ============================================================ */
+    private void refreshDashboard() {
+        updateScopeSubtitle();
+
+        if (mainContentBox == null) return;
+
+        HBox newStatRow = buildStatCardsRow();
+        int statIdx = mainContentBox.getChildren().indexOf(statCardsRowRef);
+        if (statIdx >= 0) mainContentBox.getChildren().set(statIdx, newStatRow);
+        statCardsRowRef = newStatRow;
+
+        HBox newMidSection = buildMidSection();
+        int midIdx = mainContentBox.getChildren().indexOf(midSectionRef);
+        if (midIdx >= 0) mainContentBox.getChildren().set(midIdx, newMidSection);
+        midSectionRef = newMidSection;
+
+        VBox newComplaintsPanel = buildComplaintsPanel();
+        int cIdx = mainContentBox.getChildren().indexOf(complaintsPanelRef);
+        if (cIdx >= 0) mainContentBox.getChildren().set(cIdx, newComplaintsPanel);
+        complaintsPanelRef = newComplaintsPanel;
     }
 
     /* ============================================================
@@ -230,8 +469,6 @@ public class Dashboard extends Application {
         Region divider = new Region();
         divider.setPrefHeight(1);
         divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
-
-        
 
         VBox smallLinks = new VBox(4);
         smallLinks.setPadding(new Insets(8, 0, 0, 0));
@@ -330,6 +567,8 @@ public class Dashboard extends Application {
                 selectedVillage = village;
                 villageNameLabel.setText(selectedVillage);
                 updateScopeSubtitle();
+                // Immediately refresh every dynamic section on this page — no reload required.
+                refreshDashboard();
                 // Collapse the list once a village has been chosen.
                 villageListExpanded = false;
                 villageListBox.setVisible(false);
@@ -345,9 +584,9 @@ public class Dashboard extends Application {
     private void updateScopeSubtitle() {
         if (scopeSubtitle == null) return;
         if (VILLAGES.get(0).equals(selectedVillage)) {
-            scopeSubtitle.setText("Monitor village development, projects and governance");
+            scopeSubtitle.setText("Monitor village development, projects and governance \u2014 Showing data for: All Villages (Block)");
         } else {
-            scopeSubtitle.setText("Monitor village development, projects and governance \u2014 Showing: " + selectedVillage);
+            scopeSubtitle.setText("Monitor village development, projects and governance \u2014 Showing data for: " + selectedVillage);
         }
     }
 
@@ -486,12 +725,18 @@ public class Dashboard extends Application {
         main.setPadding(new Insets(32, 40, 48, 40));
         main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
+        statCardsRowRef = buildStatCardsRow();
+        midSectionRef = buildMidSection();
+        complaintsPanelRef = buildComplaintsPanel();
+
         main.getChildren().addAll(
                 buildTitleRow(),
-                buildStatCardsRow(),
-                buildMidSection(),
-                buildComplaintsPanel()
+                statCardsRowRef,
+                midSectionRef,
+                complaintsPanelRef
         );
+
+        mainContentBox = main;
         return main;
     }
 
@@ -513,38 +758,54 @@ public class Dashboard extends Application {
     }
 
     /* ============================================================
-     *  STAT CARDS ROW
+     *  STAT CARDS ROW — every value now computed from the
+     *  village-filtered data, never hard-coded.
      * ============================================================ */
     private HBox buildStatCardsRow() {
         HBox row = new HBox(20);
 
-        VBox totalCard = kpiCard (FOREST_LIGHT,"\uD83D\uDCBC","TOTAL PROJECTS", "142");
-        Label totalFooter = new Label("\u2197  12% vs last month");
+        List<Project> villageProjects = getSelectedVillageProjects();
+        List<Complaint> villageComplaints = getSelectedVillageComplaints();
+        double[] budget = getSelectedVillageBudget();
+
+        int totalProjects = villageProjects.size();
+        long pendingApprovals = villageProjects.stream().filter(Project::isApprovable).count();
+        long completedProjects = villageProjects.stream().filter(p -> "Completed".equals(p.status)).count();
+
+        double allocatedCr = budget[0];
+        double usedCr = budget[1];
+        int utilizationPct = allocatedCr > 0 ? (int) Math.round((usedCr / allocatedCr) * 100) : 0;
+
+        int completionRate = totalProjects > 0 ? (int) Math.round((completedProjects * 100.0) / totalProjects) : 0;
+
+        VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCBC", "TOTAL PROJECTS", String.valueOf(totalProjects));
+        Label totalFooter = new Label(completionRate + "% completed for this scope");
         totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
         totalCard.getChildren().add(totalFooter);
 
-        VBox pendingCard = kpiCard(SAFFRON_MAIN,  "\u23F3","PENDING APPROVALS", "18");
-        Label pendingBadge = new Label("High Priority");
+        VBox pendingCard = kpiCard(SAFFRON_MAIN, "\u23F3", "PENDING APPROVALS", String.valueOf(pendingApprovals));
+        Label pendingBadge = new Label(pendingApprovals > 0 ? "High Priority" : "All Clear");
         pendingBadge.setPadding(new Insets(6, 10, 6, 10));
         pendingBadge.setMaxWidth(Region.USE_PREF_SIZE);
         pendingBadge.setStyle("-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 6;" +
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " + SAFFRON_MAIN + ";");
         pendingCard.getChildren().add(pendingBadge);
 
-        VBox budgetCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCA", "BUDGET UTILIZATION", "74%");
+        VBox budgetCard = kpiCard(CONTEXT_TEAL, "\uD83D\uDCCA", "BUDGET UTILIZATION", utilizationPct + "%");
         VBox budgetExtra = new VBox(8);
-        budgetExtra.getChildren().add(progressBar(0.74, CONTEXT_TEAL, 8));
-        Label budgetFootnote = new Label("\u20B91.2Cr / \u20B91.6Cr Sanctioned");
+        budgetExtra.getChildren().add(progressBar(utilizationPct / 100.0, CONTEXT_TEAL, 8));
+        Label budgetFootnote = new Label(String.format("\u20B9%.1fCr / \u20B9%.1fCr Sanctioned", usedCr, allocatedCr));
         budgetFootnote.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
         budgetExtra.getChildren().add(budgetFootnote);
         budgetCard.getChildren().add(budgetExtra);
 
-        VBox reportsCard = kpiCard(AI_VIOLET, "\uD83D\uDCC8", "REPORTS & ANALYTICS", "+12%");
+        VBox reportsCard = kpiCard(AI_VIOLET, "\uD83D\uDCC8", "REPORTS & ANALYTICS", "+" + completionRate + "%");
         VBox reportsExtra = new VBox(4);
-        Label reportsFootnote = new Label("Monthly Progress Insight");
+        Label reportsFootnote = new Label(villageComplaints.size() + " citizen complaints on record");
         reportsFootnote.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        Label reportsTrend = new Label("\u2197  Growth on track");
-        reportsTrend.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
+        Label reportsTrend = new Label(completionRate >= 50 ? "\u2197  Growth on track" : "\u26A0  Needs attention");
+        reportsTrend.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " +
+                (completionRate >= 50 ? CONTEXT_TEAL : DELAYED_RED) + ";");
         reportsExtra.getChildren().addAll(reportsFootnote, reportsTrend);
         reportsCard.getChildren().add(reportsExtra);
 
@@ -556,7 +817,6 @@ public class Dashboard extends Application {
         return row;
     }
 
-    
     private VBox kpiCard(String accent, String icon, String labelText, String statText) {
         VBox card = new VBox();
         card.setPrefWidth(320);
@@ -657,6 +917,24 @@ public class Dashboard extends Application {
         viewAll.setOnMouseClicked(e -> toProjectManagement.run());
         header.getChildren().addAll(title, spacer, viewAll);
 
+        List<Project> villageProjects = getSelectedVillageProjects();
+        // Show up to 3 rows, pending ("In Review") projects surfaced first.
+        List<Project> shown = villageProjects.stream()
+                .sorted((a, b) -> Boolean.compare(!a.isApprovable(), !b.isApprovable()))
+                .limit(3)
+                .collect(Collectors.toList());
+
+        long pendingCount = villageProjects.stream().filter(Project::isApprovable).count();
+
+        if (shown.isEmpty()) {
+            Label empty = new Label("No projects on record for " + Dashboard.selectedVillage + ".");
+            empty.setPadding(new Insets(20, 8, 20, 8));
+            empty.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+            panel.getChildren().addAll(header, empty);
+            addHoverLift(panel, 24);
+            return panel;
+        }
+
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(6);
@@ -669,19 +947,23 @@ public class Dashboard extends Application {
         grid.add(headerCell("BUDGET"), 3, 0);
         grid.add(headerCell("ACTIONS"), 4, 0);
 
-        addProjectRow(grid, 1, "#PRJ-089", "Village Road Construction", "Main Street", "In Review", SAFFRON_MAIN, "\u20B91,20,000", true);
-        grid.add(rowDivider(), 0, 2, 5, 1);
-
-        addProjectRow(grid, 3, "#PRJ-088", "Water Tank Renovation", "Near School Area", "Approved", CONTEXT_TEAL, "\u20B985,000", false);
-        grid.add(rowDivider(), 0, 4, 5, 1);
-
-        addProjectRow(grid, 5, "#PRJ-085", "Panchayat Bhavan Repair", "Gram Panchayat Office", "In Review", SAFFRON_MAIN, "\u20B92,50,000", true);
+        int gridRow = 1;
+        for (int i = 0; i < shown.size(); i++) {
+            Project p = shown.get(i);
+            addProjectRow(grid, gridRow, p.id, p.title, p.location + ", " + p.village,
+                    p.status, colorForProjectStatus(p.status), p.budget, p.isApprovable());
+            gridRow++;
+            if (i < shown.size() - 1) {
+                grid.add(rowDivider(), 0, gridRow, 5, 1);
+                gridRow++;
+            }
+        }
 
         HBox footer = new HBox();
         footer.setAlignment(Pos.CENTER_LEFT);
         footer.setPadding(new Insets(16, 0, 0, 0));
         footer.setStyle("-fx-border-color: rgba(11,61,46,0.08) transparent transparent transparent; -fx-border-width: 1 0 0 0;");
-        Label selected = new Label("3 items selected for review");
+        Label selected = new Label(pendingCount + " item" + (pendingCount == 1 ? "" : "s") + " pending review");
         selected.setPadding(new Insets(14, 0, 0, 0));
         selected.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
         Region fSpacer = new Region();
@@ -769,71 +1051,72 @@ public class Dashboard extends Application {
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 17px; -fx-font-weight: 900; -fx-text-fill: " + DELAYED_RED + ";");
         header.getChildren().addAll(icon, title);
 
-        VBox waterCard = new VBox(10);
-        waterCard.setPadding(new Insets(14, 16, 14, 16));
-        VBox.setMargin(waterCard, new Insets(0, 20, 0, 20));
-        waterCard.setStyle("-fx-background-color: " + rgba(DELAYED_RED, 0.06) + "; -fx-border-color: transparent transparent transparent " + DELAYED_RED + ";" +
-                "-fx-border-width: 0 0 0 4; -fx-background-radius: 8;");
+        panel.getChildren().add(header);
 
-        HBox waterRow = new HBox();
-        waterRow.setAlignment(Pos.CENTER_LEFT);
-        Label waterTitle = new Label("Water Shortage");
-        waterTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region waterSpacer = new Region();
-        HBox.setHgrow(waterSpacer, Priority.ALWAYS);
-        Label waterTime = new Label("10m ago");
-        waterTime.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.55);");
-        waterRow.getChildren().addAll(waterTitle, waterSpacer, waterTime);
+        List<EmergencyItem> shown = getSelectedVillageEmergencies();
 
-        Label waterDesc = new Label("Ward 4 main supply line burst. Immediate repair needed.");
-        waterDesc.setWrapText(true);
-        waterDesc.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: rgba(11,61,46,0.70);");
+        if (shown.isEmpty()) {
+            Label empty = new Label("No active emergencies in " + Dashboard.selectedVillage + ".");
+            empty.setWrapText(true);
+            empty.setPadding(new Insets(4, 20, 20, 20));
+            empty.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+            panel.getChildren().add(empty);
+            addHoverLift(panel, 24);
+            return panel;
+        }
 
-        HBox waterButtons = new HBox(8);
-        Label escalate = new Label("Escalate");
-        escalate.setPadding(new Insets(7, 14, 7, 14));
-        escalate.setStyle("-fx-background-color: " + DELAYED_RED + "; -fx-text-fill: white; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 12px; -fx-font-weight: 700; -fx-background-radius: 6; -fx-cursor: hand;");
-        Label quickApprove = new Label("Quick Approve Funds");
-        quickApprove.setWrapText(true);
-        quickApprove.setPadding(new Insets(7, 12, 7, 12));
-        quickApprove.setStyle("-fx-background-color: rgba(255,255,255,0.75); -fx-text-fill: " + FOREST_DEEP + "; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 12px; -fx-font-weight: 700; -fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 6;" +
-                "-fx-background-radius: 6; -fx-cursor: hand;");
-        waterButtons.getChildren().addAll(escalate, quickApprove);
+        for (EmergencyItem item : shown) {
+            String accent = item.waterType ? DELAYED_RED : SAFFRON_MAIN;
 
-        waterCard.getChildren().addAll(waterRow, waterDesc, waterButtons);
+            VBox card = new VBox(10);
+            card.setPadding(new Insets(14, 16, 14, 16));
+            VBox.setMargin(card, new Insets(0, 20, 0, 20));
+            card.setStyle("-fx-background-color: " + rgba(accent, item.waterType ? 0.06 : 0.08) + "; -fx-border-color: transparent transparent transparent " + accent + ";" +
+                    "-fx-border-width: 0 0 0 4; -fx-background-radius: 8;");
 
-        VBox roadCard = new VBox(10);
-        roadCard.setPadding(new Insets(14, 16, 14, 16));
-        VBox.setMargin(roadCard, new Insets(0, 20, 0, 20));
-        roadCard.setStyle("-fx-background-color: " + rgba(SAFFRON_MAIN, 0.08) + "; -fx-border-color: transparent transparent transparent " + SAFFRON_MAIN + ";" +
-                "-fx-border-width: 0 0 0 4; -fx-background-radius: 8;");
+            HBox cardRow = new HBox();
+            cardRow.setAlignment(Pos.CENTER_LEFT);
+            Label cardTitle = new Label(item.title);
+            cardTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+            Region cardSpacer = new Region();
+            HBox.setHgrow(cardSpacer, Priority.ALWAYS);
+            Label cardTime = new Label(item.timeAgo);
+            cardTime.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.55);");
+            cardRow.getChildren().addAll(cardTitle, cardSpacer, cardTime);
 
-        HBox roadRow = new HBox();
-        roadRow.setAlignment(Pos.CENTER_LEFT);
-        Label roadTitle = new Label("Road Blockage");
-        roadTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region roadSpacer = new Region();
-        HBox.setHgrow(roadSpacer, Priority.ALWAYS);
-        Label roadTime = new Label("1h ago");
-        roadTime.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.55);");
-        roadRow.getChildren().addAll(roadTitle, roadSpacer, roadTime);
+            Label cardDesc = new Label(item.description);
+            cardDesc.setWrapText(true);
+            cardDesc.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: rgba(11,61,46,0.70);");
 
-        Label roadDesc = new Label("Fallen tree blocking access to North Village clinic.");
-        roadDesc.setWrapText(true);
-        roadDesc.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: rgba(11,61,46,0.70);");
+            card.getChildren().addAll(cardRow, cardDesc);
 
-        Label assignTeam = new Label("Assign Team");
-        assignTeam.setPadding(new Insets(7, 14, 7, 14));
-        assignTeam.setMaxWidth(Region.USE_PREF_SIZE);
-        assignTeam.setStyle("-fx-background-color: rgba(255,255,255,0.75); -fx-text-fill: " + FOREST_DEEP + "; -fx-font-family: " + FONT_FAMILY + ";" +
-                "-fx-font-size: 12px; -fx-font-weight: 700; -fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 6;" +
-                "-fx-background-radius: 6; -fx-cursor: hand;");
+            if (item.waterType) {
+                HBox buttons = new HBox(8);
+                Label escalate = new Label("Escalate");
+                escalate.setPadding(new Insets(7, 14, 7, 14));
+                escalate.setStyle("-fx-background-color: " + DELAYED_RED + "; -fx-text-fill: white; -fx-font-family: " + FONT_FAMILY + ";" +
+                        "-fx-font-size: 12px; -fx-font-weight: 700; -fx-background-radius: 6; -fx-cursor: hand;");
+                Label quickApprove = new Label("Quick Approve Funds");
+                quickApprove.setWrapText(true);
+                quickApprove.setPadding(new Insets(7, 12, 7, 12));
+                quickApprove.setStyle("-fx-background-color: rgba(255,255,255,0.75); -fx-text-fill: " + FOREST_DEEP + "; -fx-font-family: " + FONT_FAMILY + ";" +
+                        "-fx-font-size: 12px; -fx-font-weight: 700; -fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 6;" +
+                        "-fx-background-radius: 6; -fx-cursor: hand;");
+                buttons.getChildren().addAll(escalate, quickApprove);
+                card.getChildren().add(buttons);
+            } else {
+                Label assignTeam = new Label("Assign Team");
+                assignTeam.setPadding(new Insets(7, 14, 7, 14));
+                assignTeam.setMaxWidth(Region.USE_PREF_SIZE);
+                assignTeam.setStyle("-fx-background-color: rgba(255,255,255,0.75); -fx-text-fill: " + FOREST_DEEP + "; -fx-font-family: " + FONT_FAMILY + ";" +
+                        "-fx-font-size: 12px; -fx-font-weight: 700; -fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 6;" +
+                        "-fx-background-radius: 6; -fx-cursor: hand;");
+                card.getChildren().add(assignTeam);
+            }
 
-        roadCard.getChildren().addAll(roadRow, roadDesc, assignTeam);
+            panel.getChildren().add(card);
+        }
 
-        panel.getChildren().addAll(header, waterCard, roadCard);
         addHoverLift(panel, 24);
         return panel;
     }
@@ -861,6 +1144,17 @@ public class Dashboard extends Application {
         viewAll.setOnMouseClicked(e -> toComplaintManagement.run());
         header.getChildren().addAll(title, spacer, viewAll);
 
+        List<Complaint> shown = getSelectedVillageComplaints().stream().limit(2).collect(Collectors.toList());
+
+        if (shown.isEmpty()) {
+            Label empty = new Label("No complaints on record for " + Dashboard.selectedVillage + ".");
+            empty.setPadding(new Insets(20, 8, 4, 8));
+            empty.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.55);");
+            panel.getChildren().addAll(header, empty);
+            addHoverLift(panel, 24);
+            return panel;
+        }
+
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(6);
@@ -876,10 +1170,17 @@ public class Dashboard extends Application {
         grid.add(headerCell("STATUS"), 5, 0);
         grid.add(headerCell("ACTIONS"), 6, 0);
 
-        addComplaintRow(grid, 1, "#CMP-102", "Water Supply", "Rampur", "Low pressure in Ward 2 for 3 days.", "Oct 24, 2023", "Pending", SAFFRON_MAIN, true);
-        grid.add(rowDivider(), 0, 2, 7, 1);
-
-        addComplaintRow(grid, 3, "#CMP-098", "Street Lighting", "Sitapur", "Main road lights flickering near temple.", "Oct 23, 2023", "Resolved", CONTEXT_TEAL, false);
+        int gridRow = 1;
+        for (int i = 0; i < shown.size(); i++) {
+            Complaint c = shown.get(i);
+            addComplaintRow(grid, gridRow, c.id, c.type, c.village, c.description, c.date,
+                    c.status, colorForComplaintStatus(c.status), c.isAssignable());
+            gridRow++;
+            if (i < shown.size() - 1) {
+                grid.add(rowDivider(), 0, gridRow, 7, 1);
+                gridRow++;
+            }
+        }
 
         panel.getChildren().addAll(header, grid);
         addHoverLift(panel, 24);

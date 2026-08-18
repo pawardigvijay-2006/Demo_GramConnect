@@ -8,6 +8,7 @@
             "type": "java",
             "name": "Main",
             "request": "launch",
+<<<<<<< HEAD
             "mainClass": "com.tech_fusion.view.gramsevak.Main",
             "projectName": "demo_gramconnect"
         },
@@ -22,11 +23,24 @@
             "type": "java",
             "name": "Main",
             "request": "launch",
+=======
+>>>>>>> 6c4bceac596f9502875d5c6d616e5cc31fd423ac
             "mainClass": "com.tech_fusion.view.sarpanch.Main",
             "projectName": "demo_gramconnect"
         },
         {
             "type": "java",
+<<<<<<< HEAD
+=======
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "com.tech_fusion.view.login.Main",
+            "mainClass": "com.tech_fusion.view.admin.Main",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
+>>>>>>> 6c4bceac596f9502875d5c6d616e5cc31fd423ac
             "name": "VillagerMain",
             "request": "launch",
             "mainClass": "com.tech_fusion.view.villager.VillagerMain",

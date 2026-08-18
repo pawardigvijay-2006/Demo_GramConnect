@@ -38,18 +38,19 @@ import javafx.scene.layout.*;
  * ============================================================
  * NEW IN THIS VERSION
  * ============================================================
- * - MeetingData is a shared model (date/time/venue, about text,
- *   presiding details, full agenda, highlights, and the quick-
- *   summary attendance breakdown) so a "View" click has real data
- *   to hand off.
+ * - MeetingData now only carries what the Meeting Details page
+ *   actually shows: date/time/venue, status, an "About the Meeting"
+ *   description, a short list of "Key Resolutions / Decisions", and
+ *   a 2-stat Quick Summary (Total Registered Voters, Total
+ *   Attendance). The earlier presiding-official / agenda / meeting-
+ *   highlights / male-female-duration fields were dropped since the
+ *   simplified detail page doesn't display them.
  * - MEETINGS is a static, in-memory store (same pattern as
  *   ComplaintsPage.COMPLAINTS) shared with MeetingDetailPage.
- * - Each row in "Previous Meetings" now has its "View" link wired
- *   to navigate to MeetingDetailPage.getMeetingDetailScene(meeting,
+ * - Each row in "Previous Meetings" has its "View" link wired to
+ *   navigate to MeetingDetailPage.getMeetingDetailScene(meeting,
  *   backAction, backToGramSabha) - conflict-free navigation, same
  *   pattern as every other detail page in this app.
- * - Fixed a pre-existing bug where the "Bills & Payments" sidebar
- *   item opened ComplaintsPage instead of BillsAndPayments.
  * ============================================================
  */
 public class GramSabha {
@@ -89,27 +90,16 @@ public class GramSabha {
                 int attendanceCapacity; // e.g. 60
 
                 String aboutText;
-                String presidedBy;
-                String organizedBy;
-                String meetingType;
-                String quorumStatus;
-                List<String> agenda;
-                List<String> highlights;
+                List<String> resolutions; // "Key Resolutions / Decisions"
 
                 int totalRegisteredVoters;
                 int totalAttendance;
                 double attendancePercent;
-                int male;
-                int female;
-                String duration;
-                String signedOn;
 
                 MeetingData(String date, String dayLabel, String timeRange, String venue, String status,
                                 String agendaSummary, int attendanceCount, int attendanceCapacity, String aboutText,
-                                String presidedBy, String organizedBy, String meetingType, String quorumStatus,
-                                List<String> agenda, List<String> highlights, int totalRegisteredVoters,
-                                int totalAttendance, double attendancePercent, int male, int female, String duration,
-                                String signedOn) {
+                                List<String> resolutions, int totalRegisteredVoters, int totalAttendance,
+                                double attendancePercent) {
                         this.date = date;
                         this.dayLabel = dayLabel;
                         this.timeRange = timeRange;
@@ -119,19 +109,10 @@ public class GramSabha {
                         this.attendanceCount = attendanceCount;
                         this.attendanceCapacity = attendanceCapacity;
                         this.aboutText = aboutText;
-                        this.presidedBy = presidedBy;
-                        this.organizedBy = organizedBy;
-                        this.meetingType = meetingType;
-                        this.quorumStatus = quorumStatus;
-                        this.agenda = agenda;
-                        this.highlights = highlights;
+                        this.resolutions = resolutions;
                         this.totalRegisteredVoters = totalRegisteredVoters;
                         this.totalAttendance = totalAttendance;
                         this.attendancePercent = attendancePercent;
-                        this.male = male;
-                        this.female = female;
-                        this.duration = duration;
-                        this.signedOn = signedOn;
                 }
         }
 
@@ -145,22 +126,12 @@ public class GramSabha {
                                 "The Gram Sabha meeting was held to discuss village development works, review "
                                                 + "ongoing projects, approve new proposals and present the financial "
                                                 + "report for transparency and better governance.",
-                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
-                                "Achieved (1/10th of total voters)",
                                 Arrays.asList(
-                                                "Discussion on village development works",
-                                                "Review of ongoing projects",
-                                                "Approval of new proposals",
-                                                "Financial report presentation",
-                                                "Any other matter with the permission of the chair",
-                                                "Open forum for villagers"),
-                                Arrays.asList(
-                                                "2 new development proposals were approved.",
-                                                "Water tank repair and street light installation discussed.",
-                                                "Budget allocation for road construction approved.",
-                                                "3 major complaints raised by villagers.",
-                                                "Financial report for FY 2023-24 presented."),
-                                620, 452, 73.0, 276, 176, "2h 45m", "13 May 2024 05:30 PM"));
+                                                "Approved budget for new water tank construction.",
+                                                "Decided to repair and install LED street lights in Main Road.",
+                                                "Agreed to start drainage cleaning drive before monsoon.",
+                                                "Discussed scholarship awareness program for students."),
+                                620, 452, 73.0));
 
                 MEETINGS.add(new MeetingData(
                                 "10 Mar 2024", "Sunday", "10:00 AM - 12:20 PM", "Gram Panchayat Office, Suryapuri",
@@ -168,20 +139,12 @@ public class GramSabha {
                                 "The Gram Sabha meeting was held to review the condition of village roads and "
                                                 + "drainage lines, and to approve the repair and construction "
                                                 + "schedule for the coming quarter.",
-                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
-                                "Achieved (1/10th of total voters)",
                                 Arrays.asList(
-                                                "Review of village road conditions",
-                                                "Drainage work proposal discussion",
-                                                "Contractor selection for road repair",
-                                                "Budget allocation for drainage lines",
-                                                "Open forum for villagers"),
-                                Arrays.asList(
-                                                "Drainage repair work approved for 3 wards.",
-                                                "Road resurfacing budget approved.",
-                                                "2 complaints on waterlogging raised and noted.",
-                                                "Contractor shortlisting committee formed."),
-                                610, 401, 65.7, 245, 156, "2h 20m", "11 Mar 2024 04:00 PM"));
+                                                "Approved drainage repair work for 3 wards.",
+                                                "Approved budget for road resurfacing.",
+                                                "Formed a committee to shortlist repair contractors.",
+                                                "Noted 2 villager complaints on waterlogging for follow-up."),
+                                610, 401, 65.7));
 
                 MEETINGS.add(new MeetingData(
                                 "14 Jan 2024", "Sunday", "10:00 AM - 12:00 PM", "Gram Panchayat Office, Suryapuri",
@@ -189,18 +152,11 @@ public class GramSabha {
                                 "The Gram Sabha meeting was held to introduce new government welfare schemes to "
                                                 + "villagers and collect proposals for local development priorities "
                                                 + "for the upcoming financial year.",
-                                "Sarpanch: Suresh Patil", "Gram Panchayat, Suryapuri", "Regular Meeting",
-                                "Achieved (1/10th of total voters)",
                                 Arrays.asList(
-                                                "Introduction of new government schemes",
-                                                "Collection of villager development proposals",
-                                                "Prioritization of local development works",
-                                                "Open forum for villagers"),
-                                Arrays.asList(
-                                                "5 new scheme applications registered on the spot.",
-                                                "Streetlight expansion proposal shortlisted.",
-                                                "Community hall renovation proposal noted for review."),
-                                600, 380, 63.3, 230, 150, "2h 00m", "15 Jan 2024 03:30 PM"));
+                                                "Registered 5 new scheme applications on the spot.",
+                                                "Shortlisted the streetlight expansion proposal.",
+                                                "Noted the community hall renovation proposal for review."),
+                                600, 380, 63.3));
         }
 
         // Instance state
@@ -288,7 +244,6 @@ public class GramSabha {
                 });
                 Label billsNav = navItem("\uD83D\uDCB3  Bills & Payments", false);
                 billsNav.setOnMouseClicked(e -> {
-                        // Fixed: this previously reopened ComplaintsPage instead of BillsAndPayments.
                         VillagerDashboard.homeStage.setScene(new BillsAndPayments().getBillsScene(backToDashboardAction));
                 });
 
@@ -587,7 +542,7 @@ public class GramSabha {
                 iconChip.setMaxSize(48, 48);
                 iconChip.setStyle("-fx-background-color: " + FOREST_DEEP + "; -fx-background-radius: 12;");
 
-                Label meetingTitle = new Label("Gram Sabha Meeting \u2013 June 2024");
+                Label meetingTitle = new Label("Village Development Plan Review \u2013 June 2024");
                 meetingTitle.setStyle(
                                 "-fx-font-family: " + FONT_FAMILY + ";" +
                                                 "-fx-font-size: 15px;" +
@@ -636,24 +591,24 @@ public class GramSabha {
                 VBox agendaBox = new VBox(8, agendaLabel, agendaItems);
                 agendaBox.setPadding(new Insets(0, 0, 0, 60));
 
-                Button viewAgenda = new Button("View Agenda");
-                viewAgenda.setStyle(
-                                "-fx-font-family: " + FONT_FAMILY + ";" +
-                                                "-fx-background-color: transparent;" +
-                                                "-fx-text-fill: " + FOREST_DEEP + ";" +
-                                                "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: 800;" +
-                                                "-fx-background-radius: 8;" +
-                                                "-fx-border-color: " + FOREST_DEEP + ";" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-border-width: 1.5;" +
-                                                "-fx-padding: 8 18 8 18;" +
-                                                "-fx-cursor: hand;");
-                HBox agendaButtonRow = new HBox(viewAgenda);
-                agendaButtonRow.setAlignment(Pos.CENTER_RIGHT);
-                agendaButtonRow.setPadding(new Insets(0, 0, 0, 60));
+                // Button viewAgenda = new Button("View Agenda");
+                // viewAgenda.setStyle(
+                //                 "-fx-font-family: " + FONT_FAMILY + ";" +
+                //                                 "-fx-background-color: transparent;" +
+                //                                 "-fx-text-fill: " + FOREST_DEEP + ";" +
+                //                                 "-fx-font-size: 12px;" +
+                //                                 "-fx-font-weight: 800;" +
+                //                                 "-fx-background-radius: 8;" +
+                //                                 "-fx-border-color: " + FOREST_DEEP + ";" +
+                //                                 "-fx-border-radius: 8;" +
+                //                                 "-fx-border-width: 1.5;" +
+                //                                 "-fx-padding: 8 18 8 18;" +
+                //                                 "-fx-cursor: hand;");
+                // HBox agendaButtonRow = new HBox(viewAgenda);
+                // agendaButtonRow.setAlignment(Pos.CENTER_RIGHT);
+                // agendaButtonRow.setPadding(new Insets(0, 0, 0, 60));
 
-                VBox meetingDetails = new VBox(14, titleRow, metaBox, divider, agendaBox, agendaButtonRow);
+                VBox meetingDetails = new VBox(14, titleRow, metaBox, divider, agendaBox);
                 meetingDetails.setPadding(new Insets(18));
                 meetingDetails.setStyle(
                                 "-fx-background-color: " + rgba(FOREST_DEEP, 0.05) + ";" +
