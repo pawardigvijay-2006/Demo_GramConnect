@@ -2,6 +2,7 @@ package com.tech_fusion.view.sarpanch;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
@@ -24,6 +25,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Screen;
 
 /**
  * GramConnect - Create Project Page.
@@ -36,6 +38,8 @@ import javafx.scene.shape.Circle;
  * other page in the app.
  */
 public class CreateProjectPage {
+
+    Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
     private static final String FOREST_DEEP  = "#0B3D2E";
     private static final String FOREST_LIGHT = "#0F4736";
@@ -89,7 +93,7 @@ public class CreateProjectPage {
         contentArea.setCenter(scroller);
         root.setCenter(contentArea);
 
-        return new Scene(root, 1300, 800);
+        return new Scene(root, screenSize.getWidth(), screenSize.getHeight());
     }
 
     /* ============================================================ SIDEBAR ============================================================ */
@@ -139,10 +143,10 @@ public class CreateProjectPage {
             SarpanchDashboard.myStage.setScene(complaintsPage.getComplaintsScene(backToDashboardAction));
         });
 
-        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Citizen Services", false);
+        HBox citizenServicesNav = navItem("\uD83D\uDCC4", "Bills & Payments", false);
         citizenServicesNav.setOnMouseClicked(e -> {
             CitizenServicesPage citizenServicesPage = new CitizenServicesPage();
-            SarpanchDashboard.myStage.setTitle("GramConnect - Citizen Services");
+            SarpanchDashboard.myStage.setTitle("GramConnect ");
             SarpanchDashboard.myStage.setScene(citizenServicesPage.getCitizenServicesScene(backToDashboardAction));
         });
 
@@ -246,11 +250,20 @@ public class CreateProjectPage {
 
         HBox searchBox = new HBox(8);
         searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.setPadding(new Insets(0, 16, 0, 16));
-        searchBox.setPrefWidth(480);
-        searchBox.setPrefHeight(42);
-        searchBox.setStyle("-fx-background-color: rgba(255,255,255,0.7); -fx-background-radius: 12;" +
-            "-fx-border-color: rgba(11,61,46,0.10); -fx-border-radius: 12; -fx-border-width: 1;");
+        searchBox.setPadding(new Insets(0, 14, 0, 14));
+        searchBox.setPrefWidth(400);
+        searchBox.setMinWidth(400);
+        searchBox.setMaxWidth(400);
+        searchBox.setPrefHeight(38);
+        searchBox.setMinHeight(38);
+        searchBox.setMaxHeight(38);     
+        searchBox.setStyle(
+            "-fx-background-color: rgba(255,255,255,0.7);" +
+            "-fx-background-radius: 12;" +
+            "-fx-border-color: rgba(11,61,46,0.10);" +
+            "-fx-border-radius: 12;" +
+            "-fx-border-width: 1;"
+        );
         Label searchIcon = new Label("\uD83D\uDD0D");
         searchIcon.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.5);");
         TextField searchField = new TextField();
