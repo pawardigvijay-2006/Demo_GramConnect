@@ -105,6 +105,8 @@ public class VillagerDashboard extends Application {
                 homeStage.setMinWidth(1280);
                 homeStage.setMinHeight(800);
 
+                homeStage.setMaximized(true);
+
                 homeStage.show();
         }
 

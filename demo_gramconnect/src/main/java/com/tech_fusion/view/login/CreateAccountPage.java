@@ -1,6 +1,6 @@
 package com.tech_fusion.view.login;
 
-import javax.smartcardio.Card;
+import com.tech_fusion.controller.AuthController;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,777 +13,630 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Screen;
-
-
-
-
 
 public class CreateAccountPage {
 
-    public static Scene CreateSccountPageScene;
+        public static Scene CreateSccountPageScene;
 
-    public Scene getCreateAccountScene(Runnable callbackAction) {
+        public Scene getCreateAccountScene(Runnable callbackAction) {
 
-        // =========================================================
-        // BACKGROUND IMAGE
-        // =========================================================
+                // =========================================================
+                // BACKGROUND IMAGE
+                // =========================================================
 
-        Image backgroundImage = new Image(
-                getClass().getResource(
-                        "/assets/images/login page .jpeg"
-                ).toExternalForm()
-        );
+                Image backgroundImage = new Image(
+                                getClass().getResource(
+                                                "/assets/images/login page .jpeg").toExternalForm());
 
-        ImageView background = new ImageView(backgroundImage);
+                ImageView background = new ImageView(backgroundImage);
 
-        background.setPreserveRatio(false);
+                background.setPreserveRatio(false);
 
+                // =========================================================
+                // OVERLAY
+                // =========================================================
 
-        // =========================================================
-        // OVERLAY
-        // =========================================================
+                Region overlay = new Region();
 
-        Region overlay = new Region();
+                overlay.setStyle(
+                                "-fx-background-color: rgba(255,255,255,0.15);");
 
-        overlay.setStyle(
-                "-fx-background-color: rgba(255,255,255,0.15);"
-        );
+                // =========================================================
+                // CREATE ACCOUNT CARD
+                // SAME SIZE AS LOGIN PAGE
+                // =========================================================
 
+                VBox card = new VBox(15);
 
-        // =========================================================
-        // CREATE ACCOUNT CARD
-        // SAME SIZE AS LOGIN PAGE
-        // =========================================================
+                card.setPadding(new Insets(35));
 
-        VBox card = new VBox(15);
+                // SAME SIZE AS LOGIN CARD
+                card.setPrefWidth(500);
+                card.setMinWidth(500);
+                card.setMaxWidth(500);
 
-        card.setPadding(new Insets(35));
+                card.setPrefHeight(700);
+                card.setMinHeight(700);
+                card.setMaxHeight(700);
 
-        // SAME SIZE AS LOGIN CARD
-        card.setPrefWidth(500);
-        card.setMinWidth(500);
-        card.setMaxWidth(500);
+                card.setStyle(
+                                "-fx-background-color: rgba(248,252,253,0.96);" +
+                                                "-fx-background-radius: 25;");
 
-        card.setPrefHeight(700);
-        card.setMinHeight(700);
-        card.setMaxHeight(700);
-       
+                // =========================================================
+                // ICON
+                // =========================================================
 
-        card.setStyle(
-                "-fx-background-color: rgba(248,252,253,0.96);" +
-                "-fx-background-radius: 25;"
-        );
+                Label icon = new Label("♙+");
 
+                icon.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.NORMAL,
+                                                42));
 
-        // =========================================================
-        // ICON
-        // =========================================================
+                icon.setTextFill(
+                                Color.web("#287A20"));
 
-        Label icon = new Label("♙+");
+                icon.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        icon.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.NORMAL,
-                        42
-                )
-        );
+                icon.setAlignment(
+                                Pos.CENTER);
 
-        icon.setTextFill(
-                Color.web("#287A20")
-        );
+                // =========================================================
+                // TITLE
+                // =========================================================
 
-        icon.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                Label title = new Label("Create Account");
 
-        icon.setAlignment(
-                Pos.CENTER
-        );
+                title.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                32));
 
+                title.setTextFill(
+                                Color.web("#0D1B2A"));
 
-        // =========================================================
-        // TITLE
-        // =========================================================
+                title.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        Label title =
-                new Label("Create Account");
+                title.setAlignment(
+                                Pos.CENTER);
 
-        title.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        32
-                )
-        );
+                // =========================================================
+                // SUBTITLE
+                // =========================================================
 
-        title.setTextFill(
-                Color.web("#0D1B2A")
-        );
+                Label subtitle = new Label(
+                                "Join GramConnect and be a part of your village's progress.");
 
-        title.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                subtitle.setFont(
+                                Font.font("Arial", 15));
 
-        title.setAlignment(
-                Pos.CENTER
-        );
+                subtitle.setTextFill(
+                                Color.GRAY);
 
+                subtitle.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        // =========================================================
-        // SUBTITLE
-        // =========================================================
+                subtitle.setAlignment(
+                                Pos.CENTER);
 
-        Label subtitle =
-                new Label(
-                        "Join GramConnect and be a part of your village's progress."
-                );
+                // =========================================================
+                // FULL NAME
+                // =========================================================
 
-        subtitle.setFont(
-                Font.font("Arial", 15)
-        );
+                Label nameLabel = new Label("Full Name");
 
-        subtitle.setTextFill(
-                Color.GRAY
-        );
+                nameLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        subtitle.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                TextField nameField = new TextField();
 
-        subtitle.setAlignment(
-                Pos.CENTER
-        );
+                nameField.setPromptText(
+                                "Enter your full name");
 
+                nameField.setPrefHeight(48);
 
-        // =========================================================
-        // FULL NAME
-        // =========================================================
+                nameField.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        Label nameLabel =
-                new Label("Full Name");
+                // =========================================================
+                // MOBILE
+                // =========================================================
 
-        nameLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                Label mobileLabel = new Label("Mobile Number");
 
-        TextField nameField =
-                new TextField();
+                mobileLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        nameField.setPromptText(
-                "Enter your full name"
-        );
+                TextField mobileField = new TextField();
 
-        nameField.setPrefHeight(48);
+                mobileField.setPromptText(
+                                "Enter your mobile number");
 
-        nameField.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                mobileField.setPrefHeight(48);
 
+                mobileField.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        // =========================================================
-        // MOBILE
-        // =========================================================
+                VBox nameBox = new VBox(
+                                7,
+                                nameLabel,
+                                nameField);
 
-        Label mobileLabel =
-                new Label("Mobile Number");
+                VBox mobileBox = new VBox(
+                                7,
+                                mobileLabel,
+                                mobileField);
 
-        mobileLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                // =========================================================
+                // FIRST ROW
+                // =========================================================
 
-        TextField mobileField =
-                new TextField();
+                HBox firstRow = new HBox(18);
 
-        mobileField.setPromptText(
-                "Enter your mobile number"
-        );
+                firstRow.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        mobileField.setPrefHeight(48);
+                firstRow.getChildren().addAll(
+                                nameBox,
+                                mobileBox);
 
-        mobileField.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                HBox.setHgrow(
+                                nameBox,
+                                Priority.ALWAYS);
 
+                HBox.setHgrow(
+                                mobileBox,
+                                Priority.ALWAYS);
 
-        VBox nameBox =
-                new VBox(
-                        7,
-                        nameLabel,
-                        nameField
-                );
+                // =========================================================
+                // EMAIL
+                // =========================================================
 
-        VBox mobileBox =
-                new VBox(
-                        7,
-                        mobileLabel,
-                        mobileField
-                );
+                Label emailLabel = new Label("Email Address");
 
+                emailLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        // =========================================================
-        // FIRST ROW
-        // =========================================================
+                TextField emailField = new TextField();
 
-        HBox firstRow =
-                new HBox(18);
+                emailField.setPromptText(
+                                "Enter your email address");
 
-        firstRow.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                emailField.setPrefHeight(48);
 
-        firstRow.getChildren().addAll(
-                nameBox,
-                mobileBox
-        );
+                emailField.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        HBox.setHgrow(
-                nameBox,
-                Priority.ALWAYS
-        );
+                VBox emailBox = new VBox(
+                                7,
+                                emailLabel,
+                                emailField);
 
-        HBox.setHgrow(
-                mobileBox,
-                Priority.ALWAYS
-        );
+                // =========================================================
+                // PASSWORD
+                // =========================================================
 
+                Label passwordLabel = new Label("Password");
 
-        // =========================================================
-        // EMAIL
-        // =========================================================
+                passwordLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        Label emailLabel =
-                new Label("Email Address");
+                PasswordField passwordField = new PasswordField();
 
-        emailLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                passwordField.setPromptText(
+                                "Create a password");
 
-        TextField emailField =
-                new TextField();
+                passwordField.setPrefHeight(48);
 
-        emailField.setPromptText(
-                "Enter your email address"
-        );
+                passwordField.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        emailField.setPrefHeight(48);
+                // =========================================================
+                // CONFIRM PASSWORD
+                // =========================================================
 
-        emailField.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                Label confirmLabel = new Label("Confirm Password");
 
+                confirmLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        VBox emailBox =
-                new VBox(
-                        7,
-                        emailLabel,
-                        emailField
-                );
+                PasswordField confirmField = new PasswordField();
 
+                confirmField.setPromptText(
+                                "Confirm your password");
 
-        // =========================================================
-        // PASSWORD
-        // =========================================================
+                confirmField.setPrefHeight(48);
 
-        Label passwordLabel =
-                new Label("Password");
+                confirmField.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        passwordLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                VBox passwordBox = new VBox(
+                                7,
+                                passwordLabel,
+                                passwordField);
 
-        PasswordField passwordField =
-                new PasswordField();
+                VBox confirmBox = new VBox(
+                                7,
+                                confirmLabel,
+                                confirmField);
 
-        passwordField.setPromptText(
-                "Create a password"
-        );
+                // =========================================================
+                // PASSWORD ROW
+                // =========================================================
 
-        passwordField.setPrefHeight(48);
+                HBox passwordRow = new HBox(18);
 
-        passwordField.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                passwordRow.setMaxWidth(
+                                Double.MAX_VALUE);
 
+                passwordRow.getChildren().addAll(
+                                passwordBox,
+                                confirmBox);
 
-        // =========================================================
-        // CONFIRM PASSWORD
-        // =========================================================
+                HBox.setHgrow(
+                                passwordBox,
+                                Priority.ALWAYS);
 
-        Label confirmLabel =
-                new Label("Confirm Password");
+                HBox.setHgrow(
+                                confirmBox,
+                                Priority.ALWAYS);
 
-        confirmLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                // =========================================================
+                // VILLAGE
+                // =========================================================
 
-        PasswordField confirmField =
-                new PasswordField();
+                Label villageLabel = new Label(
+                                "Village / Gram Panchayat");
 
-        confirmField.setPromptText(
-                "Confirm your password"
-        );
+                villageLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        confirmField.setPrefHeight(48);
+                ComboBox<String> villageBox = new ComboBox<>();
 
-        confirmField.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                villageBox.getItems().addAll(
+                                "Pabal",
+                                "Shirur",
+                                "Ranjangaon",
+                                "Koregaon",
+                                "Other");
 
+                villageBox.setPromptText(
+                                "Select your village or gram panchayat");
 
-        VBox passwordBox =
-                new VBox(
-                        7,
-                        passwordLabel,
-                        passwordField
-                );
+                villageBox.setPrefHeight(48);
 
-        VBox confirmBox =
-                new VBox(
-                        7,
-                        confirmLabel,
-                        confirmField
-                );
+                villageBox.setMaxWidth(
+                                Double.MAX_VALUE);
 
+                VBox villageContainer = new VBox(
+                                7,
+                                villageLabel,
+                                villageBox);
 
-        // =========================================================
-        // PASSWORD ROW
-        // =========================================================
+                // =========================================================
+                // ROLE
+                // =========================================================
 
-        HBox passwordRow =
-                new HBox(18);
+                Label roleLabel = new Label("Role");
 
-        passwordRow.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                roleLabel.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        passwordRow.getChildren().addAll(
-                passwordBox,
-                confirmBox
-        );
+                ComboBox<String> roleBox = new ComboBox<>();
 
-        HBox.setHgrow(
-                passwordBox,
-                Priority.ALWAYS
-        );
+                roleBox.getItems().addAll(
+                                "User",
+                                "Sarpanch",
+                                "Gramsevak",
+                                "BDO");
 
-        HBox.setHgrow(
-                confirmBox,
-                Priority.ALWAYS
-        );
+                roleBox.setPromptText(
+                                "Select your role");
 
+                roleBox.setPrefHeight(48);
 
-        // =========================================================
-        // VILLAGE
-        // =========================================================
+                roleBox.setMaxWidth(
+                                Double.MAX_VALUE);
 
-        Label villageLabel =
-                new Label(
-                        "Village / Gram Panchayat"
-                );
+                VBox roleContainer = new VBox(
+                                7,
+                                roleLabel,
+                                roleBox);
 
-        villageLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                // =========================================================
+                // ROLES TEXT
+                // =========================================================
 
-        ComboBox<String> villageBox =
-                new ComboBox<>();
+                Label rolesInfo = new Label(
+                                "Roles: User, Sarpanch, Gramsevak, BDO");
 
-        villageBox.getItems().addAll(
-                "Pabal",
-                "Shirur",
-                "Ranjangaon",
-                "Koregaon",
-                "Other"
-        );
+                rolesInfo.setFont(
+                                Font.font("Arial", 15));
 
-        villageBox.setPromptText(
-                "Select your village or gram panchayat"
-        );
+                rolesInfo.setTextFill(
+                                Color.web("#287A20"));
 
-        villageBox.setPrefHeight(48);
+                // =========================================================
+                // CREATE BUTTON
+                // =========================================================
 
-        villageBox.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                Button createButton = new Button(
+                                "♙+   Create Account");
 
+                createButton.setPrefHeight(50);
 
-        VBox villageContainer =
-                new VBox(
-                        7,
-                        villageLabel,
-                        villageBox
-                );
+                createButton.setMaxWidth(
+                                Double.MAX_VALUE);
 
+                createButton.setStyle(
+                                "-fx-background-color: #287A20;" +
+                                                "-fx-text-fill: white;" +
+                                                "-fx-font-size: 18px;" +
+                                                "-fx-font-weight: bold;" +
+                                                "-fx-background-radius: 7;" +
+                                                "-fx-cursor: hand;");
 
-        // =========================================================
-        // ROLE
-        // =========================================================
+                // =========================================================
+                // LOGIN
+                // =========================================================
 
-        Label roleLabel =
-                new Label("Role");
+                Label already = new Label(
+                                "Already have an account?");
 
-        roleLabel.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                already.setFont(
+                                Font.font("Arial", 15));
 
-        ComboBox<String> roleBox =
-                new ComboBox<>();
+                already.setTextFill(
+                                Color.GRAY);
 
-        roleBox.getItems().addAll(
-                "User",
-                "Sarpanch",
-                "Gramsevak",
-                "BDO"
-        );
+                Hyperlink loginLink = new Hyperlink("Login");
 
-        roleBox.setPromptText(
-                "Select your role"
-        );
+                loginLink.setFont(
+                                Font.font(
+                                                "Arial",
+                                                FontWeight.BOLD,
+                                                15));
 
-        roleBox.setPrefHeight(48);
+                loginLink.setStyle(
+                                "-fx-text-fill: #287A20;");
 
-        roleBox.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                Text output = new Text();
+                output.setStyle("-fx-font-size : 24; -fx-fill: black; -fx-font-weight: bold;");
 
+                // =========================================================
+                // LOGIN NAVIGATION
+                // =========================================================
 
-        VBox roleContainer =
-                new VBox(
-                        7,
-                        roleLabel,
-                        roleBox
-                );
+                loginLink.setOnAction(e -> {
 
+                        if (callbackAction != null) {
+                                callbackAction.run();
+                        }
 
-        // =========================================================
-        // ROLES TEXT
-        // =========================================================
+                });
 
-        Label rolesInfo =
-                new Label(
-                        "Roles: User, Sarpanch, Gramsevak, BDO"
-                );
+                HBox loginBox = new HBox(5);
 
-        rolesInfo.setFont(
-                Font.font("Arial", 15)
-        );
+                loginBox.setAlignment(
+                                Pos.CENTER);
 
-        rolesInfo.setTextFill(
-                Color.web("#287A20")
-        );
+                loginBox.getChildren().addAll(
+                                already,
+                                loginLink);
 
+                // =========================================================
+                // CREATE ACCOUNT ACTION
+                //
+                // BUGFIX: on a successful signUp this previously only set
+                // some (invisible-looking, unstyled) Text and left the user
+                // stranded on the Create Account screen with no feedback and
+                // no way forward. The confirmation Alert is restored, and
+                // once the user dismisses it, callbackAction.run() (the same
+                // Runnable the "Login" link already uses) takes them back to
+                // the Login screen so they can actually sign in with the
+                // account they just created. On failure, the real reason
+                // from Firebase (AuthController.getLastErrorMessage()) is
+                // shown instead of a generic message.
+                // =========================================================
 
-        // =========================================================
-        // CREATE BUTTON
-        // =========================================================
+                AuthController controller = new AuthController();
 
-        Button createButton =
-                new Button(
-                        "♙+   Create Account"
-                );
+                createButton.setOnAction(event -> {
 
-        createButton.setPrefHeight(50);
+                        String name = nameField.getText();
 
-        createButton.setMaxWidth(
-                Double.MAX_VALUE
-        );
+                        String mobile = mobileField.getText();
 
-        createButton.setStyle(
-                "-fx-background-color: #287A20;" +
-                "-fx-text-fill: white;" +
-                "-fx-font-size: 18px;" +
-                "-fx-font-weight: bold;" +
-                "-fx-background-radius: 7;" +
-                "-fx-cursor: hand;"
-        );
+                        String email = emailField.getText();
 
+                        String villageName = villageBox.getValue();
 
-        // =========================================================
-        // LOGIN
-        // =========================================================
+                        String role = roleBox.getValue();
 
-        Label already =
-                new Label(
-                        "Already have an account?"
-                );
+                        String password = passwordField.getText();
 
-        already.setFont(
-                Font.font("Arial", 15)
-        );
+                        String confirmPassword = confirmField.getText();
 
-        already.setTextFill(
-                Color.GRAY
-        );
+                        if (name.isEmpty()
+                                        || mobile.isEmpty()
+                                        || email.isEmpty()
+                                        || password.isEmpty()
+                                        || confirmPassword.isEmpty()
+                                        || villageBox.getValue() == null
+                                        || roleBox.getValue() == null) {
 
+                                Alert alert = new Alert(
+                                                Alert.AlertType.WARNING);
 
-        Hyperlink loginLink =
-                new Hyperlink("Login");
+                                alert.setTitle(
+                                                "GramConnect");
 
-        loginLink.setFont(
-                Font.font(
-                        "Arial",
-                        FontWeight.BOLD,
-                        15
-                )
-        );
+                                alert.setHeaderText(
+                                                null);
 
-        loginLink.setStyle(
-                "-fx-text-fill: #287A20;"
-        );
+                                alert.setContentText(
+                                                "Please fill all required fields.");
 
+                                alert.showAndWait();
 
-        // =========================================================
-        // LOGIN NAVIGATION
-        // =========================================================
+                        } else if (!password.equals(confirmPassword)) {
 
-        loginLink.setOnAction(e -> {
+                                Alert alert = new Alert(
+                                                Alert.AlertType.ERROR);
 
-            if (callbackAction != null) {
-                callbackAction.run();
-            }
+                                alert.setTitle(
+                                                "GramConnect");
 
-        });
+                                alert.setHeaderText(
+                                                "Password Mismatch");
 
+                                alert.setContentText(
+                                                "Password and Confirm Password must be same.");
 
-        HBox loginBox =
-                new HBox(5);
+                                alert.showAndWait();
 
-        loginBox.setAlignment(
-                Pos.CENTER
-        );
+                        } else {
 
-        loginBox.getChildren().addAll(
-                already,
-                loginLink
-        );
+                                boolean flag = controller.signUp(email, password, name, mobile, villageName, role);
 
+                                if (flag) {
 
-        // =========================================================
-        // CREATE ACCOUNT ACTION
-        // =========================================================
+                                        System.out.println("signUp successfully");
+                                        output.setText("Account created successfully");
 
-        createButton.setOnAction(event -> {
+                                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                        alert.setTitle("GramConnect");
+                                        alert.setHeaderText("Account Created Successfully");
+                                        alert.setContentText("Welcome to GramConnect! Please log in to continue.");
+                                        alert.showAndWait();
 
-            String name =
-                    nameField.getText();
+                                        if (callbackAction != null) {
+                                                callbackAction.run();
+                                        }
 
-            String mobile =
-                    mobileField.getText();
+                                } else {
 
-            String email =
-                    emailField.getText();
+                                        System.out.println("signUp failed");
+                                        output.setText("Account creation failed");
 
-            String password =
-                    passwordField.getText();
+                                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                                        alert.setTitle("GramConnect");
+                                        alert.setHeaderText("Account Creation Failed");
+                                        // alert.setContentText(controller.getLastErrorMessage());
+                                        alert.showAndWait();
+                                }
+                        }
+                });
 
-            String confirmPassword =
-                    confirmField.getText();
+                // =========================================================
+                // ADD EVERYTHING
+                // =========================================================
 
+                card.getChildren().addAll(
 
-            if (
-                    name.isEmpty()
-                    || mobile.isEmpty()
-                    || email.isEmpty()
-                    || password.isEmpty()
-                    || confirmPassword.isEmpty()
-                    || villageBox.getValue() == null
-                    || roleBox.getValue() == null
-            ) {
+                                icon,
+                                title,
+                                subtitle,
 
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.WARNING
-                        );
+                                firstRow,
 
-                alert.setTitle(
-                        "GramConnect"
-                );
+                                emailBox,
 
-                alert.setHeaderText(
-                        null
-                );
+                                passwordRow,
 
-                alert.setContentText(
-                        "Please fill all required fields."
-                );
+                                villageContainer,
 
-                alert.showAndWait();
+                                roleContainer,
 
+                                rolesInfo,
 
-            } else if (
-                    !password.equals(confirmPassword)
-            ) {
+                                createButton,
 
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.ERROR
-                        );
+                                loginBox,
+                                output);
 
-                alert.setTitle(
-                        "GramConnect"
-                );
+                // =========================================================
+                // ROOT
+                // =========================================================
 
-                alert.setHeaderText(
-                        "Password Mismatch"
-                );
+                StackPane root = new StackPane();
 
-                alert.setContentText(
-                        "Password and Confirm Password must be same."
-                );
+                root.getChildren().addAll(
+                                background,
+                                overlay,
+                                card);
 
-                alert.showAndWait();
+                // =========================================================
+                // RESPONSIVE BACKGROUND
+                // =========================================================
 
+                background.fitWidthProperty().bind(
+                                root.widthProperty());
 
-            } else {
+                background.fitHeightProperty().bind(
+                                root.heightProperty());
 
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.INFORMATION
-                        );
+                // =========================================================
+                // RESPONSIVE OVERLAY
+                // =========================================================
 
-                alert.setTitle(
-                        "GramConnect"
-                );
+                overlay.prefWidthProperty().bind(
+                                root.widthProperty());
 
-                alert.setHeaderText(
-                        "Account Created Successfully"
-                );
+                overlay.prefHeightProperty().bind(
+                                root.heightProperty());
 
-                alert.setContentText(
-                        "Welcome to GramConnect!"
-                );
+                // =========================================================
+                // CARD POSITION
+                // SAME POSITION STYLE AS LOGIN PAGE
+                // =========================================================
 
-                alert.showAndWait();
-            }
-        });
+                StackPane.setAlignment(
+                                card,
+                                Pos.CENTER_RIGHT);
 
+                StackPane.setMargin(
+                                card,
+                                new Insets(
+                                                25,
+                                                60,
+                                                25,
+                                                40));
 
-        // =========================================================
-        // ADD EVERYTHING
-        // =========================================================
+                // =========================================================
+                // SCENE
+                // =========================================================
 
-        card.getChildren().addAll(
+                CreateSccountPageScene = new Scene(root);
 
-                icon,
-                title,
-                subtitle,
-
-                firstRow,
-
-                emailBox,
-
-                passwordRow,
-
-                villageContainer,
-
-                roleContainer,
-
-                rolesInfo,
-
-                createButton,
-
-                loginBox
-        );
-
-
-        // =========================================================
-        // ROOT
-        // =========================================================
-
-        StackPane root =
-                new StackPane();
-
-        root.getChildren().addAll(
-                background,
-                overlay,
-                card
-        );
-
-
-        // =========================================================
-        // RESPONSIVE BACKGROUND
-        // =========================================================
-
-        background.fitWidthProperty().bind(
-                root.widthProperty()
-        );
-
-        background.fitHeightProperty().bind(
-                root.heightProperty()
-        );
-
-
-        // =========================================================
-        // RESPONSIVE OVERLAY
-        // =========================================================
-
-        overlay.prefWidthProperty().bind(
-                root.widthProperty()
-        );
-
-        overlay.prefHeightProperty().bind(
-                root.heightProperty()
-        );
-
-
-        // =========================================================
-        // CARD POSITION
-        // SAME POSITION STYLE AS LOGIN PAGE
-        // =========================================================
-
-        StackPane.setAlignment(
-                card,
-                Pos.CENTER_RIGHT
-        );
-
-        StackPane.setMargin(
-                card,
-                new Insets(
-                        25,
-                        60,
-                        25,
-                        40
-                )
-        );
-
-
-        // =========================================================
-        // SCENE
-        // =========================================================
-
-        CreateSccountPageScene =
-                new Scene(root);
-
-        return CreateSccountPageScene;
-    }
+                return CreateSccountPageScene;
+        }
 }

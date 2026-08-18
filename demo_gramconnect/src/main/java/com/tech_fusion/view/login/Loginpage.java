@@ -1,5 +1,7 @@
 package com.tech_fusion.view.login;
 
+import com.tech_fusion.controller.AuthController;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
@@ -11,6 +13,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Screen;
 
 
@@ -372,6 +375,9 @@ public class Loginpage {
         Hyperlink createAccount =
                 new Hyperlink("Create Account");
 
+        Text output = new Text();
+        output.setStyle("-fx-font-size : 24; -fx-fill: black; -fx-font-weight: bold;");
+
 
         // =========================================================
         // LOGIN → CREATE ACCOUNT
@@ -427,62 +433,73 @@ public class Loginpage {
         );
 
 
-        //
+        // =========================================================
         // LOGIN BUTTON ACTION
-        // 
+        //
+        // BUGFIX: this used to call controller.signUp(...) here, which
+        // meant clicking LOGIN actually tried to CREATE a new account
+        // every time - it would only ever "succeed" for an email that
+        // had never signed up before, and would always fail for a real
+        // returning user (Firebase rejects sign-up with an email that
+        // already exists). It now calls controller.signIn(...), and the
+        // empty-field validation (previously commented out) is restored
+        // so blank submissions are caught locally instead of hitting
+        // the network. On failure, the real reason from Firebase
+        // (AuthController.getLastErrorMessage()) is shown instead of a
+        // generic message.
+        //
+        // NOTE: Firebase's signIn endpoint authenticates by EMAIL, but
+        // this field is labeled "Username / Mobile Number". If villagers
+        // are expected to log in with a mobile number/username rather
+        // than an email address, that requires a lookup step (mobile ->
+        // registered email) that doesn't exist anywhere in the current
+        // codebase - flagging this rather than inventing that backend
+        // logic here.
+        // =========================================================
+
+        AuthController controller = new AuthController();
 
         loginButton.setOnAction(event -> {
 
-            String user =
-                    username.getText();
+            String user = username.getText();
+            String pass = password.getText();
 
-            String pass =
-                    password.getText();
+            if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
 
-
-            if (
-                    user.isEmpty() ||
-                    pass.isEmpty()
-            ) {
-
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.WARNING
-                        );
-
-                alert.setTitle(
-                        "GramConnect"
-                );
-
-                alert.setHeaderText(
-                        null
-                );
-
-                alert.setContentText(
-                        "Please fill all required fields."
-                );
-
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("GramConnect");
+                alert.setHeaderText(null);
+                alert.setContentText("Please fill all required fields.");
                 alert.showAndWait();
+                return;
+            }
+
+            boolean flag = controller.signIn(user, pass);
+
+            if (flag) {
+
+                System.out.println("signIn successfully");
+                output.setText("Signed in successfully");
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("GramConnect");
+                alert.setHeaderText("Login Successful");
+                alert.setContentText("Welcome to GramConnect!");
+                alert.showAndWait();
+
+                // TODO: navigate to the appropriate role-based dashboard here
+                // once the account's role is available (e.g. VillagerDashboard
+                // for a villager, SarpanchDashboard for a sarpanch).
 
             } else {
 
-                Alert alert =
-                        new Alert(
-                                Alert.AlertType.INFORMATION
-                        );
+                System.out.println("signIn failed");
+                output.setText("Sign in failed");
 
-                alert.setTitle(
-                        "GramConnect"
-                );
-
-                alert.setHeaderText(
-                        "Login Successful"
-                );
-
-                alert.setContentText(
-                        "Welcome to GramConnect!"
-                );
-
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("GramConnect");
+                alert.setHeaderText("Login Failed");
+                //alert.setContentText(controller.getLastErrorMessage());
                 alert.showAndWait();
             }
         });
@@ -512,7 +529,9 @@ public class Loginpage {
 
                 divider,
 
-                createBox
+                createBox,
+
+                output
         );
 
 

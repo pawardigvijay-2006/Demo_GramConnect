@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -19,6 +20,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 
+import com.tech_fusion.controller.Razorpay;
 import com.tech_fusion.view.villager.BillsAndPayments.BillData;
 
 /**
@@ -652,6 +654,8 @@ public class PayBillPage {
                                                 + "-fx-background-radius: 8; -fx-padding: 12 26 12 26; -fx-cursor: hand;");
                 cancelBtn.setOnAction(e -> backToBills.run());
 
+              
+
                 Button payNowBtn = new Button("\uD83D\uDD12  Pay Now \u20B9" + MONEY.format(totalAmount(bill)));
                 payNowBtn.setMaxWidth(Double.MAX_VALUE);
                 payNowBtn.setStyle(
@@ -664,12 +668,18 @@ public class PayBillPage {
                                                 + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.30), 8, 0.1, 0, 3);");
                 HBox.setHgrow(payNowBtn, Priority.ALWAYS);
 
+                Razorpay razorpay = new Razorpay();
+
                 payNowBtn.setOnAction(e -> handlePayNow(bill, backToBills));
+
+                System.out.println("Razorpay payment clicked");
+
+                Parent razorpayparent = razorpay.getView();
 
                 HBox actionsRow = new HBox(12, cancelBtn, payNowBtn);
                 actionsRow.setAlignment(Pos.CENTER_LEFT);
 
-                return new VBox(14, noteRow, actionsRow);
+                return new VBox(14, noteRow, actionsRow,razorpayparent);
         }
 
         private double totalAmount(BillData bill) {
@@ -683,6 +693,7 @@ public class PayBillPage {
          * simple notice and leaves the user on this page to retry.
          */
         private void handlePayNow(BillData bill, Runnable backToBills) {
+                
                 RazorpayUpiCheckout.openUpiCheckout(
                                 VillagerDashboard.homeStage,
                                 totalAmount(bill),

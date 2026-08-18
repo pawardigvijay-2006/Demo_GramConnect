@@ -123,7 +123,11 @@ public class ProjectTransparency {
                 root.setLeft(buildSidebar(backToDashboardAction));
                 root.setCenter(buildMainArea());
 
-                return new Scene(root, 1500, 850);
+                Rectangle2D rb = Screen.getPrimary().getVisualBounds();
+                double wb = rb.getWidth();
+                double hi = rb.getHeight();
+
+                return new Scene(root,wb,hi);
         }
 
         // =================================================================
