@@ -78,7 +78,7 @@ public class GramSabha {
         // Package-visible so MeetingDetailPage can read the full record it
         // was navigated with. Replace with a real GramSabhaService call
         // when one exists.
-        // =================================================================
+        
         static class MeetingData {
                 String date; // "12 May 2024"
                 String dayLabel; // "Sunday"
