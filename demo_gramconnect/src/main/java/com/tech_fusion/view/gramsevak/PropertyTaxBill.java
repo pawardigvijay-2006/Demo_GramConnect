@@ -6,6 +6,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
@@ -46,7 +47,7 @@ public class PropertyTaxBill {
                 mainArea.setTop(billManagement.buildHeader());
                 VBox main = new VBox(22);
                 main.setPadding(new Insets(28, 35, 40, 35));
-                main.setStyle("-fx-background-color: " + PAGE_BG + ";");
+                main.setStyle("-fx-background-color: transparent;");
                 root.setCenter(main);
                 // ========================================================
                 // TOP TITLE SECTION
@@ -150,10 +151,38 @@ public class PropertyTaxBill {
 
                 scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-                scrollPane.setStyle("-fx-background-color: " + PAGE_BG + ";");
+                scrollPane.setStyle(
+        "-fx-background-color: transparent;" +
+        "-fx-background: transparent;"
+);
 
                 // Put property tax content below the header
                 mainArea.setCenter(scrollPane);
+                Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
+
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
+        );
+
+        mainArea.setBackground(
+        new Background(backgroundImage)
+);
                 // Put header + content area beside the sidebar
                 root.setCenter(mainArea);
                 return new Scene(root, screenSize.getWidth(), screenSize.getHeight());

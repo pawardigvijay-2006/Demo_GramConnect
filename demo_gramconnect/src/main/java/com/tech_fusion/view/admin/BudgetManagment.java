@@ -663,33 +663,31 @@ public class BudgetManagment extends Application {
         VBox utilRow = new VBox(6);
         HBox utilLabels = new HBox();
         utilLabels.setAlignment(Pos.CENTER_LEFT);
-        Label utilLeft = new Label(sanctionedOfTotalPct + "% Sanctioned");
-        utilLeft.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // Label utilLeft = new Label(sanctionedOfTotalPct + "% Sanctioned");
+        // utilLeft.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
         Region utilSpacer = new Region();
         HBox.setHgrow(utilSpacer, Priority.ALWAYS);
-        Label utilRight = new Label(String.format("\u20B9%.1f Cr", sanctioned));
-        utilRight.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-text-fill: rgba(11,61,46,0.60);");
-        utilLabels.getChildren().addAll(utilLeft, utilSpacer, utilRight);
-        utilRow.getChildren().addAll(utilLabels, progressBar(sanctionedOfTotalPct / 100.0, FOREST_DEEP, 8));
+        utilLabels.getChildren().addAll( utilSpacer);
+        // utilRow.getChildren().addAll(utilLabels, progressBar(sanctionedOfTotalPct / 100.0, FOREST_DEEP, 8));
         totalCard.getChildren().add(utilRow);
 
         VBox sanctionedCard = kpiCard(SAFFRON_MAIN, "\u2705", "SANCTIONED AMOUNT", String.format("\u20B9%.1f Cr", sanctioned));
-        Label sanctionedFooter = new Label(sanctionedShareOfTotalPct + "% of total block budget");
-        sanctionedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
-        sanctionedCard.getChildren().add(sanctionedFooter);
+        // Label sanctionedFooter = new Label(sanctionedShareOfTotalPct + "% of total block budget");
+        // sanctionedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: " + CONTEXT_TEAL + ";");
+        // sanctionedCard.getChildren().add(sanctionedFooter);
 
         VBox releasedCard = kpiCard(CONTEXT_TEAL, "\u20B9", "RELEASED FUNDS", String.format("\u20B9%.1f Cr", released));
-        Label releasedFooter = new Label(releasedOfSanctionedPct + "% of sanctioned amount");
-        releasedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        releasedCard.getChildren().add(releasedFooter);
+        // Label releasedFooter = new Label(releasedOfSanctionedPct + "% of sanctioned amount");
+        // releasedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // releasedCard.getChildren().add(releasedFooter);
 
         VBox pendingCard = kpiCard(AI_VIOLET, "\uD83D\uDCCB", "PENDING ALLOCATIONS", String.format("\u20B9%.1f Cr", pending));
-        Label pendingFooter = new Label(pending > 0 ? "Requires action this month" : "Fully allocated");
-        pendingFooter.setPadding(new Insets(6, 10, 6, 10));
-        pendingFooter.setMaxWidth(Region.USE_PREF_SIZE);
-        pendingFooter.setStyle("-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 6;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " + SAFFRON_MAIN + ";");
-        pendingCard.getChildren().add(pendingFooter);
+        // Label pendingFooter = new Label(pending > 0 ? "Requires action this month" : "Fully allocated");
+        // pendingFooter.setPadding(new Insets(6, 10, 6, 10));
+        // pendingFooter.setMaxWidth(Region.USE_PREF_SIZE);
+        // pendingFooter.setStyle("-fx-background-color: rgba(224,122,31,0.14); -fx-background-radius: 6;" +
+        //         "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " + SAFFRON_MAIN + ";");
+        // pendingCard.getChildren().add(pendingFooter);
 
         HBox.setHgrow(totalCard, Priority.ALWAYS);
         HBox.setHgrow(sanctionedCard, Priority.ALWAYS);

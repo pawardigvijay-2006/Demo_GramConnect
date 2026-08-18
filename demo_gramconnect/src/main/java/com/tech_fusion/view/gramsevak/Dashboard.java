@@ -35,18 +35,26 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-public class Dashboard extends Application{
-    
-        /** Shared Stage reference - every page that needs to change screens gets this. */
+public class Dashboard extends Application {
+
+        /**
+         * Shared Stage reference - every page that needs to change screens gets this.
+         */
         public static Stage homeStage;
 
-        /** The built Dashboard scene, cached so back() can return to it without rebuilding. */
+        /**
+         * The built Dashboard scene, cached so back() can return to it without
+         * rebuilding.
+         */
         private Scene dashboardScene;
 
         private BorderPane root;
         private BorderPane mainArea;
+        private StackPane dashboardLayer;
+private VBox profileCard;
 
-        // ================= COLORS (borrowed from SarpanchDashboard.java) =================
+        // ================= COLORS (borrowed from SarpanchDashboard.java)
+        // =================
         private static final String FOREST_DEEP = "#0B3D2E";
         private static final String FOREST_LIGHT = "#0F4736";
         private static final String SAFFRON_MAIN = "#E07A1F";
@@ -69,53 +77,59 @@ public class Dashboard extends Application{
 
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
-    @Override
-    public void start(Stage stage) throws Exception {
-        homeStage = stage;
-        homeStage.setScene(getDashboardScene());
-        homeStage.setTitle("GramConnect -Gram Sevak Dashboard");
-        homeStage.show();
-       
-    }
-     public Scene getDashboardScene() {
+        @Override
+        public void start(Stage stage) throws Exception {
+                homeStage = stage;
+                homeStage.setScene(getDashboardScene());
+                homeStage.setTitle("GramConnect -Gram Sevak Dashboard");
+                homeStage.show();
 
-        root = new BorderPane();
-        Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
-        root.setBackground(new Background(new BackgroundImage(backgroundImage,
-                                                            BackgroundRepeat.NO_REPEAT,
-                                                            BackgroundRepeat.NO_REPEAT,
-                                                            BackgroundPosition.CENTER,
-                                                            new BackgroundSize(100, 100, true, true, false, true)
-    )));
-                
-        root.setLeft(buildSidebar());
-
-        // Main area
-        mainArea = new BorderPane();
-        mainArea.setTop(buildHeader());
-
-        ScrollPane scroller = new ScrollPane(buildMainContent());
-        scroller.setFitToWidth(true);
-        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroller.setStyle(
-                "-fx-background: transparent; " +
-                "-fx-background-color: transparent; " +
-                "-fx-border-color: transparent;"
-        );
-        mainArea.setCenter(scroller);
-
-        root.setCenter(mainArea);
-
-        Scene scene = new Scene(root, screenSize.getWidth(), screenSize.getHeight());
-        dashboardScene = scene;
-        return scene;
         }
+
+        public Scene getDashboardScene() {
+
+                root = new BorderPane();
+                Image backgroundImage = new Image(new File(BACKGROUND_IMAGE_PATH).toURI().toString());
+                root.setBackground(new Background(new BackgroundImage(backgroundImage,
+                                BackgroundRepeat.NO_REPEAT,
+                                BackgroundRepeat.NO_REPEAT,
+                                BackgroundPosition.CENTER,
+                                new BackgroundSize(100, 100, true, true, false, true))));
+
+                root.setLeft(buildSidebar());
+
+                // Main area
+                mainArea = new BorderPane();
+                mainArea.setTop(buildHeader());
+
+                ScrollPane scroller = new ScrollPane(buildMainContent());
+                scroller.setFitToWidth(true);
+                scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                scroller.setStyle(
+                                "-fx-background: transparent; " +
+                                                "-fx-background-color: transparent; " +
+                                                "-fx-border-color: transparent;");
+                mainArea.setCenter(scroller);
+
+                root.setCenter(mainArea);
+                // StackPane allows us to place the profile card over the dashboard
+dashboardLayer = new StackPane(root);
+
+Scene scene = new Scene(
+                dashboardLayer,
+                screenSize.getWidth(),
+                screenSize.getHeight());
+                dashboardScene = scene;
+                return scene;
+        }
+
         /** Returns to the cached Dashboard scene without rebuilding it. */
-    public void back() {
-         homeStage.setTitle("GramConnect - Gram Sevak Dashboard");
-         homeStage.setScene(dashboardScene);
+        public void back() {
+                homeStage.setTitle("GramConnect - Gram Sevak Dashboard");
+                homeStage.setScene(dashboardScene);
         }
-    // =================================================================
+
+        // =================================================================
         private VBox buildSidebar() {
                 // Step 1: create the empty container.
                 VBox sidebar = new VBox();
@@ -197,55 +211,56 @@ public class Dashboard extends Application{
                         homeStage.setScene(new GovScheme().getSchemeScene(backToDashboardAction));
                         homeStage.setTitle("GramConnect - Government Schemes");
                 });
-                
-                
+
                 VBox navItems = new VBox(6,
                                 dashboardNav,
                                 billNav,
                                 documentNav,
                                 complaintNav,
-                                schemesNav
-                                );
+                                schemesNav);
                 navItems.setPadding(new Insets(16, 12, 16, 12));
                 VBox.setVgrow(navItems, Priority.ALWAYS); // let this section stretch to fill leftover space
 
                 /* ----- CTA + footer links ----- */
-        VBox footer = new VBox(10);
-        footer.setPadding(new Insets(20, 24, 24, 24));
+                VBox footer = new VBox(10);
+                footer.setPadding(new Insets(20, 24, 24, 24));
 
-        Region divider = new Region();
-        divider.setPrefHeight(1);
-        divider.setStyle("-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
+                Region divider = new Region();
+                divider.setPrefHeight(1);
+                divider.setStyle(
+                                "-fx-background-color: linear-gradient(to right, transparent, rgba(11,61,46,0.25), transparent);");
 
+                VBox smallLinks = new VBox(4);
+                smallLinks.setPadding(new Insets(8, 0, 0, 0));
+                smallLinks.getChildren().addAll(
+                                footerLink("\u2699", "Settings"),
+                                footerLink("\u2753", "Support"));
 
-        VBox smallLinks = new VBox(4);
-        smallLinks.setPadding(new Insets(8, 0, 0, 0));
-        smallLinks.getChildren().addAll(
-            footerLink("\u2699", "Settings"),
-            footerLink("\u2753", "Support")
-        );
-
-        footer.getChildren().addAll(divider, smallLinks);
+                footer.getChildren().addAll(divider, smallLinks);
                 sidebar.getChildren().addAll(logoBox, navItems, footer);
                 return sidebar;
-        
-}
-private HBox footerLink(String icon, String text) {
-        HBox link = new HBox(10);
-        link.setAlignment(Pos.CENTER_LEFT);
-        link.setPadding(new Insets(8, 16, 8, 16));
-        Label ic = new Label(icon);
-        ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
-        Label lbl = new Label(text);
-        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
-        link.getChildren().addAll(ic, lbl);
-        String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
-        link.setStyle(base);
-        link.setOnMouseEntered(e -> link.setStyle("-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
-        link.setOnMouseExited(e -> link.setStyle(base));
-        return link;
-    }
-/**
+
+        }
+
+        private HBox footerLink(String icon, String text) {
+                HBox link = new HBox(10);
+                link.setAlignment(Pos.CENTER_LEFT);
+                link.setPadding(new Insets(8, 16, 8, 16));
+                Label ic = new Label(icon);
+                ic.setStyle("-fx-font-size: 14px; -fx-text-fill: rgba(11,61,46,0.65);");
+                Label lbl = new Label(text);
+                lbl.setStyle("-fx-font-family: " + FONT_FAMILY
+                                + "; -fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.65);");
+                link.getChildren().addAll(ic, lbl);
+                String base = "-fx-background-radius: 8; -fx-background-color: transparent; -fx-cursor: hand;";
+                link.setStyle(base);
+                link.setOnMouseEntered(e -> link.setStyle(
+                                "-fx-background-radius: 8; -fx-background-color: rgba(255,255,255,0.45); -fx-cursor: hand;"));
+                link.setOnMouseExited(e -> link.setStyle(base));
+                return link;
+        }
+
+        /**
          * Builds one clickable-looking sidebar row. Returns a single Label node
          * with NO click handler attached - the caller (buildSidebar() above)
          * attaches .setOnMouseClicked(...) itself right after construction, so
@@ -293,7 +308,7 @@ private HBox footerLink(String icon, String text) {
 
                 return item;
         }
-        
+
         // =================================================================
         // MAIN AREA (header on top, scrollable content below it)
         // =================================================================
@@ -303,10 +318,14 @@ private HBox footerLink(String icon, String text) {
                 main.setCenter(buildMainContent());
                 return main;
         }
-        /** Header restyled as a translucent glass bar with a rounded pill search box. */
+
+        /**
+         * Header restyled as a translucent glass bar with a rounded pill search box.
+         */
         private HBox buildHeader() {
                 // HBox lays its children left-to-right. Spacing "16" = 16px gap between them.
                 HBox header = new HBox(16);
+
                 header.setAlignment(Pos.CENTER_LEFT);
                 header.setPadding(new Insets(14, 28, 14, 28));
                 header.setStyle(
@@ -393,22 +412,241 @@ private HBox footerLink(String icon, String text) {
                 Label chevron = new Label("\u25BE");
                 chevron.setStyle("-fx-text-fill: " + TEXT_SECONDARY + ";");
 
-                HBox profile = new HBox(8, avatar, nameBox, chevron); // avatar + name side by side
+                HBox profile = new HBox(8, avatar, nameBox, chevron);
                 profile.setAlignment(Pos.CENTER_LEFT);
+                profile.setPadding(new Insets(5, 8, 5, 8));
+                profile.setStyle("-fx-background-color: transparent;"
+                                                + "-fx-background-radius: 10;"
+                                                + "-fx-cursor: hand;");
+
+                // Open Profile page when the user clicks the name/avatar/chevron area
+                profile.setOnMouseClicked(e ->{
+                        showProfile();
+                });
+
+                // Hover effect
+                profile.setOnMouseEntered(e -> profile.setStyle(
+                                "-fx-background-color: rgba(11,61,46,0.08);"
+                                                + "-fx-background-radius: 10;"
+                                                + "-fx-cursor: hand;"));
+
+                profile.setOnMouseExited(e -> profile.setStyle(
+                                "-fx-background-color: transparent;"
+                                                + "-fx-background-radius: 10;"
+                                                + "-fx-cursor: hand;"));
 
                 // Finally: put all pieces into the header, left to right.
                 header.getChildren().addAll(searchBox, spacer, bellWithBadge, profile);
+
                 return header;
         }
-       /*
+        private void showProfile() {
+
+        // If profile is already visible, close it
+        if (profileCard != null && dashboardLayer.getChildren().contains(profileCard)) {
+                dashboardLayer.getChildren().remove(profileCard);
+                return;
+        }
+
+        profileCard = new VBox(14);
+        profileCard.setPrefWidth(310);
+        profileCard.setMaxWidth(310);
+        profileCard.setPadding(new Insets(18));
+         // Let the card height depend only on its content
+    profileCard.setMinHeight(Region.USE_PREF_SIZE);
+    profileCard.setPrefHeight(Region.USE_COMPUTED_SIZE);
+    profileCard.setMaxHeight(Region.USE_PREF_SIZE);
+
+        profileCard.setStyle(
+                        "-fx-background-color: white;"
+                                        + "-fx-background-radius: 16;"
+                                        + "-fx-border-color: rgba(11,61,46,0.10);"
+                                        + "-fx-border-radius: 16;"
+                                        + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.20), 18, 0.15, 0, 6);");
+
+        // ============================================================
+        // PROFILE HEADER
+        // ============================================================
+
+        HBox profileHeader = new HBox(12);
+        profileHeader.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane profileAvatar = new StackPane();
+        profileAvatar.setPrefSize(52, 52);
+        profileAvatar.setMinSize(52, 52);
+        profileAvatar.setMaxSize(52, 52);
+
+        profileAvatar.setStyle(
+                        "-fx-background-color: " + FOREST_DEEP + ";"
+                                        + "-fx-background-radius: 30;"
+                                        + "-fx-border-color: " + SAFFRON_MAIN + ";"
+                                        + "-fx-border-width: 2;"
+                                        + "-fx-border-radius: 30;");
+
+        Label avatarText = new Label("AJ");
+        avatarText.setStyle(
+                        "-fx-text-fill: white;"
+                                        + "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 15px;"
+                                        + "-fx-font-weight: bold;");
+
+        profileAvatar.getChildren().add(avatarText);
+
+        VBox profileNameBox = new VBox(3);
+
+        Label profileName = new Label("Amit Jadhav");
+        profileName.setStyle(
+                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 17px;"
+                                        + "-fx-font-weight: 800;"
+                                        + "-fx-text-fill: " + FOREST_DEEP + ";");
+
+        Label profileRole = new Label("Gram Sevak");
+        profileRole.setStyle(
+                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 12px;"
+                                        + "-fx-text-fill: " + TEXT_SECONDARY + ";");
+
+        profileNameBox.getChildren().addAll(
+                        profileName,
+                        profileRole);
+
+        profileHeader.getChildren().addAll(
+                        profileAvatar,
+                        profileNameBox);
+
+        // ============================================================
+        // DIVIDER
+        // ============================================================
+
+        Region divider = new Region();
+        divider.setPrefHeight(1);
+        divider.setMaxWidth(Double.MAX_VALUE);
+        divider.setStyle(
+                        "-fx-background-color: rgba(11,61,46,0.10);");
+
+        // ============================================================
+        // PERSONAL INFORMATION
+        // ============================================================
+
+        Label sectionTitle = new Label("Personal Information");
+        sectionTitle.setStyle(
+                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 13px;"
+                                        + "-fx-font-weight: 800;"
+                                        + "-fx-text-fill: " + FOREST_DEEP + ";");
+
+        VBox information = new VBox(12);
+
+        information.getChildren().addAll(
+                        profileInfoRow("👤", "Full Name", "Amit Jadhav"),
+                        profileInfoRow("📱", "Mobile Number", "9876543210"),
+                        profileInfoRow("✉", "Email Address", "amit@gmail.com"),
+                        profileInfoRow("🏠", "Village / Gram Panchayat", "Suryapuri"),
+                        profileInfoRow("👥", "Role", "Gram Sevak"));
+
+        profileCard.getChildren().addAll(
+                        profileHeader,
+                        divider,
+                        sectionTitle,
+                        information);
+
+        // ============================================================
+        // ADD CARD TO DASHBOARD
+        // ============================================================
+
+        dashboardLayer.getChildren().add(profileCard);
+
+        // Position at top-right, just below the header
+        StackPane.setAlignment(profileCard, Pos.TOP_RIGHT);
+        StackPane.setMargin(
+                        profileCard,
+                        new Insets(72, 24, 0, 0));
+}
+private HBox profileInfoRow(
+                String icon,
+                String labelText,
+                String valueText) {
+
+        HBox row = new HBox(10);
+        row.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconBox = new StackPane();
+        iconBox.setPrefSize(32, 32);
+        iconBox.setMinSize(32, 32);
+        iconBox.setMaxSize(32, 32);
+
+        iconBox.setStyle(
+                        "-fx-background-color: rgba(11,61,46,0.08);"
+                                        + "-fx-background-radius: 9;");
+
+        Label iconLabel = new Label(icon);
+        iconLabel.setStyle("-fx-font-size: 14px;");
+
+        iconBox.getChildren().add(iconLabel);
+
+        VBox textBox = new VBox(2);
+
+        Label label = new Label(labelText);
+        label.setStyle(
+                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 10px;"
+                                        + "-fx-font-weight: 600;"
+                                        + "-fx-text-fill: rgba(11,61,46,0.55);");
+
+        Label value = new Label(valueText);
+        value.setWrapText(true);
+        value.setStyle(
+                        "-fx-font-family: " + FONT_FAMILY + ";"
+                                        + "-fx-font-size: 12px;"
+                                        + "-fx-font-weight: 700;"
+                                        + "-fx-text-fill: " + FOREST_DEEP + ";");
+
+        textBox.getChildren().addAll(
+                        label,
+                        value);
+
+        row.getChildren().addAll(
+                        iconBox,
+                        textBox);
+
+        return row;
+}
+
+        /*
          * ============================================================
          * MAIN CONTENT
          * ============================================================
          */
         private VBox buildMainContent() {
                 VBox main = new VBox(32);
+                Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
+
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
+        );
+
+main.setBackground(
+        new Background(backgroundImage)
+);
                 main.setPadding(new Insets(32, 40, 48, 40));
-                main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
+               // main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
 
                 /* Welcome section */
                 VBox welcome = new VBox(6);
@@ -454,17 +692,17 @@ private HBox footerLink(String icon, String text) {
                 row.setAlignment(Pos.TOP_LEFT);
 
                 // 1. PENDING BILLS
-                VBox kpi1 = kpiCard("#0B4F43", "💧", "PENDING BILLS", "5");
+                VBox kpi1 = kpiCard("#07352d", "💧", "PENDING BILLS", "5");
                 VBox bottom1 = kpiBottom(kpi1);
                 Label status1 = new Label("●  Pending");
-                status1.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #D97706;");
+                status1.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #ad610c;");
                 bottom1.getChildren().add(status1);
 
                 // 3. GOVERNMENT SCHEMES
-                VBox kpi3 = kpiCard("#E67E1F", "🏛", "GOVERNMENT SCHEMES", "8");
+                VBox kpi3 = kpiCard("#964901", "🏛", "GOVERNMENT SCHEMES", "8");
                 VBox bottom3 = kpiBottom(kpi3);
                 Label status3 = new Label("●  Active");
-                status3.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #16803C;");
+                status3.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #0c682d;");
                 bottom3.getChildren().add(status3);
 
                 // 4. OPEN COMPLAINTS
@@ -475,7 +713,7 @@ private HBox footerLink(String icon, String text) {
                 bottom4.getChildren().add(status4);
 
                 // 5. CERTIFICATES ISSUED
-                VBox kpi5 = kpiCard("#0B4F43", "📜", "CERTIFICATES ISSUED", "12");
+                VBox kpi5 = kpiCard("#073f35", "📜", "CERTIFICATES ISSUED", "12");
                 VBox bottom5 = kpiBottom(kpi5);
                 Label status5 = new Label("●  Active");
                 status5.setStyle("-fx-font-size: 13px;-fx-font-weight: bold;-fx-text-fill: #16803C;");
@@ -619,14 +857,14 @@ private HBox footerLink(String icon, String text) {
                 // -------------------------
                 // ACTIVITY ITEMS
                 // -------------------------
-                HBox activity1 = createActivity("💧", "Water bill payment submitted", "Today, 10:30 AM", "#159A9C");
+                HBox activity1 = createActivity("💧", "Water bill payment submitted", "Today, 10:30 AM", "#023a3c");
 
                 HBox activity2 = createActivity("📄", "Certificate application submitted", "Yesterday, 4:15 PM",
-                                "#7956F5");
+                                "#210781");
 
-                HBox activity3 = createActivity("⚠", "Complaint status updated", "Yesterday, 11:20 AM", "#E67E1F");
+                HBox activity3 = createActivity("⚠", "Complaint status updated", "Yesterday, 11:20 AM", "#763d07");
 
-                HBox activity4 = createActivity("🏛", "Government scheme application", "2 days ago", "#0B4F43");
+                HBox activity4 = createActivity("🏛", "Government scheme application", "2 days ago", "#0d473d");
 
                 VBox activityList = new VBox(10);
                 activityList.getChildren().addAll(
@@ -926,12 +1164,14 @@ private HBox footerLink(String icon, String text) {
 
                 return notice;
         }
-  
-        /* ============================================================
-         * HELPERS
-        ============================================================*/
 
-      /** Glass-panel style shared by all cards. */
+        /*
+         * ============================================================
+         * HELPERS
+         * ============================================================
+         */
+
+        /** Glass-panel style shared by all cards. */
         private String cardStyle(int radius) {
                 return "-fx-background-color: rgba(255,255,255,0.88);" +
                                 "-fx-background-radius: " + radius + ";" +
@@ -940,6 +1180,7 @@ private HBox footerLink(String icon, String text) {
                                 "-fx-border-width: 1;" +
                                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.06), 16, 0.1, 0, 4);";
         }
+
         /** Hover lift effect matching the HTML .stat-card-shadow:hover. */
         private void addHoverLift(Region card, int radius) {
                 String base = cardStyle(radius);
@@ -953,6 +1194,7 @@ private HBox footerLink(String icon, String text) {
                 card.setOnMouseEntered(e -> card.setStyle(hover));
                 card.setOnMouseExited(e -> card.setStyle(base));
         }
+
         /** Convert #RRGGBB hex to rgba(r,g,b,a) CSS string. */
         private String rgba(String hex, double alpha) {
                 int r = Integer.parseInt(hex.substring(1, 3), 16);
@@ -961,4 +1203,3 @@ private HBox footerLink(String icon, String text) {
                 return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
         }
 }
-

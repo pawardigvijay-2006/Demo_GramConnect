@@ -14,6 +14,11 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -650,10 +655,31 @@ private HBox footerLink(String icon, String text) {
 
         content.setFillWidth(true);
 
-        content.setStyle(
-                "-fx-background-color: transparent;"
+          Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
+
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
         );
 
+content.setBackground(
+        new Background(backgroundImage)
+);
 
         // ========================================================
         // PAGE TITLE
@@ -995,56 +1021,74 @@ private HBox footerLink(String icon, String text) {
 
 
         createDocumentRequest(new Document(
-                "DOC001",
-                "Ramesh Kadam",
-                "Income Certificate",
-                "12 Aug 2026",
-                "Pending",
-                "9876543210",
-                "House No. 12, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 4521",
-                "Aadhaar Card",
-                "ramesh_kadam_aadhaar.pdf",
-                "12 Aug 2026",
-                "PDF",
-                "Pending"
-        )),
+        "DOC001",
+        "Ramesh Kadam",
+        "Suresh Kadam",
+        "15 Apr 1990",
+        "Male",
+        "ramesh@gmail.com",
+        "250000",
+        "Farmer",
+        "Birth Certificate",
+        "12 Aug 2026",
+        "Pending",
+        "9876543210",
+        "House No. 12, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 4521",
+        "Aadhaar Card",
+        "ramesh_kadam_aadhaar.pdf",
+        "12 Aug 2026",
+        "PDF",
+        "Pending"
+)),
 
-        createDocumentRequest(new Document(
-                "DOC002",
-                "Sunita Pawar",
-                "Birth Certificate",
-                "10 Aug 2026",
-                "Pending",
-                "9823456712",
-                "House No. 5, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 7734",
-                "Aadhaar Card",
-                "sunita_pawar_aadhaar.pdf",
-                "10 Aug 2026",
-                "PDF",
-                "Pending"
-        )),
+createDocumentRequest(new Document(
+        "DOC002",
+        "Sunita Pawar",
+        "Mahesh Pawar",
+        "22 Sep 1992",
+        "Female",
+        "sunita@gmail.com",
+        "180000",
+        "Teacher",
+        "Marriage Certificate",
+        "10 Aug 2026",
+        "Pending",
+        "9823456712",
+        "House No. 5, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 7734",
+        "Aadhaar Card",
+        "sunita_pawar_aadhaar.pdf",
+        "10 Aug 2026",
+        "PDF",
+        "Pending"
+)),
 
-        createDocumentRequest(new Document(
-                "DOC003",
-                "Anil Deshmukh",
-                "Caste Certificate",
-                "08 Aug 2026",
-                "Approved",
-                "9812345678",
-                "House No. 21, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 9012",
-                "Aadhaar Card",
-                "anil_deshmukh_aadhaar.pdf",
-                "08 Aug 2026",
-                "PDF",
-                "Approved"
-        ))
-);
+createDocumentRequest(new Document(
+        "DOC003",
+        "Anil Deshmukh",
+        "Rajendra Deshmukh",
+        "08 Jan 1985",
+        "Male",
+        "anil@gmail.com",
+        "320000",
+        "Business",
+        "Death Certificate",
+        "08 Aug 2026",
+        "Approved",
+        "9812345678",
+        "House No. 21, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 9012",
+        "Aadhaar Card",
+        "anil_deshmukh_aadhaar.pdf",
+        "08 Aug 2026",
+        "PDF",
+        "Approved"
+))
+        );
         
 
 
@@ -1089,68 +1133,100 @@ private HBox footerLink(String icon, String text) {
     // Similar to BillManagement summary cards
     // ============================================================
 
-    private static VBox createSummaryCard(
-            String titleText,
-            String numberText,
-            String accent) {
+  private static VBox createSummaryCard(
+        String titleText,
+        String numberText,
+        String accent) {
 
-        VBox card =
-                new VBox(8);
+    // ========================================================
+    // MAIN CARD
+    // ========================================================
 
-        card.setPadding(
-                new Insets(15)
-        );
+    VBox card = new VBox();
 
-        card.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 14;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 14;"
-        );
+    card.setMinHeight(190);
+    card.setPrefHeight(190);
+    card.setMaxHeight(190);
 
+    card.setPadding(new Insets(0));
 
-        Label title =
-                new Label(titleText);
+    card.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 14;" +
+            "-fx-border-color: #E1E7E4;" +
+            "-fx-border-radius: 14;"
+    );
 
-        title.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #657180;"
-        );
+    // ========================================================
+    // TOP COLORED STRIP
+    // ========================================================
 
+    Region strip = new Region();
 
-        Label number =
-                new Label(numberText);
+    strip.setPrefHeight(5);
+    strip.setMinHeight(5);
+    strip.setMaxHeight(5);
 
-        number.setStyle(
-                "-fx-font-size: 28px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    strip.setMaxWidth(Double.MAX_VALUE);
 
+    strip.setStyle(
+            "-fx-background-color: " + accent + ";" +
+            "-fx-background-radius: 14 14 0 0;"
+    );
 
-        Label status =
-                new Label(
-                        "●  " + titleText
-                );
+    // ========================================================
+    // CARD CONTENT
+    // ========================================================
 
-        status.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    VBox cardContent = new VBox(9);
 
+    cardContent.setPadding(
+            new Insets(18, 20, 18, 20)
+    );
 
-        card.getChildren().addAll(
-                title,
-                number,
-                status
-        );
+    Label title = new Label(titleText);
 
+    title.setStyle(
+            "-fx-font-size: 11px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: #657180;"
+    );
 
-        return card;
-    }
+    Label number = new Label(numberText);
 
+    number.setStyle(
+            "-fx-font-size: 30px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: " + accent + ";"
+    );
+
+    Label status = new Label(
+            "●  " + titleText
+    );
+
+    status.setStyle(
+            "-fx-font-size: 11px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: " + accent + ";"
+    );
+
+    cardContent.getChildren().addAll(
+            title,
+            number,
+            status
+    );
+
+    // ========================================================
+    // STRIP AT TOP + CONTENT BELOW
+    // ========================================================
+
+    card.getChildren().addAll(
+            strip,
+            cardContent
+    );
+
+    return card;
+}
 
     // ============================================================
     // SINGLE DOCUMENT REQUEST
@@ -1405,32 +1481,6 @@ private HBox footerLink(String icon, String text) {
         );
 
 
-        Button approveButton =
-                new Button("Approve");
-
-        approveButton.setStyle(
-                "-fx-background-color: #16803C;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 7;"
-                        + "-fx-padding: 7 12 7 12;"
-                        + "-fx-cursor: hand;"
-        );
-
-
-        Button rejectButton =
-                new Button("Reject");
-
-        rejectButton.setStyle(
-                "-fx-background-color: #D93025;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 7;"
-                        + "-fx-padding: 7 12 7 12;"
-                        + "-fx-cursor: hand;"
-        );
-
-
         // ========================================================
         // TEMPORARY BUTTON ACTIONS
         // ========================================================
@@ -1442,24 +1492,10 @@ viewButton.setOnAction(
         )
 );
 
-approveButton.setOnAction(
-        event -> System.out.println(
-                "Approve document: " + document.getApplicantName()
-        )
-);
-
-rejectButton.setOnAction(
-        event -> System.out.println(
-                "Reject document: " + document.getApplicantName()
-        )
-);
-
         HBox actions =
                 new HBox(
                         8,
-                        viewButton,
-                        approveButton,
-                        rejectButton
+                        viewButton
                 );
 
         actions.setAlignment(

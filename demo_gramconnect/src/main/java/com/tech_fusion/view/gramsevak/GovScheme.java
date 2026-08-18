@@ -11,6 +11,11 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -61,6 +66,9 @@ public class GovScheme {
         private static final String CONTEXT_TEAL = "#2E8B57";
         private static final String AI_VIOLET = "#7E57C2";
 
+        // Same background image / theme as SarpanchComplaintsPage
+        private static final String BACKGROUND_IMAGE_PATH = "/assets/images/BackgroundImage.png";
+
         private Runnable backAction;
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
@@ -74,8 +82,13 @@ public class GovScheme {
 
                 BorderPane root = new BorderPane();
 
-                root.setStyle(
-                                "-fx-background-color: " + BACKGROUND + ";");
+                Image backgroundImage = new Image(BACKGROUND_IMAGE_PATH);
+                root.setBackground(new Background(new BackgroundImage(backgroundImage,
+                                BackgroundRepeat.NO_REPEAT,
+                                BackgroundRepeat.NO_REPEAT,
+                                BackgroundPosition.CENTER,
+                                new BackgroundSize(100, 100, true, true, false, true)
+                )));
 
                 root.setLeft(buildSidebar(backAction));
                 root.setCenter(buildMainArea());
@@ -114,7 +127,6 @@ public class GovScheme {
                 Image logoImage = new Image("assets\\images\\gc logo.jpeg");
 
                 ImageView logoIcon = new ImageView(logoImage);
-
                 logoIcon.setFitWidth(60);
                 logoIcon.setFitHeight(60);
                 logoIcon.setPreserveRatio(true);
@@ -427,12 +439,18 @@ public class GovScheme {
                                 buildSummaryCards(),
                                 buildMainContentArea());
 
+                // Background now lives on the root BorderPane (see getSchemeScene),
+                // so content itself stays transparent and shows it through.
+
                 ScrollPane scrollPane = new ScrollPane(content);
 
                 scrollPane.setFitToWidth(true);
-
+                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
                 scrollPane.setStyle(
-                                "-fx-background-color: transparent;");
+                                "-fx-background: transparent; " +
+                                "-fx-background-color: transparent; " +
+                                "-fx-border-color: transparent;"
+                );
 
                 return scrollPane;
         }
@@ -679,15 +697,7 @@ public class GovScheme {
                                 createSchemeCard("Women Empowerment Scheme", "Women & Child", "Active", "63"),
                                 createSchemeCard("Farmer Support Scheme", "Agriculture", "Inactive", "45"));
 
-                ScrollPane scrollPane = new ScrollPane(schemeList);
-                scrollPane.setFitToWidth(true);
-                scrollPane.setPrefHeight(460);
-                scrollPane.setStyle(
-                                "-fx-background: transparent;" +
-                                                "-fx-background-color: transparent;" +
-                                                "-fx-border-color: transparent;");
-
-                card.getChildren().addAll(header, scrollPane);
+                card.getChildren().addAll(header, schemeList);
                 return card;
         }
 

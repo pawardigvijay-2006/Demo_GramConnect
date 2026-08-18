@@ -16,6 +16,11 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -78,10 +83,32 @@ public class Complaints {
         this.backAction = backAction;
 
         BorderPane root = new BorderPane();
+        Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
 
-        root.setStyle(
-                "-fx-background-color: " + BACKGROUND + ";"
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
         );
+
+root.setBackground(
+        new Background(backgroundImage)
+);
+
 
         root.setLeft(buildSidebar(backAction));
         root.setCenter(buildMainArea());
@@ -633,7 +660,6 @@ private HBox footerLink(String icon, String text) {
         return header;
     }
 
-
     // ============================================================
     // SCROLLABLE CONTENT
     // ============================================================
@@ -641,17 +667,39 @@ private HBox footerLink(String icon, String text) {
     private ScrollPane buildScrollableContent() {
 
         VBox content =
-                new VBox(14);
+                new VBox(10);
 
-        content.setPadding(
-                new Insets(16, 24, 24, 24)
-        );
+      content.setPadding(
+        new Insets(30, 24, 24, 24)
+);
 
         content.setFillWidth(true);
 
-        content.setStyle(
-                "-fx-background-color: transparent;"
+         Image bgImage = new Image(
+        getClass()
+              .getResource("/assets/images/BackgroundImage.png")
+               .toExternalForm()
+);
+
+BackgroundImage backgroundImage =
+        new BackgroundImage(
+        bgImage,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(
+                        100,
+                        100,
+                        true,
+                        true,
+                        false,
+                        true
+                )
         );
+
+content.setBackground(
+        new Background(backgroundImage)
+);
 
 
         // ========================================================
@@ -697,7 +745,7 @@ private HBox footerLink(String icon, String text) {
         // ADD COMPLAINT BUTTON
         // ========================================================
 
-        Button addComplaintButton =
+        /*Button addComplaintButton =
                 new Button("+  Add Complaint");
 
         addComplaintButton.setStyle(
@@ -714,18 +762,21 @@ private HBox footerLink(String icon, String text) {
                 event -> System.out.println(
                         "Add Complaint clicked"
                 )
-        );
+        );*/
 
 
         titlePane.setLeft(
                 titleBox
+                
         );
+        VBox.setMargin(
+        titlePane,
+        new Insets(0, 0, 24, 0)
+);
 
-        titlePane.setRight(
+        /*titlePane.setRight(
                 addComplaintButton
-        );
-
-
+        );*/
         // ========================================================
         // SUMMARY CARDS
         // ========================================================
@@ -841,27 +892,6 @@ private HBox footerLink(String icon, String text) {
                 "🔍  Search Complaint ID or Category"
         );
 
-
-        // ========================================================
-        // CATEGORY FILTER
-        // ========================================================
-
-        ComboBox<String> categoryComboBox =
-                new ComboBox<>();
-
-        categoryComboBox.getItems().addAll(
-                "All Categories",
-                "Water Supply",
-                "Street Light",
-                "Road Damage",
-                "Garbage Collection"
-        );
-
-        categoryComboBox.setValue(
-                "All Categories"
-        );
-
-
         // ========================================================
         // STATUS FILTER
         // ========================================================
@@ -910,12 +940,6 @@ private HBox footerLink(String icon, String text) {
                 searchField,
                 Priority.ALWAYS
         );
-
-
-        categoryComboBox.setMaxWidth(
-                Double.MAX_VALUE
-        );
-
         statusComboBox.setMaxWidth(
                 Double.MAX_VALUE
         );
@@ -923,17 +947,12 @@ private HBox footerLink(String icon, String text) {
         searchButton.setMaxWidth(
                 Double.MAX_VALUE
         );
-
-
         searchField.setMinWidth(150);
-        categoryComboBox.setMinWidth(130);
         statusComboBox.setMinWidth(120);
         searchButton.setMinWidth(70);
 
-
         filterBox.getChildren().addAll(
                 searchField,
-                categoryComboBox,
                 statusComboBox,
                 searchButton
         );
@@ -943,12 +962,9 @@ private HBox footerLink(String icon, String text) {
                 filterTitle,
                 filterBox
         );
-
-
         // ========================================================
         // COMPLAINT LIST SECTION
         // ========================================================
-
         VBox complaintSection =
                 new VBox(12);
 
@@ -962,15 +978,11 @@ private HBox footerLink(String icon, String text) {
                         + "-fx-border-color: #E1E7E4;"
                         + "-fx-border-radius: 16;"
         );
-
-
         // ========================================================
         // LIST HEADER
         // ========================================================
-
         BorderPane complaintHeader =
                 new BorderPane();
-
 
         Label recentTitle =
                 new Label(
@@ -1012,8 +1024,6 @@ private HBox footerLink(String icon, String text) {
 
         VBox complaintList =
                 new VBox(8);
-
-
         // ========================================================
         // DATABASE / API CONNECTION POINT
         // ========================================================
@@ -1029,42 +1039,36 @@ private HBox footerLink(String icon, String text) {
         // createComplaintItem(...)
         //
         // ========================================================
-
-
-        HBox complaint1 =
-                createComplaintItem(
+        HBox complaint1 =createComplaintItem(
                         "C001",
                         "Water Supply",
                         "Pending",
-                        "15 Jan 2026"
-                );
+                        "15 Jan 2026",
+                        "Ramesh Kumar"
+                        );
 
-
-        HBox complaint2 =
-                createComplaintItem(
+        HBox complaint2 =createComplaintItem(
                         "C002",
                         "Street Light",
                         "In Progress",
-                        "14 Oct 2026"
-                );
+                        "14 Oct 2026",
+                        "Shrutika Rode");
 
-
-        HBox complaint3 =
-                createComplaintItem(
+        HBox complaint3 =createComplaintItem(
                         "C003",
                         "Road Damage",
                         "Resolved",
-                        "12 Oct 2026"
+                        "12 Oct 2026",
+                        "Om Bora"
                 );
 
 
-        HBox complaint4 =
-                createComplaintItem(
+        HBox complaint4 =createComplaintItem(
                         "C004",
                         "Garbage Collection",
                         "Escalated",
-                        "10 Oct 2026"
-                );
+                        "10 Oct 2026",
+                        "Chinmay Wagh");
 
 
         complaintList.getChildren().addAll(
@@ -1096,86 +1100,139 @@ private HBox footerLink(String icon, String text) {
         // ========================================================
         // SCROLL PANE
         // ========================================================
+// ============================================================
+// PAGE CONTENT + TOP STRIP
+// ============================================================
 
-        ScrollPane scrollPane =
-                new ScrollPane(content);
+// ============================================================
+// PAGE CONTENT
+// ============================================================
 
-        scrollPane.setFitToWidth(true);
+VBox pageContent = new VBox();
 
-        scrollPane.setStyle(
-                "-fx-background-color: transparent;"
-        );
+pageContent.setFillWidth(true);
+
+pageContent.getChildren().add(content);
 
 
-        return scrollPane;
+// ============================================================
+// SCROLL PANE
+// ============================================================
+
+ScrollPane scrollPane =
+        new ScrollPane(pageContent);
+
+scrollPane.setFitToWidth(true);
+
+scrollPane.setStyle(
+        "-fx-background-color: transparent;"
+);
+
+return scrollPane;
     }
-
-
     // ============================================================
     // SUMMARY CARD
     // ============================================================
+// ============================================================
+// SUMMARY CARD
+// ============================================================
 
-    private static VBox createSummaryCard(
-            String titleText,
-            String numberText,
-            String accent) {
+private static VBox createSummaryCard(
+        String titleText,
+        String numberText,
+        String accent) {
 
-        VBox card =
-                new VBox(8);
+    VBox card =
+            new VBox(0);
+            card.setMinHeight(190);
+    card.setPrefHeight(190);
+    card.setMaxHeight(190);
 
-        card.setPadding(
-                new Insets(15)
-        );
-
-        card.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 14;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 14;"
-        );
-
-
-        Label title =
-                new Label(titleText);
-
-        title.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #657180;"
-        );
+    card.setStyle(
+            "-fx-background-color: white;"
+                    + "-fx-background-radius: 14;"
+                    + "-fx-border-color: #E1E7E4;"
+                    + "-fx-border-radius: 14;"
+                    + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);"
+    );
 
 
-        Label number =
-                new Label(numberText);
+    // ========================================================
+    // COLOURED TOP STRIP
+    // ========================================================
 
-        number.setStyle(
-                "-fx-font-size: 28px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    Region strip =
+            new Region();
 
+    strip.setPrefHeight(5);
+    strip.setMinHeight(5);
+    strip.setMaxHeight(5);
 
-        Label status =
-                new Label(
-                        "●  " + titleText
-                );
-
-        status.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    strip.setStyle(
+            "-fx-background-color: " + accent + ";"
+                    + "-fx-background-radius: 14 14 0 0;"
+    );
 
 
-        card.getChildren().addAll(
-                title,
-                number,
-                status
-        );
+    // ========================================================
+    // CARD CONTENT
+    // ========================================================
+
+    VBox cardContent =
+            new VBox(8);
+
+    cardContent.setPadding(
+            new Insets(15)
+    );
 
 
-        return card;
-    }
+    Label title =
+            new Label(titleText);
+
+    title.setStyle(
+            "-fx-font-size: 11px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: #657180;"
+    );
+
+
+    Label number =
+            new Label(numberText);
+
+    number.setStyle(
+            "-fx-font-size: 28px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: " + accent + ";"
+    );
+
+
+    Label status =
+            new Label(
+                    "●  " + titleText
+            );
+
+    status.setStyle(
+            "-fx-font-size: 11px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: " + accent + ";"
+    );
+
+
+    cardContent.getChildren().addAll(
+            title,
+            number,
+            status
+    );
+
+
+    card.getChildren().addAll(
+            strip,
+            cardContent
+    );
+
+
+    return card;
+}
 
 
     // ============================================================
@@ -1186,24 +1243,16 @@ private HBox footerLink(String icon, String text) {
             String id,
             String category,
             String status,
-            String date) {
+            String date,
+            String name) {
 
 
-        HBox item =
-                new HBox(15);
+        HBox item =new HBox(15);
+        HBox.setHgrow(item,Priority.ALWAYS);
 
-        HBox.setHgrow(
-                item,
-                Priority.ALWAYS
-        );
+        item.setAlignment(Pos.CENTER_LEFT);
 
-        item.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        item.setPadding(
-                new Insets(12)
-        );
+        item.setPadding(new Insets(12));
 
         item.setStyle(
                 "-fx-background-color: #F8FAF9;"
@@ -1367,6 +1416,41 @@ private HBox footerLink(String icon, String text) {
                 dateTitle,
                 dateLabel
         );
+        // ========================================================
+        // Nmae of citizen
+        // ========================================================
+
+        VBox NameBox =
+                new VBox(3);
+
+        NameBox.setPrefWidth(
+                250
+        );
+
+
+        Label NameTitle =
+                new Label("Raised by:");
+
+        NameTitle.setStyle(
+                "-fx-font-size: 10px;"
+                        + "-fx-text-fill: #7A8A87;"
+        );
+
+
+        Label NameLabel =
+                new Label(name);
+
+        NameLabel.setStyle(
+                "-fx-font-size: 13px;"
+                        + "-fx-font-weight: bold;"
+                        + "-fx-text-fill: #285B5B;"
+        );
+
+
+        NameBox.getChildren().addAll(
+                NameTitle,
+                NameLabel
+        );
 
 
         // ========================================================
@@ -1427,8 +1511,7 @@ private HBox footerLink(String icon, String text) {
 viewButton.setOnAction(
         event -> {
 
-            Complaint selectedComplaint =
-                    buildTempComplaint(id, category, status, date);
+            Complaint selectedComplaint =buildTempComplaint(id, category, status, date);
 
             Dashboard.homeStage.setScene(
                     new Complaintdetails()
@@ -1465,6 +1548,7 @@ viewButton.setOnAction(
                 idBox,
                 categoryBox,
                 dateBox,
+                NameBox,
                 spacer,
                 statusLabel,
                 actions

@@ -90,8 +90,27 @@ public class ProjectManagement extends Application {
         final String date;
         final String priority;   // only meaningful for "Pending" projects: "HIGH PRIORITY" | "MEDIUM" | "NORMAL"
 
+        /*
+         * ---- Fields aligned with CreateProjectPage (Sarpanch Login) ----
+         * These use the exact same names/shape as the fields collected on
+         * CreateProjectPage's "Project Details" / "Budget & Timeline" form
+         * (CATEGORY, LOCATION / WARD, EXPECTED BUDGET, EXPECTED DURATION).
+         * Nothing sends real data into these yet — that wiring comes later —
+         * but keeping the shape identical here means that whenever
+         * CreateProjectPage (and eventually the Villager Login's New
+         * Complaints Page -> SarpanchComplaintsPage) starts submitting real
+         * data, the Pending Approval panel below can consume it as-is,
+         * with no field renaming/mapping required.
+         */
+        final String category;         // e.g. "Roads", "Water Supply", "Electricity", "Sanitation", "Education", "Other"
+        final String location;         // free-text village/ward, as typed on CreateProjectPage
+        final String expectedBudget;   // e.g. "Rs. 1,50,000"
+        final String expectedDuration; // e.g. "3 Months"
+
+        /** Full constructor — use this once a project actually carries data submitted from CreateProjectPage. */
         Project(String projectName, String projectId, String village, String locality, String department,
-                String budget, String status, String date, String priority) {
+                String budget, String status, String date, String priority,
+                String category, String location, String expectedBudget, String expectedDuration) {
             this.projectName = projectName;
             this.projectId = projectId;
             this.village = village;
@@ -101,7 +120,126 @@ public class ProjectManagement extends Application {
             this.status = status;
             this.date = date;
             this.priority = priority;
+            this.category = category;
+            this.location = location;
+            this.expectedBudget = expectedBudget;
+            this.expectedDuration = expectedDuration;
         }
+
+        /**
+         * Back-compat constructor for sample/legacy data that hasn't been given
+         * explicit category/location/expectedDuration yet. Derives reasonable
+         * fallbacks from the existing fields so the Approved Projects panel and
+         * Project Inventory table (which don't use the new fields) keep working
+         * unchanged.
+         */
+        Project(String projectName, String projectId, String village, String locality, String department,
+                String budget, String status, String date, String priority) {
+            this(projectName, projectId, village, locality, department, budget, status, date, priority,
+                    department, village + ", " + locality, budget, "\u2014");
+        }
+    }
+
+    /** A villager-submitted report — title + description, same shape as ReportProject.java's form fields. Not wired to it yet. */
+    private static class Report {
+        final String projectId;
+        final String title;
+        final String description;
+
+        Report(String projectId, String title, String description) {
+            this.projectId = projectId;
+            this.title = title;
+            this.description = description;
+        }
+    }
+
+    /** Mock reports keyed by projectId, standing in for a future ComplaintService/Firestore query. */
+    private static final List<Report> ALL_REPORTS = new ArrayList<>(Arrays.asList(
+            new Report("#PRJ-089", "Pothole near main gate",
+                    "There is a large pothole forming right at the entrance of the site, near Main Street. It's getting worse after the rain and is a hazard for two-wheelers."),
+            new Report("#PRJ-089", "Debris left on roadside",
+                    "Construction debris has been piled up on the roadside for over a week and hasn't been cleared, blocking part of the walking path."),
+            new Report("#PRJ-110", "Uneven road widening work",
+                    "The widened section near the NH link road has an uneven surface with a sudden drop on one side, which is risky for vehicles at night.")
+    ));
+
+    /** Returns every report filed against a given project, oldest-submission order preserved as stored. */
+    private List<Report> getReportsForProject(String projectId) {
+        List<Report> matched = new ArrayList<>();
+        for (Report r : ALL_REPORTS) {
+            if (r.projectId.equals(projectId)) matched.add(r);
+        }
+        return matched;
+    }
+
+    /**
+     * Full-page Scene listing every villager-submitted report for one
+     * Approved project (title + description). Opened from the "View
+     * Reports" action in the Project Inventory table. Intentionally not
+     * wired to ReportProject.java / ProjectTransparency1.java yet — this
+     * only renders {@link #ALL_REPORTS} mock data in the same shape those
+     * pages will eventually submit/display.
+     */
+    private Scene buildProjectReportsScene(Project p) {
+        BorderPane root = new BorderPane();
+        root.setBackground(buildBackground());
+        root.setLeft(buildSidebar());
+
+        BorderPane contentArea = new BorderPane();
+        contentArea.setTop(buildTopBar());
+
+        VBox main = new VBox(20);
+        main.setPadding(new Insets(32, 40, 48, 40));
+        main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
+
+        Label back = new Label("\u2190  Back to Project Management");
+        back.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + FOREST_DEEP + "; -fx-cursor: hand;");
+        back.setOnMouseClicked(e -> Dashboard.myStage.setScene(getProjectManagementScene()));
+
+        Label title = new Label("Reports \u2014 " + p.projectName);
+        title.setWrapText(true);
+        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 24px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        VBox listCard = new VBox(14);
+        listCard.setPadding(new Insets(28));
+        listCard.setStyle(cardStyle(24));
+
+        List<Report> reports = getReportsForProject(p.projectId);
+        if (reports.isEmpty()) {
+            listCard.getChildren().add(emptyState("No reports have been filed for this project yet."));
+        } else {
+            for (Report r : reports) {
+                listCard.getChildren().add(reportCard(r));
+            }
+        }
+        addHoverLift(listCard, 24);
+
+        main.getChildren().addAll(back, title, listCard);
+        ScrollPane scroller = new ScrollPane(main);
+        scroller.setFitToWidth(true);
+        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroller.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+        contentArea.setCenter(scroller);
+
+        root.setCenter(contentArea);
+        return new Scene(root, 1500, 820);
+    }
+
+    /** One report's title + description, rendered as a plain read-only card. */
+    private VBox reportCard(Report r) {
+        VBox card = new VBox(8);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: rgba(240,244,242,0.6); -fx-background-radius: 14;" +
+                "-fx-border-color: rgba(11,61,46,0.08); -fx-border-radius: 14; -fx-border-width: 1;");
+        Label t = new Label(r.title);
+        t.setWrapText(true);
+        t.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14.5px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        Label d = new Label(r.description);
+        d.setWrapText(true);
+        d.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-text-fill: rgba(11,61,46,0.70);");
+        card.getChildren().addAll(t, d);
+        return card;
     }
 
     /**
@@ -119,7 +257,8 @@ public class ProjectManagement extends Application {
             new Project("Water Tank Renovation", "#PRJ-088", "Rampur", "Near School Area",
                     "Water Supply", "\u20B985,000", "In Progress", "22 May 2025", null),
             new Project("Community Hall Construction", "#PRJ-092", "Rampur", "Panchayat Grounds",
-                    "Rural Development", "\u20B95,50,000", "Pending", "18 May 2025", "HIGH PRIORITY"),
+                    "Rural Development", "\u20B95,50,000", "Pending", "18 May 2025", "HIGH PRIORITY",
+                    "Other", "Rampur, Panchayat Grounds", "\u20B95,50,000", "6 Months"),
             new Project("Rampur Drainage Upgrade", "#PRJ-101", "Rampur", "East Ward",
                     "Sanitation", "\u20B92,10,000", "Completed", "02 Mar 2025", null),
 
@@ -127,7 +266,8 @@ public class ProjectManagement extends Application {
             new Project("Primary School Repair", "#PRJ-085", "Sitapur", "Gram Panchayat Office",
                     "Infrastructure", "\u20B92,50,000", "Delayed", "28 Aug 2023", null),
             new Project("Solar Street Lights", "#PRJ-095", "Sitapur", "Main Road",
-                    "Energy", "\u20B91,20,000", "Pending", "15 May 2025", "MEDIUM"),
+                    "Energy", "\u20B91,20,000", "Pending", "15 May 2025", "MEDIUM",
+                    "Electricity", "Sitapur, Main Road", "\u20B91,20,000", "2 Months"),
             new Project("Sitapur Health Sub-Center", "#PRJ-076", "Sitapur", "Ward 2",
                     "Health", "\u20B93,80,000", "In Progress", "10 Apr 2025", null),
             new Project("Sitapur Bus Shelter", "#PRJ-063", "Sitapur", "Bus Stand Road",
@@ -135,7 +275,8 @@ public class ProjectManagement extends Application {
 
             // ---- Madhavpur ----
             new Project("Library Construction", "#PRJ-098", "Madhavpur", "School Campus",
-                    "Education", "\u20B93,00,000", "Pending", "12 May 2025", "NORMAL"),
+                    "Education", "\u20B93,00,000", "Pending", "12 May 2025", "NORMAL",
+                    "Education", "Madhavpur, School Campus", "\u20B93,00,000", "8 Months"),
             new Project("Madhavpur Check Dam", "#PRJ-071", "Madhavpur", "Riverside",
                     "Irrigation", "\u20B94,60,000", "In Progress", "05 Apr 2025", null),
             new Project("Anganwadi Renovation", "#PRJ-058", "Madhavpur", "Ward 1",
@@ -147,7 +288,8 @@ public class ProjectManagement extends Application {
             new Project("Gopalganj Road Widening", "#PRJ-110", "Gopalganj", "NH Link Road",
                     "Rural Development", "\u20B96,20,000", "Approved", "20 May 2025", null),
             new Project("Gopalganj Water Pipeline", "#PRJ-104", "Gopalganj", "Colony Road",
-                    "Water Supply", "\u20B92,90,000", "Pending", "08 May 2025", "HIGH PRIORITY"),
+                    "Water Supply", "\u20B92,90,000", "Pending", "08 May 2025", "HIGH PRIORITY",
+                    "Water Supply", "Gopalganj, Colony Road", "\u20B92,90,000", "4 Months"),
             new Project("Gopalganj Panchayat Bhavan", "#PRJ-047", "Gopalganj", "Gram Panchayat Office",
                     "Infrastructure", "\u20B91,45,000", "In Progress", "22 Mar 2025", null),
             new Project("Gopalganj Playground", "#PRJ-039", "Gopalganj", "Ward 3",
@@ -630,7 +772,7 @@ public class ProjectManagement extends Application {
     /* ---------------- KPI cards (dynamic) ---------------- */
     private void refreshStatCards() {
         List<Project> scoped = getProjectsForSelectedVillage();
-        boolean allVillages = Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage);
+        // boolean allVillages = Dashboard.VILLAGES.get(0).equals(Dashboard.selectedVillage);
 
         int total = scoped.size();
         int active = 0, completed = 0, delayed = 0;
@@ -641,31 +783,19 @@ public class ProjectManagement extends Application {
         }
 
         VBox totalCard = kpiCard(FOREST_LIGHT, "\uD83D\uDCBC", "TOTAL PROJECTS", String.valueOf(total));
-        Label totalFooter = new Label(allVillages ? "All village projects" : "Projects in " + Dashboard.selectedVillage);
-        totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        totalCard.getChildren().add(totalFooter);
+        // Label totalFooter = new Label(allVillages ? "All village projects" : "Projects in " + Dashboard.selectedVillage);
+        // totalFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // totalCard.getChildren().add(totalFooter);
 
         VBox activeCard = kpiCard(SAFFRON_MAIN, "\u25B6", "ACTIVE PROJECTS", String.valueOf(active));
-        VBox activeRow = new VBox(6);
-        activeRow.getChildren().add(progressBar(safeFraction(active, total), CONTEXT_TEAL, 8));
-        Label activeFooter = new Label(safePct(active, total) + " currently in progress");
-        activeFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        activeRow.getChildren().add(activeFooter);
-        activeCard.getChildren().add(activeRow);
+        // Progress bar removed — the card now shows just the stat, like the others.
 
         VBox completedCard = kpiCard(CONTEXT_TEAL, "\u2705", "COMPLETED", String.valueOf(completed));
-        Label completedFooter = new Label(safePct(completed, total) + " of all projects");
-        completedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
-        completedCard.getChildren().add(completedFooter);
+        // Label completedFooter = new Label(safePct(completed, total) + " of all projects");
+        // completedFooter.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // completedCard.getChildren().add(completedFooter);
 
         VBox delayedCard = kpiCard(AI_VIOLET, "\u26A0", "DELAYED PROJECTS", String.valueOf(delayed));
-        Label delayedFooter = new Label(delayed > 0 ? "Requires action this month" : "No delayed projects");
-        delayedFooter.setPadding(new Insets(6, 10, 6, 10));
-        delayedFooter.setMaxWidth(Region.USE_PREF_SIZE);
-        delayedFooter.setStyle("-fx-background-color: " + (delayed > 0 ? "rgba(224,122,31,0.14)" : "rgba(14,140,140,0.12)") + "; -fx-background-radius: 6;" +
-                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 700; -fx-text-fill: " +
-                (delayed > 0 ? SAFFRON_MAIN : CONTEXT_TEAL) + ";");
-        delayedCard.getChildren().add(delayedFooter);
 
         HBox.setHgrow(totalCard, Priority.ALWAYS);
         HBox.setHgrow(activeCard, Priority.ALWAYS);
@@ -913,12 +1043,24 @@ public class ProjectManagement extends Application {
         return panel;
     }
 
+    /**
+     * Renders one Pending Approval card summarizing the project — Project
+     * Name, Category, Location — via {@link Project#category} and
+     * {@link Project#location}. Expected Budget and Expected Duration
+     * (and the budget-approval action) no longer live on the card itself;
+     * "View Details" opens {@link #buildProjectDetailsScene(Project)},
+     * which shows those fields plus an editable budget field and an
+     * "Approve Project" action. Not wired to CreateProjectPage yet; this only makes sure the
+     * shape matches so a future submit-and-fetch (here, and later on
+     * SarpanchComplaintsPage) needs no field renaming.
+     */
     private VBox pendingApprovalCard(Project p, String priorityColor) {
         VBox card = new VBox(10);
         card.setPadding(new Insets(16));
         card.setStyle("-fx-background-color: rgba(240,244,242,0.6); -fx-background-radius: 14;" +
                 "-fx-border-color: rgba(11,61,46,0.08); -fx-border-radius: 14; -fx-border-width: 1;");
 
+        // ---- Project Name + Priority ----
         HBox titleRow = new HBox(8);
         titleRow.setAlignment(Pos.CENTER_LEFT);
         Label nameLabel = new Label(p.projectName);
@@ -933,16 +1075,23 @@ public class ProjectManagement extends Application {
                 "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10.5px; -fx-font-weight: 800; -fx-text-fill: " + priorityColor + ";");
         titleRow.getChildren().addAll(nameLabel, spacer, priorityBadge);
 
-        Label deptLabel = new Label("Dept: " + p.department + " | " + p.projectId + " | " + p.village);
-        deptLabel.setWrapText(true);
-        deptLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+        // ---- Category ----
+        Label categoryLabel = new Label(p.category);
+        categoryLabel.setPadding(new Insets(3, 9, 3, 9));
+        categoryLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        categoryLabel.setStyle("-fx-background-color: " + rgba(AI_VIOLET, 0.14) + "; -fx-background-radius: 999;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800; -fx-text-fill: " + AI_VIOLET + ";");
 
+        // ---- Location ----
+        Label locationLabel = new Label("\uD83D\uDCCD " + p.location);
+        locationLabel.setWrapText(true);
+        locationLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-text-fill: rgba(11,61,46,0.60);");
+
+        // ---- Bottom row: quick edit + View Details (opens the full details page,
+        //      which is where Expected Budget / Expected Duration and the budget
+        //      approval action now live) ----
         HBox bottomRow = new HBox(10);
-        bottomRow.setAlignment(Pos.CENTER_LEFT);
-        Label budgetLabel = new Label(p.budget);
-        budgetLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 15px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
-        Region bottomSpacer = new Region();
-        HBox.setHgrow(bottomSpacer, Priority.ALWAYS);
+        bottomRow.setAlignment(Pos.CENTER_RIGHT);
 
         StackPane editBtn = new StackPane();
         editBtn.setPrefSize(34, 34);
@@ -952,24 +1101,338 @@ public class ProjectManagement extends Application {
         editIcon.setStyle("-fx-font-size: 13px;");
         editBtn.getChildren().add(editIcon);
 
-        Label approveBtn = new Label("Approve");
-        approveBtn.setPadding(new Insets(9, 18, 9, 18));
-        approveBtn.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
+        Label viewDetailsBtn = new Label("View Details  \u2192");
+        viewDetailsBtn.setPadding(new Insets(9, 18, 9, 18));
+        viewDetailsBtn.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
                 "-fx-text-fill: white; -fx-background-radius: 8; -fx-font-family: " + FONT_FAMILY + ";" +
                 "-fx-font-size: 12.5px; -fx-font-weight: 800; -fx-cursor: hand;" +
                 "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.30), 8, 0.1, 0, 3);");
-        // Demo-only in-memory approval: flips this project to "Approved" and refreshes the page.
-        approveBtn.setOnMouseClicked(e -> {
-            ALL_PROJECTS.remove(p);
-            ALL_PROJECTS.add(new Project(p.projectName, p.projectId, p.village, p.locality, p.department,
-                    p.budget, "Approved", p.date, null));
-            refreshVillageData();
+        // Opens the dedicated Project Details page, which shows the Expected
+        // Budget / Expected Duration removed from this card, plus the budget
+        // adjustment field + "Approve Project" action.
+        viewDetailsBtn.setOnMouseClicked(e -> Dashboard.myStage.setScene(buildProjectDetailsScene(p)));
+
+        bottomRow.getChildren().addAll(editBtn, viewDetailsBtn);
+
+        card.getChildren().addAll(titleRow, categoryLabel, locationLabel, bottomRow);
+        return card;
+    }
+
+    /** Small labeled tile used to show Expected Budget / Expected Duration on a Pending Approval card. */
+    private VBox pendingStatTile(String label, String value, String accent) {
+        VBox tile = new VBox(2);
+        tile.setPadding(new Insets(8, 10, 8, 10));
+        tile.setStyle("-fx-background-color: " + rgba(accent, 0.08) + "; -fx-background-radius: 10;");
+        Label lbl = new Label(label);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 9.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.04em;");
+        Label val = new Label(value);
+        val.setWrapText(true);
+        val.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13.5px; -fx-font-weight: 900; -fx-text-fill: " + accent + ";");
+        tile.getChildren().addAll(lbl, val);
+        return tile;
+    }
+
+    /* ============================================================
+     *  PROJECT DETAILS PAGE
+     *  ------------------------------------------------------------
+     *  Opened from a Pending Approval card's "View Details" action.
+     *  Shows the fields removed from the card itself (Expected
+     *  Budget / Expected Duration) plus an editable budget field
+     *  and an "Approve Project" action that commits the (possibly
+     *  revised) budget and moves the project to "Approved".
+     * ============================================================ */
+
+    /** Builds the full-page Scene for a single project's details. */
+    private Scene buildProjectDetailsScene(Project p) {
+        BorderPane root = new BorderPane();
+        root.setBackground(buildBackground());
+
+        root.setLeft(buildSidebar());
+
+        BorderPane contentArea = new BorderPane();
+        contentArea.setTop(buildTopBar());
+
+        ScrollPane scroller = new ScrollPane(buildProjectDetailsContent(p));
+        scroller.setFitToWidth(true);
+        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroller.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+        contentArea.setCenter(scroller);
+
+        root.setCenter(contentArea);
+
+        return new Scene(root, 1500, 820);
+    }
+
+    private VBox buildProjectDetailsContent(Project p) {
+        VBox main = new VBox(22);
+        main.setPadding(new Insets(32, 40, 48, 40));
+        main.setStyle("-fx-background-color: rgba(240,244,242,0.52);");
+
+        Label back = new Label("\u2190  Back to Project Management");
+        back.setPadding(new Insets(6, 2, 6, 2));
+        back.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + FOREST_DEEP + "; -fx-cursor: hand;");
+        back.setOnMouseClicked(e -> Dashboard.myStage.setScene(getProjectManagementScene()));
+
+        main.getChildren().addAll(back, buildDetailsHero(p), buildDetailsInfoGrid(p), buildBudgetAdjustmentPanel(p));
+        return main;
+    }
+
+    /** Solid-dark hero header — project name/id, status, category, location. High-contrast on purpose. */
+    private VBox buildDetailsHero(Project p) {
+        VBox hero = new VBox(16);
+        hero.setPadding(new Insets(32));
+        hero.setStyle("-fx-background-color: linear-gradient(135deg, #08291F, " + FOREST_DEEP + " 60%, " + FOREST_LIGHT + ");" +
+                "-fx-background-radius: 24;" +
+                "-fx-border-color: rgba(255,255,255,0.08); -fx-border-radius: 24; -fx-border-width: 1;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 26, 0.2, 0, 10);");
+
+        Label idBadge = new Label(p.projectId);
+        idBadge.setPadding(new Insets(4, 12, 4, 12));
+        idBadge.setMaxWidth(Region.USE_PREF_SIZE);
+        idBadge.setStyle("-fx-background-color: rgba(255,255,255,0.22); -fx-background-radius: 999;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 800; -fx-text-fill: white;");
+        Label statusBadge = new Label("\u23F3 " + p.status);
+        statusBadge.setPadding(new Insets(4, 12, 4, 12));
+        statusBadge.setMaxWidth(Region.USE_PREF_SIZE);
+        statusBadge.setStyle("-fx-background-color: " + SAFFRON_MAIN + "; -fx-background-radius: 999;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 800; -fx-text-fill: white;");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox topRow = new HBox(10);
+        topRow.setAlignment(Pos.CENTER_LEFT);
+        topRow.getChildren().addAll(idBadge, spacer, statusBadge);
+
+        Label name = new Label(p.projectName);
+        name.setWrapText(true);
+        name.setMaxWidth(Double.MAX_VALUE);
+        name.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 30px; -fx-font-weight: 900; -fx-text-fill: #FFFFFF;" +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 6, 0.5, 0, 2);");
+
+        Label categoryTag = new Label(p.category);
+        categoryTag.setPadding(new Insets(5, 13, 5, 13));
+        categoryTag.setMaxWidth(Region.USE_PREF_SIZE);
+        categoryTag.setStyle("-fx-background-color: rgba(255,255,255,0.20); -fx-background-radius: 999;" +
+                "-fx-border-color: rgba(255,255,255,0.35); -fx-border-radius: 999; -fx-border-width: 1;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800; -fx-text-fill: #FFFFFF;");
+
+        Label location = new Label("\uD83D\uDCCD " + p.location);
+        location.setWrapText(true);
+        location.setMaxWidth(Double.MAX_VALUE);
+        location.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 700; -fx-text-fill: #F1F6F3;");
+
+        // Project name plus the info directly above it (id / status) and
+        // below it (category / location) grouped into one dedicated VBox,
+        // on its own frosted panel, so the text reads clearly against the
+        // gradient behind it instead of floating loosely on top of it.
+        VBox infoBox = new VBox(14);
+        infoBox.setPadding(new Insets(20, 22, 20, 22));
+        infoBox.setStyle("-fx-background-color: rgba(0,0,0,0.22); -fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.10); -fx-border-radius: 18; -fx-border-width: 1;");
+        infoBox.getChildren().addAll(topRow, name, categoryTag, location);
+
+        hero.getChildren().add(infoBox);
+        return hero;
+    }
+
+    /** Village / locality / department / date quick-reference grid. */
+    private VBox buildDetailsInfoGrid(Project p) {
+        VBox card = new VBox(16);
+        card.setPadding(new Insets(28));
+        card.setStyle(cardStyle(24));
+
+        Label title = new Label("Project Information");
+        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 18px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(20);
+        grid.setVgap(18);
+        grid.getColumnConstraints().addAll(pct(25), pct(25), pct(25), pct(25));
+
+        grid.add(infoField("VILLAGE", p.village), 0, 0);
+        grid.add(infoField("LOCALITY", p.locality), 1, 0);
+        grid.add(infoField("DEPARTMENT", p.department), 2, 0);
+        grid.add(infoField("DATE SUBMITTED", p.date), 3, 0);
+
+        card.getChildren().addAll(title, grid);
+        addHoverLift(card, 24);
+        return card;
+    }
+
+    private VBox infoField(String label, String value) {
+        VBox box = new VBox(4);
+        Label lbl = new Label(label);
+        lbl.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 10px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.06em;");
+        Label val = new Label(value);
+        val.setWrapText(true);
+        val.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        box.getChildren().addAll(lbl, val);
+        return box;
+    }
+
+    /**
+     * Budget review panel. Shows the Sarpanch-submitted Expected Budget as
+     * a plain read-only fact alongside Expected Duration, with a clearly
+     * separate "Customize Budget" section below where the reviewing
+     * officer can type a different final figure. "Approve Project" commits
+     * whatever is in the customize field (or the original figure if left
+     * untouched) and moves the project to "Approved"; "Reject Project"
+     * moves it to "Rejected" instead — neither reads from the other.
+     */
+    private VBox buildBudgetAdjustmentPanel(Project p) {
+        VBox card = new VBox(22);
+        card.setPadding(new Insets(28));
+        card.setStyle(cardStyle(24));
+
+        Label title = new Label("Expected Budget & Duration");
+        title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 18px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        long originalBudget = parseRupeeAmount(p.expectedBudget);
+
+        // ---- Section 1: read-only facts as submitted, unrelated to customization below ----
+        VBox budgetStat = pendingStatTile("EXPECTED BUDGET", p.expectedBudget, CONTEXT_TEAL);
+        VBox durationStat = pendingStatTile("EXPECTED DURATION", p.expectedDuration, SAFFRON_MAIN);
+        HBox.setHgrow(budgetStat, Priority.ALWAYS);
+        HBox.setHgrow(durationStat, Priority.ALWAYS);
+        HBox statsRow = new HBox(14);
+        statsRow.setAlignment(Pos.CENTER_LEFT);
+        statsRow.getChildren().addAll(budgetStat, durationStat);
+
+        Region sectionDivider = new Region();
+        sectionDivider.setPrefHeight(1);
+        sectionDivider.setStyle("-fx-background-color: rgba(11,61,46,0.10);");
+
+        // ---- Section 2: a separate, standalone budget customization block ----
+        Label customizeTitle = new Label("CUSTOMIZE BUDGET");
+        customizeTitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.55); -fx-letter-spacing: 0.06em;");
+
+        VBox customizeBox = new VBox(8);
+        customizeBox.setPadding(new Insets(14, 16, 14, 16));
+        customizeBox.setStyle("-fx-background-color: " + rgba(AI_VIOLET, 0.07) + "; -fx-background-radius: 12;" +
+                "-fx-border-color: " + rgba(AI_VIOLET, 0.20) + "; -fx-border-radius: 12; -fx-border-width: 1;");
+        Label customizeHint = new Label("Type a different final amount to override the submitted budget above.");
+        customizeHint.setWrapText(true);
+        customizeHint.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.60);");
+
+        HBox inputRow = new HBox(8);
+        inputRow.setAlignment(Pos.CENTER_LEFT);
+        Label rupeeSign = new Label("\u20B9");
+        rupeeSign.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 18px; -fx-font-weight: 900; -fx-text-fill: " + AI_VIOLET + ";");
+        TextField budgetField = new TextField(String.valueOf(originalBudget));
+        budgetField.setPrefWidth(200);
+        budgetField.setStyle("-fx-background-color: rgba(255,255,255,0.95); -fx-background-radius: 8;" +
+                "-fx-border-color: rgba(11,61,46,0.15); -fx-border-radius: 8; -fx-border-width: 1;" +
+                "-fx-padding: 9 12; -fx-font-family: " + FONT_FAMILY + ";" +
+                "-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+        inputRow.getChildren().addAll(rupeeSign, budgetField);
+
+        Label previewLabel = new Label(formatRupees(originalBudget));
+        previewLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 700; -fx-text-fill: " + AI_VIOLET + ";");
+
+        // Digits-only guard, with a live formatted preview underneath.
+        budgetField.textProperty().addListener((obs, oldV, newV) -> {
+            String sanitized = newV.replaceAll("[^0-9]", "");
+            if (!sanitized.equals(newV)) {
+                budgetField.setText(sanitized);
+                return; // re-triggers this listener with the sanitized value
+            }
+            long val = sanitized.isEmpty() ? 0 : Long.parseLong(sanitized);
+            previewLabel.setText(formatRupees(val));
         });
 
-        bottomRow.getChildren().addAll(budgetLabel, bottomSpacer, editBtn, approveBtn);
+        customizeBox.getChildren().addAll(customizeHint, inputRow, previewLabel);
 
-        card.getChildren().addAll(titleRow, deptLabel, bottomRow);
+        Region divider = new Region();
+        divider.setPrefHeight(1);
+        divider.setStyle("-fx-background-color: rgba(11,61,46,0.10);");
+
+        HBox actionRow = new HBox(12);
+        actionRow.setAlignment(Pos.CENTER_RIGHT);
+
+        Label cancelBtn = new Label("Cancel");
+        cancelBtn.setPadding(new Insets(11, 22, 11, 22));
+        cancelBtn.setStyle("-fx-background-color: transparent; -fx-border-color: rgba(11,61,46,0.20);" +
+                "-fx-border-radius: 10; -fx-background-radius: 10;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + FOREST_DEEP + "; -fx-cursor: hand;");
+        cancelBtn.setOnMouseClicked(e -> Dashboard.myStage.setScene(getProjectManagementScene()));
+
+        Label rejectBtn = new Label("\u2715  Reject Project");
+        rejectBtn.setPadding(new Insets(11, 22, 11, 22));
+        rejectBtn.setStyle("-fx-background-color: transparent; -fx-border-color: " + DELAYED_RED + ";" +
+                "-fx-border-radius: 10; -fx-background-radius: 10; -fx-border-width: 1.5;" +
+                "-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + DELAYED_RED + "; -fx-cursor: hand;");
+        // Demo-only in-memory rejection: flips this project to "Rejected"
+        // (budget is left untouched) and returns to Project Management.
+        rejectBtn.setOnMouseClicked(e -> {
+            ALL_PROJECTS.remove(p);
+            ALL_PROJECTS.add(new Project(p.projectName, p.projectId, p.village, p.locality, p.department,
+                    p.budget, "Rejected", p.date, null,
+                    p.category, p.location, p.expectedBudget, p.expectedDuration));
+            Dashboard.myStage.setScene(getProjectManagementScene());
+        });
+
+        Label approveProjectBtn = new Label("\u2713  Approve Project");
+        approveProjectBtn.setPadding(new Insets(11, 24, 11, 24));
+        approveProjectBtn.setStyle("-fx-background-color: linear-gradient(to right, " + FOREST_LIGHT + ", " + FOREST_DEEP + ");" +
+                "-fx-text-fill: white; -fx-background-radius: 10; -fx-font-family: " + FONT_FAMILY + ";" +
+                "-fx-font-size: 13.5px; -fx-font-weight: 800; -fx-cursor: hand;" +
+                "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.30), 10, 0.1, 0, 4);");
+        // Demo-only in-memory approval: commits the customized budget (or the
+        // original figure if untouched), flips this project to "Approved",
+        // and returns to Project Management.
+        approveProjectBtn.setOnMouseClicked(e -> {
+            String digits = budgetField.getText().replaceAll("[^0-9]", "");
+            long finalBudget = digits.isEmpty() ? originalBudget : Long.parseLong(digits);
+            String newBudget = formatRupees(finalBudget);
+            ALL_PROJECTS.remove(p);
+            ALL_PROJECTS.add(new Project(p.projectName, p.projectId, p.village, p.locality, p.department,
+                    newBudget, "Approved", p.date, null,
+                    p.category, p.location, newBudget, p.expectedDuration));
+            Dashboard.myStage.setScene(getProjectManagementScene());
+        });
+
+        actionRow.getChildren().addAll(cancelBtn, rejectBtn, approveProjectBtn);
+
+        card.getChildren().addAll(title, statsRow, sectionDivider, customizeTitle, customizeBox, divider, actionRow);
+        addHoverLift(card, 24);
         return card;
+    }
+
+    /** Parses a formatted rupee string like "\u20B91,20,000" back into a plain long. Returns 0 for non-numeric values. */
+    private long parseRupeeAmount(String rupeeStr) {
+        if (rupeeStr == null) return 0;
+        String digits = rupeeStr.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return 0;
+        try {
+            return Long.parseLong(digits);
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
+    }
+
+    /** Formats a plain long as an Indian-grouped rupee string, e.g. 150000 -> "\u20B91,50,000". */
+    private String formatRupees(long amount) {
+        String num = String.valueOf(Math.abs(amount));
+        String grouped;
+        if (num.length() <= 3) {
+            grouped = num;
+        } else {
+            String last3 = num.substring(num.length() - 3);
+            String rest = num.substring(0, num.length() - 3);
+            StringBuilder sb = new StringBuilder();
+            for (int i = rest.length(); i > 0; i -= 2) {
+                int start = Math.max(0, i - 2);
+                sb.insert(0, rest.substring(start, i));
+                if (start > 0) sb.insert(0, ",");
+            }
+            grouped = sb + "," + last3;
+        }
+        return "\u20B9" + (amount < 0 ? "-" : "") + grouped;
     }
 
     /* ---------------- Project Inventory (dynamic) ---------------- */
@@ -1008,7 +1471,7 @@ public class ProjectManagement extends Application {
         int row = 1;
         for (Project p : scoped) {
             String statusColor = statusColor(p.status);
-            addInventoryRow(grid, row++, p.projectName, p.village, p.department, p.budget, p.status, statusColor, p.date);
+            addInventoryRow(grid, row++, p, statusColor);
         }
 
         inventoryPanel.getChildren().addAll(header, grid);
@@ -1017,6 +1480,7 @@ public class ProjectManagement extends Application {
     private String statusColor(String status) {
         switch (status) {
             case "Delayed": return DELAYED_RED;
+            case "Rejected": return DELAYED_RED;
             case "In Progress": return SAFFRON_MAIN;
             case "Pending": return AI_VIOLET;
             case "Completed": return CONTEXT_TEAL;
@@ -1033,30 +1497,41 @@ public class ProjectManagement extends Application {
         grid.add(headerCell("ACTION"), 5, 0);
     }
 
-    private void addInventoryRow(GridPane grid, int row, String project, String village, String department,
-                                  String budget, String status, String statusColor, String lastDate) {
-        Label projectLabel = new Label(project);
+    private void addInventoryRow(GridPane grid, int row, Project p, String statusColor) {
+        Label projectLabel = new Label(p.projectName);
         projectLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 14px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label villageLabel = new Label(village);
+        Label villageLabel = new Label(p.village);
         villageLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
-        Label departmentLabel = new Label(department);
+        Label departmentLabel = new Label(p.department);
         departmentLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
-        Label budgetLabel = new Label(budget);
+        Label budgetLabel = new Label(p.budget);
         budgetLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 700; -fx-text-fill: " + FOREST_DEEP + ";");
-        Label statusLabel = new Label(status);
+        Label statusLabel = new Label(p.status);
         statusLabel.setPadding(new Insets(4, 10, 4, 10));
         statusLabel.setMaxWidth(Region.USE_PREF_SIZE);
         statusLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
                 "-fx-text-fill: " + statusColor + "; -fx-background-color: " + rgba(statusColor, 0.12) + "; -fx-background-radius: 999;");
-        Label actionLabel = new Label("\uD83D\uDC41");
-        actionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
+
+        HBox actions = new HBox(10);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        Label viewLabel = new Label("\uD83D\uDC41");
+        viewLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + CONTEXT_TEAL + "; -fx-cursor: hand;");
+        actions.getChildren().add(viewLabel);
+        // "View Reports" — Approved projects only; not wired to a live data
+        // source yet, just opens the mock reports page for this project.
+        if (!"Pending".equals(p.status)) {
+            Label reportsLabel = new Label("\uD83D\uDCC4");
+            reportsLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: " + SAFFRON_MAIN + "; -fx-cursor: hand;");
+            reportsLabel.setOnMouseClicked(e -> Dashboard.myStage.setScene(buildProjectReportsScene(p)));
+            actions.getChildren().add(reportsLabel);
+        }
 
         grid.add(projectLabel, 0, row);
         grid.add(villageLabel, 1, row);
         grid.add(departmentLabel, 2, row);
         grid.add(budgetLabel, 3, row);
         grid.add(statusLabel, 4, row);
-        grid.add(actionLabel, 5, row);
+        grid.add(actions, 5, row);
     }
 
     private Label headerCell(String text) {

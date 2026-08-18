@@ -8,6 +8,16 @@
             "type": "java",
             "name": "Main",
             "request": "launch",
+<<<<<<< HEAD
+            "mainClass": "com.tech_fusion.view.gramsevak.Main",
+            "projectName": "demo_gramconnect"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+=======
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
             "mainClass": "com.tech_fusion.view.login.Main",
             "projectName": "demo_gramconnect"
         },
