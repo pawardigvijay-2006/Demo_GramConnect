@@ -381,7 +381,7 @@ public class Complaintdetails {
         StackPane bellWithBadge = new StackPane(bell, badge);
         StackPane.setAlignment(badge, Pos.TOP_RIGHT);
 
-        StackPane avatar = new StackPane(new Label("RP"));
+        StackPane avatar = new StackPane(new Label("AJ"));
         avatar.setPrefSize(34, 34);
         avatar.setMaxSize(34, 34);
         avatar.setStyle(
@@ -398,7 +398,7 @@ public class Complaintdetails {
                         + "-fx-font-weight: bold;"
         );
 
-        Label name = new Label("Ramesh Patil");
+        Label name = new Label("Amit Jadhav");
         name.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + ";"
                         + "-fx-font-size: 13px;"
@@ -406,7 +406,7 @@ public class Complaintdetails {
                         + "-fx-text-fill: " + TEXT_PRIMARY + ";"
         );
 
-        Label role = new Label("Villager, Suryapuri");
+        Label role = new Label("Gram Sevak");
         role.setStyle(
                 "-fx-font-family: " + FONT_FAMILY + ";"
                         + "-fx-font-size: 11px;"
@@ -558,10 +558,7 @@ public class Complaintdetails {
         grid.add(gridLabel("Complaint ID"), 0, row);
         grid.add(gridValue(complaint.getId()), 1, row++);
 
-        grid.add(gridLabel("Category"), 0, row);
-        grid.add(gridValue(complaint.getCategory()), 1, row++);
-
-        grid.add(gridLabel("Complaint Subject"), 0, row);
+        grid.add(gridLabel("Complaint Title"), 0, row);
         grid.add(gridValue(complaint.getSubject()), 1, row++);
 
         grid.add(gridLabel("Submitted By"), 0, row);
@@ -578,15 +575,6 @@ public class Complaintdetails {
 
         grid.add(gridLabel("Last Updated"), 0, row);
         grid.add(gridValue(complaint.getLastUpdated()), 1, row++);
-
-        grid.add(gridLabel("Assigned Department"), 0, row);
-        grid.add(gridValue(complaint.getDepartment()), 1, row++);
-
-        grid.add(gridLabel("Assigned Officer"), 0, row);
-        grid.add(gridValue(complaint.getOfficer()), 1, row++);
-
-        grid.add(gridLabel("Priority"), 0, row);
-        grid.add(gridValue(complaint.getPriority()), 1, row++);
 
         detailsCard.getChildren().addAll(detailsTitle, grid);
 
@@ -620,207 +608,6 @@ public class Complaintdetails {
         descriptionCard.getChildren().addAll(descriptionTitle, descriptionText);
 
         // ========================================================
-        // STATUS UPDATE CARD
-        // ========================================================
-
-        VBox statusCard = new VBox(12);
-        statusCard.setPadding(new Insets(20));
-        statusCard.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 16;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 16;"
-        );
-
-        Label statusCardTitle = new Label("Complaint Status");
-        statusCardTitle.setStyle(
-                "-fx-font-size: 16px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #0B4F43;"
-        );
-
-        Label currentStatusLine = new Label(
-                "Current Status: " + complaint.getStatus()
-        );
-        currentStatusLine.setStyle(
-                "-fx-font-size: 13px;"
-                        + "-fx-text-fill: " + TEXT_SECONDARY + ";"
-        );
-
-        HBox statusUpdateRow = new HBox(10);
-        statusUpdateRow.setAlignment(Pos.CENTER_LEFT);
-
-        ComboBox<String> statusComboBox = new ComboBox<>();
-        statusComboBox.getItems().addAll(
-                "Pending",
-                "In Progress",
-                "Resolved",
-                "Escalated"
-        );
-        statusComboBox.setValue(complaint.getStatus());
-
-        Button updateStatusButton = new Button("Update Status");
-        updateStatusButton.setStyle(
-                "-fx-background-color: #0B4F43;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 8;"
-                        + "-fx-padding: 8 16 8 16;"
-                        + "-fx-cursor: hand;"
-        );
-
-        updateStatusButton.setOnAction(
-                event -> System.out.println(
-                        "Update status for " + complaint.getId()
-                                + " -> " + statusComboBox.getValue()
-                )
-        );
-
-        statusUpdateRow.getChildren().addAll(statusComboBox, updateStatusButton);
-
-        statusCard.getChildren().addAll(
-                statusCardTitle,
-                currentStatusLine,
-                statusUpdateRow
-        );
-
-        // ========================================================
-        // ASSIGNMENT CARD
-        // ========================================================
-
-        VBox assignmentCard = new VBox(12);
-        assignmentCard.setPadding(new Insets(20));
-        assignmentCard.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 16;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 16;"
-        );
-
-        Label assignmentTitle = new Label("Assignment");
-        assignmentTitle.setStyle(
-                "-fx-font-size: 16px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #0B4F43;"
-        );
-
-        VBox departmentBlock = new VBox(5);
-        Label departmentLabel = new Label("Assigned Department");
-        departmentLabel.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-text-fill: #7A8A87;"
-        );
-
-        ComboBox<String> departmentComboBox = new ComboBox<>();
-        departmentComboBox.getItems().addAll(
-                "Water Department",
-                "Public Works Department",
-                "Sanitation Department",
-                "Electricity Department"
-        );
-        departmentComboBox.setValue(complaint.getDepartment());
-        departmentComboBox.setMaxWidth(Double.MAX_VALUE);
-
-        departmentBlock.getChildren().addAll(departmentLabel, departmentComboBox);
-
-        VBox officerBlock = new VBox(5);
-        Label officerLabel = new Label("Assigned Officer");
-        officerLabel.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-text-fill: #7A8A87;"
-        );
-
-        ComboBox<String> officerComboBox = new ComboBox<>();
-        officerComboBox.getItems().addAll(
-                "Officer 1",
-                "Officer 2",
-                "Officer 3"
-        );
-        officerComboBox.setMaxWidth(Double.MAX_VALUE);
-
-        officerBlock.getChildren().addAll(officerLabel, officerComboBox);
-
-        HBox assignmentRow = new HBox(20, departmentBlock, officerBlock);
-        HBox.setHgrow(departmentBlock, Priority.ALWAYS);
-        HBox.setHgrow(officerBlock, Priority.ALWAYS);
-
-        Button assignButton = new Button("Assign Complaint");
-        assignButton.setStyle(
-                "-fx-background-color: #159A9C;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 8;"
-                        + "-fx-padding: 8 16 8 16;"
-                        + "-fx-cursor: hand;"
-        );
-
-        assignButton.setOnAction(
-                event -> System.out.println(
-                        "Assign complaint " + complaint.getId()
-                                + " -> " + departmentComboBox.getValue()
-                                + " / " + officerComboBox.getValue()
-                )
-        );
-
-        assignmentCard.getChildren().addAll(
-                assignmentTitle,
-                assignmentRow,
-                assignButton
-        );
-
-        // ========================================================
-        // REMARKS CARD
-        // ========================================================
-
-        VBox remarksCard = new VBox(12);
-        remarksCard.setPadding(new Insets(20));
-        remarksCard.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 16;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 16;"
-        );
-
-        Label remarksTitle = new Label("Remarks / Action Notes");
-        remarksTitle.setStyle(
-                "-fx-font-size: 16px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #0B4F43;"
-        );
-
-        TextArea remarksArea = new TextArea();
-        remarksArea.setPromptText("Add a remark or action taken...");
-        remarksArea.setPrefRowCount(3);
-        remarksArea.setWrapText(true);
-        remarksArea.setStyle(
-                "-fx-font-family: " + FONT_FAMILY + ";"
-                        + "-fx-font-size: 13px;"
-        );
-
-        Button saveRemarkButton = new Button("Save Remark");
-        saveRemarkButton.setStyle(
-                "-fx-background-color: #0B4F43;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 8;"
-                        + "-fx-padding: 8 16 8 16;"
-                        + "-fx-cursor: hand;"
-        );
-
-        saveRemarkButton.setOnAction(
-                event -> System.out.println(
-                        "Remark for " + complaint.getId()
-                                + ": " + remarksArea.getText()
-                )
-        );
-
-        remarksCard.getChildren().addAll(
-                remarksTitle,
-                remarksArea,
-                saveRemarkButton
-        );
-
-        // ========================================================
         // ATTACHMENTS CARD
         // ========================================================
 
@@ -840,13 +627,65 @@ public class Complaintdetails {
                         + "-fx-text-fill: #0B4F43;"
         );
 
-        Label noAttachments = new Label("No attachments available");
-        noAttachments.setStyle(
-                "-fx-font-size: 12px;"
-                        + "-fx-text-fill: #7A8A87;"
-        );
+        
+        HBox attachmentBox = new HBox(10);
+attachmentBox.setAlignment(Pos.CENTER_LEFT);
+attachmentBox.setPadding(new Insets(10));
 
-        attachmentsCard.getChildren().addAll(attachmentsTitle, noAttachments);
+Label imageIcon = new Label("🖼");
+imageIcon.setStyle(
+        "-fx-font-size: 22px;"
+        + "-fx-text-fill: #1976D2;"
+);
+
+VBox attachmentInfo = new VBox(3);
+
+Label attachmentName = new Label("Complaint Photo");
+attachmentName.setStyle(
+        "-fx-font-size: 13px;"
+        + "-fx-font-weight: bold;"
+        + "-fx-text-fill: #285B5B;"
+);
+
+Label attachmentText = new Label("Image attached");
+attachmentText.setStyle(
+        "-fx-font-size: 11px;"
+        + "-fx-text-fill: #7A8A87;"
+);
+
+attachmentInfo.getChildren().addAll(
+        attachmentName,
+        attachmentText
+);
+
+Region attachmentSpacer = new Region();
+HBox.setHgrow(
+        attachmentSpacer,
+        Priority.ALWAYS
+);
+
+Button viewPhotoButton = new Button("View Photo");
+viewPhotoButton.setStyle(
+        "-fx-background-color: #EAF5FC;"
+        + "-fx-text-fill: #1976D2;"
+        + "-fx-font-weight: bold;"
+        + "-fx-background-radius: 7;"
+        + "-fx-padding: 7 14 7 14;"
+        + "-fx-cursor: hand;"
+);
+
+viewPhotoButton.setOnAction(e -> {
+    // Open complaint image
+});
+
+attachmentBox.getChildren().addAll(
+        imageIcon,
+        attachmentInfo,
+        attachmentSpacer,
+        viewPhotoButton
+);
+
+        attachmentsCard.getChildren().addAll(attachmentsTitle, attachmentBox);
 
         // ========================================================
         // ADD EVERYTHING
@@ -858,9 +697,6 @@ public class Complaintdetails {
                 basicInfoCard,
                 detailsCard,
                 descriptionCard,
-                statusCard,
-                assignmentCard,
-                remarksCard,
                 attachmentsCard
         );
 

@@ -995,56 +995,74 @@ private HBox footerLink(String icon, String text) {
 
 
         createDocumentRequest(new Document(
-                "DOC001",
-                "Ramesh Kadam",
-                "Income Certificate",
-                "12 Aug 2026",
-                "Pending",
-                "9876543210",
-                "House No. 12, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 4521",
-                "Aadhaar Card",
-                "ramesh_kadam_aadhaar.pdf",
-                "12 Aug 2026",
-                "PDF",
-                "Pending"
-        )),
+        "DOC001",
+        "Ramesh Kadam",
+        "Suresh Kadam",
+        "15 Apr 1990",
+        "Male",
+        "ramesh@gmail.com",
+        "250000",
+        "Farmer",
+        "Birth Certificate",
+        "12 Aug 2026",
+        "Pending",
+        "9876543210",
+        "House No. 12, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 4521",
+        "Aadhaar Card",
+        "ramesh_kadam_aadhaar.pdf",
+        "12 Aug 2026",
+        "PDF",
+        "Pending"
+)),
 
-        createDocumentRequest(new Document(
-                "DOC002",
-                "Sunita Pawar",
-                "Birth Certificate",
-                "10 Aug 2026",
-                "Pending",
-                "9823456712",
-                "House No. 5, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 7734",
-                "Aadhaar Card",
-                "sunita_pawar_aadhaar.pdf",
-                "10 Aug 2026",
-                "PDF",
-                "Pending"
-        )),
+createDocumentRequest(new Document(
+        "DOC002",
+        "Sunita Pawar",
+        "Mahesh Pawar",
+        "22 Sep 1992",
+        "Female",
+        "sunita@gmail.com",
+        "180000",
+        "Teacher",
+        "Marriage Certificate",
+        "10 Aug 2026",
+        "Pending",
+        "9823456712",
+        "House No. 5, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 7734",
+        "Aadhaar Card",
+        "sunita_pawar_aadhaar.pdf",
+        "10 Aug 2026",
+        "PDF",
+        "Pending"
+)),
 
-        createDocumentRequest(new Document(
-                "DOC003",
-                "Anil Deshmukh",
-                "Caste Certificate",
-                "08 Aug 2026",
-                "Approved",
-                "9812345678",
-                "House No. 21, Suryapuri",
-                "Suryapuri",
-                "XXXX XXXX 9012",
-                "Aadhaar Card",
-                "anil_deshmukh_aadhaar.pdf",
-                "08 Aug 2026",
-                "PDF",
-                "Approved"
-        ))
-);
+createDocumentRequest(new Document(
+        "DOC003",
+        "Anil Deshmukh",
+        "Rajendra Deshmukh",
+        "08 Jan 1985",
+        "Male",
+        "anil@gmail.com",
+        "320000",
+        "Business",
+        "Death Certificate",
+        "08 Aug 2026",
+        "Approved",
+        "9812345678",
+        "House No. 21, Suryapuri",
+        "Suryapuri",
+        "XXXX XXXX 9012",
+        "Aadhaar Card",
+        "anil_deshmukh_aadhaar.pdf",
+        "08 Aug 2026",
+        "PDF",
+        "Approved"
+))
+        );
         
 
 
@@ -1405,32 +1423,6 @@ private HBox footerLink(String icon, String text) {
         );
 
 
-        Button approveButton =
-                new Button("Approve");
-
-        approveButton.setStyle(
-                "-fx-background-color: #16803C;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 7;"
-                        + "-fx-padding: 7 12 7 12;"
-                        + "-fx-cursor: hand;"
-        );
-
-
-        Button rejectButton =
-                new Button("Reject");
-
-        rejectButton.setStyle(
-                "-fx-background-color: #D93025;"
-                        + "-fx-text-fill: white;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-background-radius: 7;"
-                        + "-fx-padding: 7 12 7 12;"
-                        + "-fx-cursor: hand;"
-        );
-
-
         // ========================================================
         // TEMPORARY BUTTON ACTIONS
         // ========================================================
@@ -1442,24 +1434,10 @@ viewButton.setOnAction(
         )
 );
 
-approveButton.setOnAction(
-        event -> System.out.println(
-                "Approve document: " + document.getApplicantName()
-        )
-);
-
-rejectButton.setOnAction(
-        event -> System.out.println(
-                "Reject document: " + document.getApplicantName()
-        )
-);
-
         HBox actions =
                 new HBox(
                         8,
-                        viewButton,
-                        approveButton,
-                        rejectButton
+                        viewButton
                 );
 
         actions.setAlignment(

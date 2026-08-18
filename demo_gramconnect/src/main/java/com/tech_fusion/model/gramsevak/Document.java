@@ -19,10 +19,16 @@ public class Document {
 
     private final String id;
     private final String applicantName;
+    private final String applicantFatherName;
+    private final String dob;
+    private final String gender;
     private final String documentType;
     private final String dateSubmitted;
     private final String status;
 
+    private final String email;
+    private final String annualIncome;
+    private final String occupation;
     private final String mobileNumber;
     private final String address;
     private final String village;
@@ -37,6 +43,12 @@ public class Document {
     public Document(
             String id,
             String applicantName,
+            String applicantFatherName,
+            String dob,
+            String gender,
+            String email,
+            String annualIncome,
+            String occupation,
             String documentType,
             String dateSubmitted,
             String status,
@@ -64,6 +76,14 @@ public class Document {
         this.uploadedDate = uploadedDate;
         this.fileType = fileType;
         this.verificationStatus = verificationStatus;
+        this.applicantFatherName = applicantFatherName;
+        this.dob = dob;
+        this.gender = gender;
+        this.email = email;
+this.annualIncome = annualIncome;
+this.occupation = occupation;
+
+
     }
 
     public String getId() { return id; }
@@ -80,4 +100,27 @@ public class Document {
     public String getUploadedDate() { return uploadedDate; }
     public String getFileType() { return fileType; }
     public String getVerificationStatus() { return verificationStatus; }
+    public String getApplicantFatherName() {
+    return applicantFatherName;
+}
+
+public String getDob() {
+    return dob;
+}
+
+public String getGender() {
+    return gender;
+}
+
+public String getEmail() {
+    return email;
+}
+
+public String getAnnualIncome() {
+    return annualIncome;
+}
+
+public String getOccupation() {
+    return occupation;
+}
 }
