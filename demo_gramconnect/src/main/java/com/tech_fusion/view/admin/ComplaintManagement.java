@@ -1,6 +1,10 @@
 package com.tech_fusion.view.admin;
 
 import java.util.List;
+<<<<<<< HEAD
+import java.util.stream.Collectors;
+=======
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
 import java.io.File;
 
 import com.tech_fusion.model.admin.VillageDataStore;
@@ -12,7 +16,10 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+<<<<<<< HEAD
+=======
 import javafx.scene.control.Button;
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleButton;
@@ -72,6 +79,16 @@ import javafx.stage.Stage;
  * returns that village's Sarpanch's display name (or null/blank if
  * unassigned). See {@link #currentSarpanchName()}.
  *
+<<<<<<< HEAD
+ * REMAINING ASSUMPTION: Complaint.getTargetPerson() /
+ * getComplainantRole() / getCitizenName() - guessed at the most
+ * natural method names for the Complaint class. If your real
+ * Complaint API differs, update just
+ * {@link #isTargetedAtSarpanch(Complaint, String)},
+ * {@link #isFiledBySarpanch(Complaint, String)}, and
+ * {@link #complainantDisplayName(Complaint)} - everything else keeps
+ * working unchanged.
+=======
  * ------------------------------------------------------------------
  * "COMPLAINTS AGAINST SARPANCH" PANEL - OFFICIAL COMPLAINTS ONLY
  * ------------------------------------------------------------------
@@ -90,6 +107,7 @@ import javafx.stage.Stage;
  * and Admin logins are NOT wired together yet; see
  * {@code OfficialComplaintStore}'s class doc for exactly what a future
  * connection looks like.
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
  */
 public class ComplaintManagement extends Application {
 
@@ -137,12 +155,17 @@ public class ComplaintManagement extends Application {
     private Label progressFooterLabel;
     private Label pendingValueLabel;
 
+<<<<<<< HEAD
+    // Sarpanch-targeted complaints (village-scoped) - the only complaint list on this page
+    private GridPane sarpanchComplaintGrid;
+=======
     // Official Complaints against the Sarpanch (village-scoped) - the only
     // complaint list on this page. Sourced from OfficialComplaintStore, i.e.
     // complaints filed as "Official Complaint" on the Villager Login's
     // NewComplaintPage - see the class doc above and OfficialComplaintStore
     // for how this will connect to real submissions in future.
     private VBox sarpanchComplaintList;
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
     private Label sarpanchComplaintEmptyLabel;
 
     @Override
@@ -233,6 +256,74 @@ public class ComplaintManagement extends Application {
     }
 
     /* ============================================================
+<<<<<<< HEAD
+     *  SARPANCH-TARGETED COMPLAINTS (VILLAGE-SCOPED, NOT PROJECT-SCOPED)
+     * ============================================================
+     * ASSUMPTION: Complaint.getTargetPerson() / getComplainantRole() /
+     * getCitizenName() - guessed at the most natural names. Update
+     * them once you confirm the real Complaint API.
+     */
+
+    /**
+     * Complaints for the currently selected village that are targeted
+     * at that village's Sarpanch, excluding any complaint the Sarpanch
+     * filed themselves. Fully village-driven: switching villages in
+     * the sidebar changes both which complaints are pulled AND which
+     * Sarpanch name they're matched against - there is no project
+     * filtering anywhere in this method.
+     */
+    private List<Complaint> getSarpanchComplaintsForSelectedVillage() {
+        String sarpanchName = currentSarpanchName();
+        if (SARPANCH_UNASSIGNED.equals(sarpanchName)) {
+            return List.of();
+        }
+
+        return getComplaintsForSelectedVillage().stream()
+                .filter(c -> isTargetedAtSarpanch(c, sarpanchName))
+                .filter(c -> !isFiledBySarpanch(c, sarpanchName))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * True when a complaint is targeted at this village's Sarpanch.
+     * Matches on the Sarpanch's actual name first (so this stays
+     * correct per-village); also accepts a generic {@code "Sarpanch"}
+     * role tag as a fallback, in case your Complaint data marks the
+     * target by role rather than by name.
+     *
+     * ASSUMPTION: Complaint.getTargetPerson() holds who the complaint
+     * is against.
+     */
+    private boolean isTargetedAtSarpanch(Complaint c, String sarpanchName) {
+        String target = c.getTargetPerson();
+        if (target == null) return false;
+        String trimmed = target.trim();
+        return sarpanchName.equalsIgnoreCase(trimmed) || SARPANCH_ROLE.equalsIgnoreCase(trimmed);
+    }
+
+    /**
+     * True when a complaint was filed BY this village's Sarpanch (and
+     * so should be excluded from the "against the Sarpanch" list).
+     * Matches on the filer's name first, with the same role-tag
+     * fallback as {@link #isTargetedAtSarpanch(Complaint, String)}.
+     *
+     * ASSUMPTION: Complaint.getCitizenName() holds the filer's name,
+     * Complaint.getComplainantRole() holds the filer's role.
+     */
+    private boolean isFiledBySarpanch(Complaint c, String sarpanchName) {
+        String filerName = c.getCitizenName();
+        if (filerName != null && sarpanchName.equalsIgnoreCase(filerName.trim())) {
+            return true;
+        }
+        String role = c.getComplainantRole();
+        return role != null && SARPANCH_ROLE.equalsIgnoreCase(role.trim());
+    }
+
+    /** "Anonymous" whenever the complainant name is missing/blank. */
+    private String complainantDisplayName(Complaint c) {
+        String name = c.getCitizenName();
+        return (name == null || name.trim().isEmpty()) ? "Anonymous" : name;
+=======
      *  OFFICIAL COMPLAINTS AGAINST THE SARPANCH (VILLAGE-SCOPED)
      * ============================================================
      * Sourced from OfficialComplaintStore - the future data contract
@@ -250,6 +341,7 @@ public class ComplaintManagement extends Application {
      */
     private List<OfficialComplaint> getOfficialComplaintsForSelectedVillage() {
         return isAllVillages() ? OfficialComplaintStore.getAll() : OfficialComplaintStore.getForVillage(currentVillage());
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
     }
 
     /**
@@ -726,8 +818,18 @@ public class ComplaintManagement extends Application {
         long resolved = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.RESOLVED).count();
         long inProgress = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.IN_PROGRESS).count();
         long pending = complaints.stream().filter(c -> c.getStatus() == Complaint.Status.PENDING).count();
+<<<<<<< HEAD
+        long highPriority = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.HIGH).count();
+        long critical = complaints.stream().filter(c -> c.getPriority() == Complaint.Priority.CRITICAL).count();
 
         totalValueLabel.setText(String.valueOf(total));
+        // FIX: was concatenating a boolean into the footer text
+        // ("trueSitapur" / "falseSitapur"). Now shows a proper scope label.
+        totalFooterLabel.setText(isAllVillages() ? "All Villages" : "Village: " + currentVillage());
+=======
+
+        totalValueLabel.setText(String.valueOf(total));
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
 
         resolvedValueLabel.setText(String.valueOf(resolved));
 
@@ -781,6 +883,10 @@ public class ComplaintManagement extends Application {
 
     /* ============================================================
      *  SARPANCH COMPLAINT PANEL (village-scoped, NOT project-scoped)
+<<<<<<< HEAD
+     *  This is the only complaint list rendered on the page. No
+     *  PROJECT column - project data is not shown anywhere here.
+=======
      *  This is the only complaint list rendered on the page. Shows
      *  ONLY the Official Complaints filed against the Sarpanch via
      *  the Villager Login's NewComplaintPage - Title + Location per
@@ -788,6 +894,7 @@ public class ComplaintManagement extends Application {
      *  page (SarpanchComplaintDetailsPage), where an officer can see
      *  the Official's Name, Designation, Description, and mark the
      *  complaint Resolved or Rejected.
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
      * ============================================================ */
     private VBox buildSarpanchComplaintPanel() {
         VBox panel = new VBox(18);
@@ -798,6 +905,16 @@ public class ComplaintManagement extends Application {
         header.setAlignment(Pos.CENTER_LEFT);
         Label title = new Label("Complaints Against Sarpanch \u2014 Selected Village");
         title.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 20px; -fx-font-weight: 900; -fx-text-fill: " + FOREST_DEEP + ";");
+<<<<<<< HEAD
+        header.getChildren().addAll(title);
+
+        sarpanchComplaintGrid = new GridPane();
+        sarpanchComplaintGrid.setHgap(12);
+        sarpanchComplaintGrid.setVgap(16);
+        sarpanchComplaintGrid.setPadding(new Insets(6, 0, 0, 0));
+        sarpanchComplaintGrid.getColumnConstraints().addAll(
+                pct(11), pct(15), pct(10), pct(12), pct(28), pct(10), pct(14));
+=======
         Label subtitle = new Label("Official Complaints filed via the Villager Login");
         subtitle.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12.5px; -fx-font-weight: 600; -fx-text-fill: rgba(11,61,46,0.55);");
         VBox titleBox = new VBox(2, title, subtitle);
@@ -805,6 +922,7 @@ public class ComplaintManagement extends Application {
 
         sarpanchComplaintList = new VBox(12);
         sarpanchComplaintList.setPadding(new Insets(6, 0, 0, 0));
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
 
         sarpanchComplaintEmptyLabel = new Label();
         sarpanchComplaintEmptyLabel.setWrapText(true);
@@ -813,11 +931,107 @@ public class ComplaintManagement extends Application {
         sarpanchComplaintEmptyLabel.setManaged(false);
         sarpanchComplaintEmptyLabel.setVisible(false);
 
+<<<<<<< HEAD
+        panel.getChildren().addAll(header, sarpanchComplaintGrid, sarpanchComplaintEmptyLabel);
+=======
         panel.getChildren().addAll(header, sarpanchComplaintList, sarpanchComplaintEmptyLabel);
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
         addHoverLift(panel, 24);
         return panel;
     }
 
+<<<<<<< HEAD
+    private void addSarpanchComplaintHeader(GridPane grid) {
+        grid.add(headerCell("COMPLAINT ID"), 0, 0);
+        grid.add(headerCell("COMPLAINANT"), 1, 0);
+        grid.add(headerCell("DATE FILED"), 2, 0);
+        grid.add(headerCell("CATEGORY"), 3, 0);
+        grid.add(headerCell("DESCRIPTION"), 4, 0);
+        grid.add(headerCell("PRIORITY"), 5, 0);
+        grid.add(headerCell("STATUS"), 6, 0);
+    }
+
+    /**
+     * Rebuilds the Sarpanch-targeted panel from
+     * {@link #getSarpanchComplaintsForSelectedVillage()}. Shows the
+     * required empty-state message when nothing matches (including
+     * when the selected village has no Sarpanch on record, or when
+     * "All Villages" is selected). Every complaint shown here already
+     * satisfies both conditions: targeted at the current village's
+     * Sarpanch AND not filed by that Sarpanch.
+     */
+    private void updateSarpanchComplaintPanel() {
+        sarpanchComplaintGrid.getChildren().clear();
+        addSarpanchComplaintHeader(sarpanchComplaintGrid);
+
+        List<Complaint> complaints = getSarpanchComplaintsForSelectedVillage();
+
+        if (complaints.isEmpty()) {
+            sarpanchComplaintGrid.setManaged(false);
+            sarpanchComplaintGrid.setVisible(false);
+            sarpanchComplaintEmptyLabel.setManaged(true);
+            sarpanchComplaintEmptyLabel.setVisible(true);
+            sarpanchComplaintEmptyLabel.setText(isAllVillages()
+                    ? "Select a specific village to view complaints against its Sarpanch."
+                    : "No complaints have been reported against the Sarpanch for " + currentVillage() + ".");
+            return;
+        }
+
+        sarpanchComplaintGrid.setManaged(true);
+        sarpanchComplaintGrid.setVisible(true);
+        sarpanchComplaintEmptyLabel.setManaged(false);
+        sarpanchComplaintEmptyLabel.setVisible(false);
+
+        int row = 1;
+        for (Complaint c : complaints) {
+            addSarpanchComplaintRow(sarpanchComplaintGrid, row, c);
+            row++;
+        }
+    }
+
+    private void addSarpanchComplaintRow(GridPane grid, int row, Complaint c) {
+        String statusText = displayStatus(c.getStatus());
+        String statusColor = statusColor(c.getStatus());
+
+        Label idLabel = new Label(c.getComplaintId());
+        idLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-font-weight: 800; -fx-text-fill: " + FOREST_DEEP + ";");
+
+        Label nameLabel = new Label(complainantDisplayName(c));
+        nameLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.80);");
+
+        Label dateLabel = new Label(c.getDateFiled());
+        dateLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
+
+        Label categoryLabel = new Label(c.getCategory());
+        categoryLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.75);");
+
+        Label descLabel = new Label(c.getDescription());
+        descLabel.setWrapText(true);
+        descLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 13px; -fx-text-fill: rgba(11,61,46,0.80);");
+
+        Label priorityLabel = new Label(c.getPriority().toString());
+        priorityLabel.setPadding(new Insets(4, 10, 4, 10));
+        priorityLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        priorityLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11.5px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + DELAYED_RED + "; -fx-background-color: " + rgba(DELAYED_RED, 0.12) + "; -fx-background-radius: 999;");
+
+        Label statusLabel = new Label(statusText);
+        statusLabel.setPadding(new Insets(4, 10, 4, 10));
+        statusLabel.setMaxWidth(Region.USE_PREF_SIZE);
+        statusLabel.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 12px; -fx-font-weight: 800;" +
+                "-fx-text-fill: " + statusColor + "; -fx-background-color: " + rgba(statusColor, 0.12) + "; -fx-background-radius: 999;");
+
+        grid.add(idLabel, 0, row);
+        grid.add(nameLabel, 1, row);
+        grid.add(dateLabel, 2, row);
+        grid.add(categoryLabel, 3, row);
+        grid.add(descLabel, 4, row);
+        grid.add(priorityLabel, 5, row);
+        grid.add(statusLabel, 6, row);
+    }
+
+    private String displayStatus(Complaint.Status status) {
+=======
     /**
      * Rebuilds the Sarpanch panel from
      * {@link #getOfficialComplaintsForSelectedVillage()}. Shows the
@@ -921,6 +1135,7 @@ public class ComplaintManagement extends Application {
     }
 
     private String officialStatusText(OfficialComplaint.Status status) {
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
         switch (status) {
             case RESOLVED: return "Resolved";
             case REJECTED: return "Rejected";
@@ -936,6 +1151,22 @@ public class ComplaintManagement extends Application {
         }
     }
 
+<<<<<<< HEAD
+    private Label headerCell(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-font-family: " + FONT_FAMILY + "; -fx-font-size: 11px; -fx-font-weight: 800;" +
+                "-fx-text-fill: rgba(11,61,46,0.60); -fx-letter-spacing: 0.06em;");
+        return label;
+    }
+
+    private ColumnConstraints pct(double width) {
+        ColumnConstraints cc = new ColumnConstraints();
+        cc.setPercentWidth(width);
+        return cc;
+    }
+
+=======
+>>>>>>> c93dffcf5bbb024bbc0e0d7fbbe47b72c71c37a2
     /* ============================================================
      *  SHARED STYLE HELPERS — same copies as every other page
      * ============================================================ */

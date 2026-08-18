@@ -1133,68 +1133,100 @@ createDocumentRequest(new Document(
     // Similar to BillManagement summary cards
     // ============================================================
 
-    private static VBox createSummaryCard(
-            String titleText,
-            String numberText,
-            String accent) {
+  private static VBox createSummaryCard(
+        String titleText,
+        String numberText,
+        String accent) {
 
-        VBox card =
-                new VBox(8);
+    // ========================================================
+    // MAIN CARD
+    // ========================================================
 
-        card.setPadding(
-                new Insets(15)
-        );
+    VBox card = new VBox();
 
-        card.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 14;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 14;"
-        );
+    card.setMinHeight(190);
+    card.setPrefHeight(190);
+    card.setMaxHeight(190);
 
+    card.setPadding(new Insets(0));
 
-        Label title =
-                new Label(titleText);
+    card.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 14;" +
+            "-fx-border-color: #E1E7E4;" +
+            "-fx-border-radius: 14;"
+    );
 
-        title.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #657180;"
-        );
+    // ========================================================
+    // TOP COLORED STRIP
+    // ========================================================
 
+    Region strip = new Region();
 
-        Label number =
-                new Label(numberText);
+    strip.setPrefHeight(5);
+    strip.setMinHeight(5);
+    strip.setMaxHeight(5);
 
-        number.setStyle(
-                "-fx-font-size: 28px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    strip.setMaxWidth(Double.MAX_VALUE);
 
+    strip.setStyle(
+            "-fx-background-color: " + accent + ";" +
+            "-fx-background-radius: 14 14 0 0;"
+    );
 
-        Label status =
-                new Label(
-                        "●  " + titleText
-                );
+    // ========================================================
+    // CARD CONTENT
+    // ========================================================
 
-        status.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    VBox cardContent = new VBox(9);
 
+    cardContent.setPadding(
+            new Insets(18, 20, 18, 20)
+    );
 
-        card.getChildren().addAll(
-                title,
-                number,
-                status
-        );
+    Label title = new Label(titleText);
 
+    title.setStyle(
+            "-fx-font-size: 11px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: #657180;"
+    );
 
-        return card;
-    }
+    Label number = new Label(numberText);
 
+    number.setStyle(
+            "-fx-font-size: 30px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: " + accent + ";"
+    );
+
+    Label status = new Label(
+            "●  " + titleText
+    );
+
+    status.setStyle(
+            "-fx-font-size: 11px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-text-fill: " + accent + ";"
+    );
+
+    cardContent.getChildren().addAll(
+            title,
+            number,
+            status
+    );
+
+    // ========================================================
+    // STRIP AT TOP + CONTENT BELOW
+    // ========================================================
+
+    card.getChildren().addAll(
+            strip,
+            cardContent
+    );
+
+    return card;
+}
 
     // ============================================================
     // SINGLE DOCUMENT REQUEST

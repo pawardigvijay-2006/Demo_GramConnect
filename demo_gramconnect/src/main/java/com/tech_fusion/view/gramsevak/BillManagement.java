@@ -359,7 +359,7 @@ searchBox.getChildren().addAll(searchIcon, searchField);
         loadBills();
 
         VBox content = new VBox(18);
-        content.setPadding(new Insets(16, 24, 24, 24));
+        content.setPadding(new Insets(38, 28, 30, 28));
         content.setFillWidth(true);
         Image bgImage = new Image(
         getClass()
@@ -497,8 +497,9 @@ BackgroundImage backgroundImage =
 // SUMMARY CARDS
 // ============================================================
 
-HBox summaryCards = new HBox(20);
+HBox summaryCards = new HBox(24);
 summaryCards.setAlignment(Pos.CENTER_LEFT);
+summaryCards.setFillHeight(false);
 
 int totalBills = bills.size();
 
@@ -544,11 +545,17 @@ HBox.setHgrow(paidCard, Priority.ALWAYS);
 HBox.setHgrow(pendingCard, Priority.ALWAYS);
 HBox.setHgrow(overdueCard, Priority.ALWAYS);
 
+
 summaryCards.getChildren().addAll(
                 totalCard,
                 paidCard,
                 pendingCard,
                 overdueCard);
+
+                VBox.setMargin(
+        summaryCards,
+        new Insets(8, 0, 20, 0)
+);
 
 
         // ============================================================
@@ -648,15 +655,46 @@ private static VBox createSummaryCard(
                 String numberText,
                 String accent) {
 
+        // Main white card
         VBox card = new VBox(8);
+       card.setPrefWidth(235);
+        card.setMinWidth(235);
+        card.setMaxWidth(235);
 
-        card.setPadding(new Insets(15));
-
+        card.setPrefHeight(190);
+        card.setMinHeight(190);
+        card.setMaxHeight(190);
+        card.setPadding(new Insets(0));
         card.setStyle(
                         "-fx-background-color: white;" +
                         "-fx-background-radius: 14;" +
                         "-fx-border-color: #E1E7E4;" +
                         "-fx-border-radius: 14;");
+
+        // ============================================================
+        // TOP STRIP
+        // ============================================================
+
+        Region strip = new Region();
+
+        strip.setPrefHeight(5);
+        strip.setMinHeight(5);
+        strip.setMaxWidth(Double.MAX_VALUE);
+
+        strip.setStyle(
+                "-fx-background-color: " + accent + ";" +
+                "-fx-background-radius: 14 14 0 0;"
+        );
+
+        // ============================================================
+        // CARD CONTENT
+        // ============================================================
+
+        VBox cardContent = new VBox(12);
+
+         cardContent.setPadding(
+                        new Insets(22, 22, 22, 22)
+        );
 
         Label title = new Label(titleText);
 
@@ -679,10 +717,20 @@ private static VBox createSummaryCard(
                         "-fx-font-weight: bold;" +
                         "-fx-text-fill: " + accent + ";");
 
-        card.getChildren().addAll(
+        cardContent.getChildren().addAll(
                         title,
                         number,
-                        status);
+                        status
+        );
+
+        // ============================================================
+        // PUT STRIP AT TOP + CONTENT BELOW
+        // ============================================================
+
+        card.getChildren().addAll(
+                        strip,
+                        cardContent
+        );
 
         return card;
 }
