@@ -38,9 +38,9 @@ import com.tech_fusion.view.villager.BillsAndPayments.BillData;
  * "Cancel", and after a successful payment - one callback, no
  * competing navigation paths.
  *
- * Payment is handled by RazorpayUpiCheckout, which opens a modal
- * Razorpay Checkout window configured for UPI and reports success or
- * failure back here.
+ * Payment is handled by RazorpayUpiCheckout, which creates a Razorpay
+ * payment link, opens it in the villager's browser, and reports
+ * success or failure back here once the payment completes.
  */
 public class PayBillPage {
 
@@ -677,21 +677,18 @@ public class PayBillPage {
         }
 
         /**
-         * Opens the Razorpay UPI checkout modal. On success, records the payment
+         * Opens the Razorpay UPI checkout dialog. On success, records the payment
          * (moves the bill into Payment History), shows a "Payment Successful"
          * popup, and returns to Bills & Payments. On failure/cancel, shows a
          * simple notice and leaves the user on this page to retry.
          */
         private void handlePayNow(BillData bill, Runnable backToBills) {
-                String orderId = RazorpayUpiCheckout.createOrderIdOnYourServer(totalAmount(bill));
-
                 RazorpayUpiCheckout.openUpiCheckout(
                                 VillagerDashboard.homeStage,
-                                orderId,
                                 totalAmount(bill),
                                 "Ramesh Suresh Patil",
                                 "9999999999",
-                                "Payment for " + bill.name,
+                                bill.name,
                                 new RazorpayUpiCheckout.PaymentCallback() {
                                         @Override
                                         public void onSuccess(String razorpayPaymentId) {
@@ -886,3 +883,7 @@ public class PayBillPage {
                 return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
         }
 }
+
+
+
+
