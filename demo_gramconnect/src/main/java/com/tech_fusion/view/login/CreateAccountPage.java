@@ -588,6 +588,7 @@ public class CreateAccountPage {
                 // =========================================================
 
                 StackPane root = new StackPane();
+                System.out.println("hi");
 
                 root.getChildren().addAll(
                                 background,
