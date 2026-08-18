@@ -660,7 +660,6 @@ private HBox footerLink(String icon, String text) {
         return header;
     }
 
-
     // ============================================================
     // SCROLLABLE CONTENT
     // ============================================================
@@ -668,11 +667,11 @@ private HBox footerLink(String icon, String text) {
     private ScrollPane buildScrollableContent() {
 
         VBox content =
-                new VBox(14);
+                new VBox(10);
 
-        content.setPadding(
-                new Insets(16, 24, 24, 24)
-        );
+      content.setPadding(
+        new Insets(30, 24, 24, 24)
+);
 
         content.setFillWidth(true);
 
@@ -768,7 +767,12 @@ content.setBackground(
 
         titlePane.setLeft(
                 titleBox
+                
         );
+        VBox.setMargin(
+        titlePane,
+        new Insets(0, 0, 24, 0)
+);
 
         /*titlePane.setRight(
                 addComplaintButton
@@ -1096,77 +1100,139 @@ content.setBackground(
         // ========================================================
         // SCROLL PANE
         // ========================================================
+// ============================================================
+// PAGE CONTENT + TOP STRIP
+// ============================================================
 
-        ScrollPane scrollPane =new ScrollPane(content);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent;");
-        return scrollPane;
+// ============================================================
+// PAGE CONTENT
+// ============================================================
+
+VBox pageContent = new VBox();
+
+pageContent.setFillWidth(true);
+
+pageContent.getChildren().add(content);
+
+
+// ============================================================
+// SCROLL PANE
+// ============================================================
+
+ScrollPane scrollPane =
+        new ScrollPane(pageContent);
+
+scrollPane.setFitToWidth(true);
+
+scrollPane.setStyle(
+        "-fx-background-color: transparent;"
+);
+
+return scrollPane;
     }
     // ============================================================
     // SUMMARY CARD
     // ============================================================
+// ============================================================
+// SUMMARY CARD
+// ============================================================
 
-    private static VBox createSummaryCard(
-            String titleText,
-            String numberText,
-            String accent) {
+private static VBox createSummaryCard(
+        String titleText,
+        String numberText,
+        String accent) {
 
-        VBox card =
-                new VBox(8);
+    VBox card =
+            new VBox(0);
+            card.setMinHeight(190);
+    card.setPrefHeight(190);
+    card.setMaxHeight(190);
 
-        card.setPadding(
-                new Insets(15)
-        );
-
-        card.setStyle(
-                "-fx-background-color: white;"
-                        + "-fx-background-radius: 14;"
-                        + "-fx-border-color: #E1E7E4;"
-                        + "-fx-border-radius: 14;"
-        );
-
-
-        Label title =
-                new Label(titleText);
-
-        title.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: #657180;"
-        );
+    card.setStyle(
+            "-fx-background-color: white;"
+                    + "-fx-background-radius: 14;"
+                    + "-fx-border-color: #E1E7E4;"
+                    + "-fx-border-radius: 14;"
+                    + "-fx-effect: dropshadow(gaussian, rgba(11,61,46,0.08), 8, 0.1, 0, 2);"
+    );
 
 
-        Label number =
-                new Label(numberText);
+    // ========================================================
+    // COLOURED TOP STRIP
+    // ========================================================
 
-        number.setStyle(
-                "-fx-font-size: 28px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    Region strip =
+            new Region();
 
+    strip.setPrefHeight(5);
+    strip.setMinHeight(5);
+    strip.setMaxHeight(5);
 
-        Label status =
-                new Label(
-                        "●  " + titleText
-                );
-
-        status.setStyle(
-                "-fx-font-size: 11px;"
-                        + "-fx-font-weight: bold;"
-                        + "-fx-text-fill: " + accent + ";"
-        );
+    strip.setStyle(
+            "-fx-background-color: " + accent + ";"
+                    + "-fx-background-radius: 14 14 0 0;"
+    );
 
 
-        card.getChildren().addAll(
-                title,
-                number,
-                status
-        );
+    // ========================================================
+    // CARD CONTENT
+    // ========================================================
+
+    VBox cardContent =
+            new VBox(8);
+
+    cardContent.setPadding(
+            new Insets(15)
+    );
 
 
-        return card;
-    }
+    Label title =
+            new Label(titleText);
+
+    title.setStyle(
+            "-fx-font-size: 11px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: #657180;"
+    );
+
+
+    Label number =
+            new Label(numberText);
+
+    number.setStyle(
+            "-fx-font-size: 28px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: " + accent + ";"
+    );
+
+
+    Label status =
+            new Label(
+                    "●  " + titleText
+            );
+
+    status.setStyle(
+            "-fx-font-size: 11px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-text-fill: " + accent + ";"
+    );
+
+
+    cardContent.getChildren().addAll(
+            title,
+            number,
+            status
+    );
+
+
+    card.getChildren().addAll(
+            strip,
+            cardContent
+    );
+
+
+    return card;
+}
 
 
     // ============================================================

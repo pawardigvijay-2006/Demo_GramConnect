@@ -455,14 +455,14 @@ public class ProjectTrackerPage {
             {"\uD83D\uDCC1", "View All Projects", "Browse the complete list of ongoing, completed and pending projects.", CONTEXT_TEAL},
             {"\uD83D\uDCC8", "Project Updates", "View each project's stage-by-stage timeline and proof of expenditure.", SAFFRON_MAIN},
             {"\uD83E\uDD16", "View AI Analysis", "See AI-generated insights and risk flags for project execution.", AI_VIOLET},
-            {"\uD83D\uDCCD", "Verify GPS & Timestamp", "Validate site photos against GPS location and capture timestamp.", CONTEXT_TEAL}
+            {"\uD83D\uDE80", "Project Initialize", "Review Admin-approved projects and initialize the ones ready to begin tracking.", CONTEXT_TEAL}
         };
 
         Runnable[] openActions = {
             () -> openViewAllProjectsPage(),
             () -> openProjectUpdatesPage(),
             () -> openViewAiAnalysisPage(),
-            () -> openVerifyGpsTimestampPage()
+            () -> openProjectInitializePage()
         };
 
         for (int i = 0; i < features.length; i++) {
@@ -549,11 +549,11 @@ public class ProjectTrackerPage {
         );
     }
 
-    private void openVerifyGpsTimestampPage() {
-        System.out.println("[Project Tracker] Opened: Verify GPS & Timestamp");
-        VerifyGpsTimestampPage page = new VerifyGpsTimestampPage();
+    private void openProjectInitializePage() {
+        System.out.println("[Project Tracker] Opened: Project Initialize");
+        ProjectInitializePage page = new ProjectInitializePage();
         SarpanchDashboard.myStage.setScene(
-            page.getVerifyGpsTimestampScene(createBackToProjectTrackerAction(), backToDashboardAction)
+            page.getProjectInitializeScene(createBackToProjectTrackerAction(), backToDashboardAction)
         );
     }
 
