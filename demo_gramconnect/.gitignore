@@ -1,0 +1,4 @@
+**/target/
+*.class
+demo_gramconnect/src/main/resources/gramconnect-Firebase.json
+target/
